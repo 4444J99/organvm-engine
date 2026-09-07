@@ -228,6 +228,7 @@ def sync_all(
     rendered_remote_references: list[dict[str, str]] = []
 
     if receipt_enabled:
+        assert receipt_path is not None
         target_preimages = _preflight_context_outputs(
             workspace=ws,
             registry=reg,
@@ -244,6 +245,15 @@ def sync_all(
         if receipt_target_absolute in output_targets:
             raise RuntimeError(
                 "receipt destination collides with a generated context output: "
+                f"{receipt_target_absolute}",
+            )
+        from organvm_engine.paths import PathConfig, context_changelog_path
+
+        changelog_config = PathConfig(workspace_dir=workspace) if workspace else None
+        changelog_target = _lexical_absolute(context_changelog_path(changelog_config))
+        if receipt_target_absolute == changelog_target:
+            raise RuntimeError(
+                "receipt destination collides with the context changelog: "
                 f"{receipt_target_absolute}",
             )
     target_preimage_map = {
@@ -426,16 +436,24 @@ def sync_all(
             key=_lexical_absolute,
         )
         if rediscovered_seed_paths != seed_paths:
-            raise RuntimeError(
+            _raise_after_receipted_rollback(
                 "seed evidence path set changed while preparing receipted sync",
+                workspace=ws,
+                target_preimages=target_preimages,
+                expected_output_bindings=expected_output_bindings,
+                workspace_identity=receipt_workspace_identity,
             )
         rediscovered_sops = discover_sops(workspace=ws)
         for root in extra_roots:
             rediscovered_sops.extend(discover_sops(workspace=root))
             rediscovered_sops.extend(_discover_flat_sops(root))
         if bind_context_sync_sops(rediscovered_sops, ws) != receipt_sop_inputs:
-            raise RuntimeError(
+            _raise_after_receipted_rollback(
                 "SOP evidence path set changed while preparing receipted sync",
+                workspace=ws,
+                target_preimages=target_preimages,
+                expected_output_bindings=expected_output_bindings,
+                workspace_identity=receipt_workspace_identity,
             )
 
         from organvm_engine.contextmd.receipt import (
@@ -1166,6 +1184,210 @@ def _preflight_context_outputs(
                 },
             )
     return bindings
+
+
+def _raise_after_receipted_rollback(
+    message: str,
+    *,
+    workspace: Path,
+    target_preimages: list[dict[str, Any]],
+    expected_output_bindings: list[dict[str, str | int]],
+    workspace_identity: dict[str, int] | None,
+) -> None:
+    """Restore every published context target before reporting late input drift."""
+    try:
+        _restore_receipted_context_outputs(
+            workspace=workspace,
+            target_preimages=target_preimages,
+            expected_output_bindings=expected_output_bindings,
+            workspace_identity=workspace_identity,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"{message}; context output rollback failed: {exc}") from exc
+    raise RuntimeError(message)
+
+
+def _restore_receipted_context_outputs(
+    *,
+    workspace: Path,
+    target_preimages: list[dict[str, Any]],
+    expected_output_bindings: list[dict[str, str | int]],
+    workspace_identity: dict[str, int] | None,
+) -> None:
+    """Restore preflight bytes without overwriting a concurrent public edit."""
+    preimages = {str(binding["path"]): binding for binding in target_preimages}
+    outputs = {str(binding["path"]): binding for binding in expected_output_bindings}
+    for label in reversed(sorted(outputs)):
+        preimage = preimages[label]
+        output = outputs[label]
+        target = workspace / label
+        parent_fd, filename, opened_label = _open_custody_parent(
+            target,
+            workspace,
+            expected_root_identity=workspace_identity,
+        )
+        try:
+            if opened_label != label:
+                raise RuntimeError(f"context rollback target identity changed: {label}")
+            _require_preflight_parent_identity(parent_fd, label, preimages)
+            current_payload = _read_custody_payload(parent_fd, filename)
+            if current_payload is None or _payload_binding(label, current_payload) != output:
+                raise RuntimeError(
+                    f"context output changed before transaction rollback: {label}",
+                )
+            if preimage.get("state") == "present":
+                if _payload_binding(label, current_payload).get("sha256") == preimage.get(
+                    "sha256",
+                ):
+                    continue
+                original_payload = _read_preimage_from_custody(
+                    workspace=workspace,
+                    output_label=label,
+                    parent_fd=parent_fd,
+                    preimage=preimage,
+                    workspace_identity=workspace_identity,
+                )
+                _write_custody_payload(
+                    parent_fd,
+                    filename,
+                    original_payload,
+                    create_only=False,
+                    expected_preimage=current_payload,
+                    custody_root=workspace,
+                    output_label=label,
+                    custody_root_identity=workspace_identity,
+                )
+            else:
+                _remove_created_custody_output(
+                    parent_fd=parent_fd,
+                    filename=filename,
+                    payload=current_payload,
+                    custody_root=workspace,
+                    output_label=label,
+                    custody_root_identity=workspace_identity,
+                )
+        finally:
+            os.close(parent_fd)
+
+
+def _read_preimage_from_custody(
+    *,
+    workspace: Path,
+    output_label: str,
+    parent_fd: int,
+    preimage: dict[str, Any],
+    workspace_identity: dict[str, int] | None,
+) -> bytes:
+    """Read and verify the immutable object created for an overwritten preimage."""
+    digest = preimage.get("sha256")
+    if not isinstance(digest, str) or not digest.startswith("sha256:"):
+        raise RuntimeError(f"context preimage is missing its digest: {output_label}")
+    object_name = f"sha256-{digest.removeprefix('sha256:')}.object"
+    journal_fd = _open_custody_journal(
+        workspace,
+        output_label,
+        parent_fd,
+        workspace_identity,
+    )
+    try:
+        _lock_custody_journal(journal_fd)
+        payload = _read_custody_payload(journal_fd, object_name)
+    finally:
+        os.close(journal_fd)
+    if payload is None or _payload_binding(output_label, payload).get("sha256") != digest:
+        raise RuntimeError(f"context preimage custody object is unavailable: {output_label}")
+    return payload
+
+
+def _remove_created_custody_output(
+    *,
+    parent_fd: int,
+    filename: str,
+    payload: bytes,
+    custody_root: Path,
+    output_label: str,
+    custody_root_identity: dict[str, int] | None,
+) -> None:
+    """Retire one transaction-created public file through the custody journal."""
+    source_fd: int | None = None
+    capture_name: str | None = None
+    capture_identity: tuple[int, int] | None = None
+    journal_fd = _open_custody_journal(
+        custody_root,
+        output_label,
+        parent_fd,
+        custody_root_identity,
+    )
+    try:
+        _lock_custody_journal(journal_fd)
+        _reap_custody_transactions(journal_fd)
+        _assert_custody_parent_is_live(
+            parent_fd,
+            filename,
+            output_label,
+            custody_root,
+            custody_root_identity,
+        )
+        source_fd = os.open(filename, _custody_read_flags(), dir_fd=parent_fd)
+        opened = os.fstat(source_fd)
+        if not stat.S_ISREG(opened.st_mode) or (
+            _read_open_custody_payload(source_fd, filename) != payload
+        ):
+            raise RuntimeError(f"context output changed before removal: {output_label}")
+        _ensure_custody_object(journal_fd, payload)
+        live = os.stat(filename, dir_fd=parent_fd, follow_symlinks=False)
+        if (live.st_dev, live.st_ino) != (opened.st_dev, opened.st_ino):
+            raise RuntimeError(f"context output identity changed before removal: {output_label}")
+        capture_name = f"transaction-{secrets.token_hex(24)}.rollback"
+        os.rename(
+            filename,
+            capture_name,
+            src_dir_fd=parent_fd,
+            dst_dir_fd=journal_fd,
+        )
+        capture_status = os.stat(
+            capture_name,
+            dir_fd=journal_fd,
+            follow_symlinks=False,
+        )
+        capture_identity = (capture_status.st_dev, capture_status.st_ino)
+        captured_payload = _read_custody_payload(journal_fd, capture_name)
+        if capture_identity != (opened.st_dev, opened.st_ino) or captured_payload != payload:
+            _restore_journal_capture(
+                parent_fd,
+                journal_fd,
+                filename,
+                capture_name,
+                capture_identity,
+                captured_payload,
+            )
+            capture_name = None
+            raise RuntimeError(f"context output changed at rollback boundary: {output_label}")
+        os.fsync(parent_fd)
+        _remove_private_journal_alias(
+            journal_fd,
+            capture_name,
+            capture_identity,
+            payload,
+        )
+        capture_name = None
+        os.fsync(journal_fd)
+    except Exception:
+        if capture_name is not None and capture_identity is not None:
+            captured_payload = _read_custody_payload(journal_fd, capture_name)
+            _restore_journal_capture(
+                parent_fd,
+                journal_fd,
+                filename,
+                capture_name,
+                capture_identity,
+                captured_payload,
+            )
+        raise
+    finally:
+        if source_fd is not None:
+            os.close(source_fd)
+        os.close(journal_fd)
 
 
 def _safe_path_component(value: object) -> bool:

@@ -17,6 +17,7 @@ import stat
 import tempfile
 import tokenize
 import traceback
+from contextlib import suppress
 from pathlib import Path
 from textwrap import dedent
 
@@ -1442,8 +1443,10 @@ def privacy_gate_candidate_bytes(
 
 
 def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
-    """Publish the already-scanned bytes through same-directory temporary files."""
+    """Publish one recoverable artifact set from already-scanned candidate bytes."""
     temporary_paths: dict[Path, Path] = {}
+    rollback_paths: dict[Path, Path | None] = {}
+    published: list[Path] = []
     try:
         for target, payload in candidate_bytes.items():
             descriptor, temporary_name = tempfile.mkstemp(
@@ -1460,14 +1463,70 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                     stream.flush()
                     os.fsync(stream.fileno())
             except Exception:
-                try:
+                with suppress(OSError):
                     os.close(descriptor)
-                except OSError:
-                    pass
                 raise
-        for target, temporary in temporary_paths.items():
-            os.replace(temporary, target)
-        temporary_paths.clear()
+        for target in candidate_bytes:
+            try:
+                initial = target.stat(follow_symlinks=False)
+            except FileNotFoundError:
+                rollback_paths[target] = None
+                continue
+            if not stat.S_ISREG(initial.st_mode):
+                raise RuntimeError(f"Published artifact {target.name!r} is not a regular file")
+            preimage = _read_regular_bytes_once(target)
+            current = target.stat(follow_symlinks=False)
+            if (
+                initial.st_dev,
+                initial.st_ino,
+                initial.st_size,
+                initial.st_mtime_ns,
+            ) != (
+                current.st_dev,
+                current.st_ino,
+                current.st_size,
+                current.st_mtime_ns,
+            ):
+                raise RuntimeError(f"Published artifact {target.name!r} changed at preflight")
+            descriptor, rollback_name = tempfile.mkstemp(
+                dir=target.parent,
+                prefix=f".{target.name}.",
+                suffix=".rollback",
+            )
+            rollback = Path(rollback_name)
+            rollback_paths[target] = rollback
+            try:
+                os.fchmod(descriptor, stat.S_IMODE(initial.st_mode))
+                with os.fdopen(descriptor, "wb") as stream:
+                    stream.write(preimage)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+            except Exception:
+                with suppress(OSError):
+                    os.close(descriptor)
+                raise
+        try:
+            for target, temporary in temporary_paths.items():
+                temporary.replace(target)
+                published.append(target)
+        except Exception as publication_error:
+            rollback_errors: list[str] = []
+            for target in reversed(published):
+                rollback = rollback_paths[target]
+                try:
+                    if rollback is None:
+                        target.unlink()
+                    else:
+                        rollback.replace(target)
+                        rollback_paths[target] = None
+                except Exception as exc:
+                    rollback_errors.append(f"{target.name}: {exc}")
+            if rollback_errors:
+                raise RuntimeError(
+                    "Audit artifact publication failed and rollback was incomplete: "
+                    + "; ".join(rollback_errors),
+                ) from publication_error
+            raise
         directory_descriptor = os.open(HERE, os.O_RDONLY)
         try:
             os.fsync(directory_descriptor)
@@ -1476,6 +1535,9 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
     finally:
         for temporary in temporary_paths.values():
             temporary.unlink(missing_ok=True)
+        for rollback in rollback_paths.values():
+            if rollback is not None:
+                rollback.unlink(missing_ok=True)
 
 
 def main() -> None:

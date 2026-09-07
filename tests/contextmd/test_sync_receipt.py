@@ -1601,7 +1601,9 @@ def test_receipted_directory_mapping_ignores_unselected_ambiguous_organs() -> No
 
 def test_receipt_destination_cannot_alias_a_generated_context_output(
     tmp_path,
+    monkeypatch,
 ) -> None:
+    _isolate_emitters(monkeypatch)
     workspace = tmp_path / "workspace"
     workspace.mkdir()
 
@@ -1618,6 +1620,31 @@ def test_receipt_destination_cannot_alias_a_generated_context_output(
     assert not (workspace / "AGENTS.md").exists()
 
 
+def test_receipt_destination_cannot_alias_the_context_changelog(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from organvm_engine.paths import PathConfig, context_changelog_path
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    _isolate_emitters(monkeypatch)
+    changelog = context_changelog_path(PathConfig(workspace_dir=workspace))
+
+    with pytest.raises(RuntimeError, match="collides with the context changelog"):
+        sync_all(
+            workspace=workspace,
+            registry_path=str(FIXTURES / "registry-minimal.json"),
+            additional_workspace_roots=[],
+            receipt_path=changelog,
+        )
+
+    assert not changelog.exists()
+    assert not (workspace / "CLAUDE.md").exists()
+    assert not (workspace / "GEMINI.md").exists()
+    assert not (workspace / "AGENTS.md").exists()
+
+
 def test_receipted_sync_rejects_a_seed_path_added_before_publication(
     tmp_path,
     monkeypatch,
@@ -1626,6 +1653,13 @@ def test_receipted_sync_rejects_a_seed_path_added_before_publication(
 
     workspace = tmp_path / "workspace"
     workspace.mkdir()
+    _isolate_emitters(monkeypatch)
+    originals = {
+        workspace / name: f"manual {name}\n"
+        for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")
+    }
+    for target, content in originals.items():
+        target.write_text(content, encoding="utf-8")
     real_discover = seed_discover.discover_seeds
     calls = 0
 
@@ -1655,6 +1689,7 @@ def test_receipted_sync_rejects_a_seed_path_added_before_publication(
 
     assert calls == 2
     assert not (workspace / "receipt.json").exists()
+    assert {target: target.read_text(encoding="utf-8") for target in originals} == originals
 
 
 def test_receipted_sync_rebinds_sops_at_the_publication_boundary(
@@ -1665,6 +1700,7 @@ def test_receipted_sync_rebinds_sops_at_the_publication_boundary(
 
     workspace = tmp_path / "workspace"
     workspace.mkdir()
+    _isolate_emitters(monkeypatch)
     real_bind = receipt_mod.bind_context_sync_sops
     calls = 0
 
@@ -1692,3 +1728,6 @@ def test_receipted_sync_rebinds_sops_at_the_publication_boundary(
 
     assert calls == 3
     assert not (workspace / "receipt.json").exists()
+    assert not (workspace / "CLAUDE.md").exists()
+    assert not (workspace / "GEMINI.md").exists()
+    assert not (workspace / "AGENTS.md").exists()

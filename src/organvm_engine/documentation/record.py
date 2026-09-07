@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import selectors
 import subprocess
+import time
 from collections import Counter
 from collections.abc import Mapping
 from datetime import datetime, timezone
@@ -49,6 +52,8 @@ _UniqueKeySafeLoader.add_constructor(
 CONTRACT_NAME = "project-record.v1"
 CONTRACT_VERSION = 1
 MAX_STRUCTURED_RECORD_BYTES = 2_000_000
+MAX_EVIDENCE_BYTES = 128_000_000
+GIT_EVIDENCE_TIMEOUT_SECONDS = 30.0
 MAX_FRESHNESS_AGE_SECONDS = 315_576_000
 DOCUMENTATION_CLASSES = frozenset("ABCDEF")
 IMPLEMENTATION_STATUSES = frozenset(
@@ -776,6 +781,7 @@ def _validate_assertion_target(
         return None, [f"{label} assertion path escapes repository root: {reference}"]
     if not candidate.is_file():
         return None, [f"{label} assertion path does not exist: {reference}"]
+    assertion_binding_errors: list[str] = []
     if require_git_tracked_evidence:
         assertion_binding_errors = _git_tracked_path_errors(
             root=root,
@@ -785,9 +791,19 @@ def _validate_assertion_target(
         )
         errors.extend(assertion_binding_errors)
     try:
-        assertion = _load_mapping(candidate)
+        assertion, assertion_payload = _load_mapping_with_payload(candidate)
     except (OSError, ValueError) as exc:
         return None, [f"{label} cannot load assertion: {exc}"]
+    if require_git_tracked_evidence and not assertion_binding_errors:
+        errors.extend(
+            _git_head_payload_errors(
+                root=root,
+                relative=reference,
+                payload=assertion_payload,
+                label=label,
+                object_name="assertion",
+            ),
+        )
 
     assertion_contract_matches = assertion.get("contract_name") == "assertion-evidence.v1"
     if not assertion_contract_matches:
@@ -1367,14 +1383,14 @@ def _assertion_evidence_binding_errors(
                 f"{label} reference does not exist: {evidence_reference}",
             )
             continue
+        evidence_binding_errors: list[str] = []
         if require_git_tracked_evidence:
-            errors.extend(
-                _git_tracked_path_errors(
-                    root=root,
-                    relative=evidence_reference,
-                    label=label,
-                ),
+            evidence_binding_errors = _git_tracked_path_errors(
+                root=root,
+                relative=evidence_reference,
+                label=label,
             )
+            errors.extend(evidence_binding_errors)
         initial_identity = _cached_evidence_identity(
             root,
             evidence_reference,
@@ -1410,6 +1426,16 @@ def _assertion_evidence_binding_errors(
             errors.append(
                 f"{label} body_hash does not match raw bytes for {evidence_reference}: "
                 f"expected {actual}, found {body_hash}",
+            )
+        if require_git_tracked_evidence and not evidence_binding_errors:
+            errors.extend(
+                _git_head_digest_errors(
+                    root=root,
+                    relative=evidence_reference,
+                    digest=actual,
+                    label=label,
+                    object_name="evidence",
+                ),
             )
     return errors
 
@@ -1501,14 +1527,18 @@ def _git_evidence_binding_errors(
         else None
     )
     if cached_digest is None:
-        digest, returncode = _stream_git_object_sha256(root, object_type, object_name)
-        if returncode != 0 or digest is None:
-            cached_digest = (
-                None,
-                f"cannot resolve git evidence: {evidence_reference}",
-            )
+        try:
+            digest, returncode = _stream_git_object_sha256(root, object_type, object_name)
+        except StableReadError as exc:
+            cached_digest = (None, str(exc))
         else:
-            cached_digest = ("sha256:" + digest, None)
+            if returncode != 0 or digest is None:
+                cached_digest = (
+                    None,
+                    f"cannot resolve git evidence: {evidence_reference}",
+                )
+            else:
+                cached_digest = ("sha256:" + digest, None)
         if object_cache_key is not None:
             evidence_digest_cache[object_cache_key] = cached_digest
     evidence_digest_cache[reference_cache_key] = cached_digest
@@ -1517,7 +1547,7 @@ def _git_evidence_binding_errors(
 
 def _stream_sha256(path: Path) -> str:
     """Hash one bounded, stable regular file through no-follow path binding."""
-    payload = read_stable_regular_bytes(path)
+    payload = read_stable_regular_bytes(path, maximum_bytes=MAX_EVIDENCE_BYTES)
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -1526,7 +1556,7 @@ def _stream_git_object_sha256(
     object_type: str,
     object_name: str,
 ) -> tuple[str | None, int]:
-    """Hash a Git object through a bounded stdout stream."""
+    """Hash a Git object with the same bound and a finite subprocess deadline."""
     process = subprocess.Popen(
         ["git", "-C", str(root), "cat-file", object_type, object_name],
         stdout=subprocess.PIPE,
@@ -1537,11 +1567,101 @@ def _stream_git_object_sha256(
         process.wait()
         return None, process.returncode
     digest = hashlib.sha256()
-    with process.stdout:
-        while chunk := process.stdout.read(1024 * 1024):
+    total = 0
+    deadline = time.monotonic() + GIT_EVIDENCE_TIMEOUT_SECONDS
+    selector = selectors.DefaultSelector()
+    try:
+        os_fd = process.stdout.fileno()
+        os.set_blocking(os_fd, False)
+        selector.register(os_fd, selectors.EVENT_READ)
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise StableReadError(
+                    f"Git evidence read exceeded {GIT_EVIDENCE_TIMEOUT_SECONDS:g}s timeout",
+                )
+            if not selector.select(remaining):
+                raise StableReadError(
+                    f"Git evidence read exceeded {GIT_EVIDENCE_TIMEOUT_SECONDS:g}s timeout",
+                )
+            try:
+                chunk = os.read(os_fd, 1024 * 1024)
+            except BlockingIOError:
+                continue
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_EVIDENCE_BYTES:
+                raise StableReadError(
+                    f"Git evidence exceeds {MAX_EVIDENCE_BYTES} byte limit",
+                )
             digest.update(chunk)
-    returncode = process.wait()
-    return (digest.hexdigest() if returncode == 0 else None), returncode
+        remaining = max(0.0, deadline - time.monotonic())
+        try:
+            returncode = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired as exc:
+            raise StableReadError(
+                f"Git evidence read exceeded {GIT_EVIDENCE_TIMEOUT_SECONDS:g}s timeout",
+            ) from exc
+        return (digest.hexdigest() if returncode == 0 else None), returncode
+    except Exception:
+        if process.poll() is None:
+            process.kill()
+        process.wait()
+        raise
+    finally:
+        selector.close()
+        process.stdout.close()
+
+
+def _git_head_payload_errors(
+    *,
+    root: Path,
+    relative: str,
+    payload: bytes,
+    label: str,
+    object_name: str,
+) -> list[str]:
+    """Require captured working-tree bytes to equal one exact HEAD blob."""
+    digest = "sha256:" + hashlib.sha256(payload).hexdigest()
+    return _git_head_digest_errors(
+        root=root,
+        relative=relative,
+        digest=digest,
+        label=label,
+        object_name=object_name,
+    )
+
+
+def _git_head_digest_errors(
+    *,
+    root: Path,
+    relative: str,
+    digest: str,
+    label: str,
+    object_name: str,
+) -> list[str]:
+    """Compare captured bytes with the blob from a captured HEAD commit."""
+    resolved_head = _run_git(root, "rev-parse", "--verify", "HEAD^{commit}")
+    head = resolved_head.stdout.strip().decode("ascii", errors="replace")
+    if resolved_head.returncode != 0 or re.fullmatch(r"[a-f0-9]{40,64}", head) is None:
+        return [f"{label} cannot resolve HEAD for committed {object_name}: {relative}"]
+    try:
+        head_digest, returncode = _stream_git_object_sha256(
+            root,
+            "blob",
+            f"{head}:{relative}",
+        )
+    except StableReadError as exc:
+        return [f"{label} cannot read committed {object_name} bytes: {exc}"]
+    expected = f"sha256:{head_digest}" if head_digest is not None else None
+    if returncode != 0 or expected is None:
+        return [f"{label} cannot resolve committed {object_name} path: {relative}"]
+    if digest != expected:
+        return [
+            f"{label} {object_name} bytes do not match HEAD {head}: {relative}",
+        ]
+    return []
 
 
 def _git_tracked_path_errors(
@@ -1627,18 +1747,36 @@ def _load_mapping(path: Path) -> dict[str, Any]:
     return _normalize_structured_data(data, path)
 
 
+def _load_mapping_with_payload(path: Path) -> tuple[dict[str, Any], bytes]:
+    """Load one mapping while retaining the exact stable bytes that were parsed."""
+    payload = _read_bounded_record_bytes(path)
+    data = _parse_structured_payload(payload, path)
+    if not isinstance(data, dict):
+        raise ValueError(f"not a mapping: {path}")
+    return _normalize_structured_data(data, path), payload
+
+
 def _load_structured_data(path: Path) -> Any:
     """Load bounded JSON/YAML while rejecting duplicate mapping keys."""
-    payload = _read_bounded_record_text(path)
+    payload = _read_bounded_record_bytes(path)
+    return _parse_structured_payload(payload, path)
+
+
+def _parse_structured_payload(payload: bytes, path: Path) -> Any:
+    """Parse exact bounded structured bytes without reopening their pathname."""
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"structured record is not valid UTF-8: {path}") from exc
     if path.suffix.lower() == ".json":
         try:
-            return json.loads(payload, object_pairs_hook=_unique_json_mapping)
+            return json.loads(text, object_pairs_hook=_unique_json_mapping)
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON in {path}: {exc}") from exc
         except RecursionError as exc:
             raise ValueError(f"JSON nesting exceeds supported depth: {path}") from exc
     try:
-        return yaml.load(payload, Loader=_UniqueKeySafeLoader)
+        return yaml.load(text, Loader=_UniqueKeySafeLoader)
     except yaml.YAMLError as exc:
         raise ValueError(f"Invalid YAML in {path}: {exc}") from exc
     except RecursionError as exc:
@@ -1666,7 +1804,7 @@ def _normalize_structured_data(data: dict[str, Any], path: Path) -> dict[str, An
         ) from exc
 
 
-def _read_bounded_record_text(path: Path) -> str:
+def _read_bounded_record_bytes(path: Path) -> bytes:
     """Read one stable, bounded structured record without following replacements."""
     try:
         payload = read_stable_regular_bytes(
@@ -1679,10 +1817,7 @@ def _read_bounded_record_text(path: Path) -> str:
                 f"structured record exceeds {MAX_STRUCTURED_RECORD_BYTES} bytes: {path}",
             ) from exc
         raise OSError(str(exc)) from exc
-    try:
-        return payload.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise ValueError(f"structured record is not valid UTF-8: {path}") from exc
+    return payload
 
 
 def _normalize_yaml_datetimes(

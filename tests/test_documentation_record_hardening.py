@@ -2779,7 +2779,6 @@ def test_evidence_hash_rejects_a_path_identity_replacement(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     record = _write_git_fixture(tmp_path)
-    evidence_path = tmp_path / "docs/evidence/sources/validation.txt"
     original_stream = documentation_record._stream_sha256
     replaced = False
 
@@ -2822,6 +2821,122 @@ def test_assertion_read_rejects_an_unstable_path_binding(
     errors = validate_project_record(record, root=tmp_path)
 
     assert any("cannot load assertion" in error for error in errors)
+
+
+def test_local_evidence_uses_the_documented_evidence_byte_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    evidence = tmp_path / "evidence.bin"
+    evidence.write_bytes(b"evidence")
+    real_read = documentation_record.read_stable_regular_bytes
+    observed_limit: int | None = None
+
+    def capture_limit(path: Path, *, maximum_bytes: int) -> bytes:
+        nonlocal observed_limit
+        observed_limit = maximum_bytes
+        return real_read(path, maximum_bytes=maximum_bytes)
+
+    monkeypatch.setattr(documentation_record, "read_stable_regular_bytes", capture_limit)
+
+    documentation_record._stream_sha256(evidence)
+
+    assert observed_limit == documentation_record.MAX_EVIDENCE_BYTES
+    assert observed_limit > documentation_record.MAX_STRUCTURED_RECORD_BYTES
+
+
+def test_git_evidence_stream_stops_at_the_evidence_byte_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _git(tmp_path, "init")
+    payload = b"x" * 65
+    source = tmp_path / "large-evidence.bin"
+    source.write_bytes(payload)
+    object_id = _git(tmp_path, "hash-object", "-w", str(source)).decode().strip()
+    monkeypatch.setattr(documentation_record, "MAX_EVIDENCE_BYTES", 64)
+
+    with pytest.raises(documentation_record.StableReadError, match="exceeds 64 byte limit"):
+        documentation_record._stream_git_object_sha256(tmp_path, "blob", object_id)
+
+
+def test_commit_bound_assertion_bytes_must_equal_the_head_blob(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record = _write_git_fixture(tmp_path)
+    assertion_path = tmp_path / "docs/evidence/claims/validation.json"
+    real_check = documentation_record._git_tracked_path_errors
+    replaced = False
+
+    def replace_after_git_check(**kwargs):
+        nonlocal replaced
+        result = real_check(**kwargs)
+        if kwargs.get("object_name") == "assertion" and not replaced:
+            assertion_path.write_text(
+                assertion_path.read_text(encoding="utf-8") + "\n",
+                encoding="utf-8",
+            )
+            replaced = True
+        return result
+
+    monkeypatch.setattr(
+        documentation_record,
+        "_git_tracked_path_errors",
+        replace_after_git_check,
+    )
+
+    errors = validate_project_record(
+        record,
+        root=tmp_path,
+        require_git_tracked_evidence=True,
+    )
+
+    assert replaced is True
+    assert any("assertion bytes do not match HEAD" in error for error in errors)
+
+
+def test_commit_bound_evidence_bytes_must_equal_the_head_blob(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record = _write_git_fixture(tmp_path)
+    evidence_path = tmp_path / "docs/evidence/sources/validation.txt"
+    replacement = b"replacement evidence\n"
+    assertion_path = tmp_path / "docs/evidence/claims/validation.json"
+    assertion = json.loads(assertion_path.read_text(encoding="utf-8"))
+    assertion["evidence_references"][0]["body_hash"] = (
+        "sha256:" + hashlib.sha256(replacement).hexdigest()
+    )
+    assertion_path.write_text(json.dumps(assertion), encoding="utf-8")
+    _git(tmp_path, "add", str(assertion_path.relative_to(tmp_path)))
+    _git(tmp_path, "commit", "-m", "bind replacement digest")
+    real_check = documentation_record._git_tracked_path_errors
+    replaced = False
+
+    def replace_after_git_check(**kwargs):
+        nonlocal replaced
+        result = real_check(**kwargs)
+        if kwargs.get("relative") == evidence_path.relative_to(tmp_path).as_posix() and not replaced:
+            evidence_path.write_bytes(replacement)
+            replaced = True
+        return result
+
+    monkeypatch.setattr(
+        documentation_record,
+        "_git_tracked_path_errors",
+        replace_after_git_check,
+    )
+
+    errors = validate_project_record(
+        record,
+        root=tmp_path,
+        require_git_tracked_evidence=True,
+    )
+
+    assert replaced is True
+    assert not any("body_hash does not match raw bytes" in error for error in errors)
+    assert any("evidence bytes do not match HEAD" in error for error in errors)
 
 
 def test_markdown_audit_skips_an_unstable_replacement(
@@ -3091,3 +3206,34 @@ def test_safe_candidate_publishes_exact_scanned_bytes_and_preserves_manifest(
     executed = nbformat.read(tmp_path / module.NOTEBOOK.name, as_version=4)
     assert executed.cells[0].source == "new public notebook"
 
+
+def test_audit_artifact_publication_restores_the_complete_preimage_set(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_audit_builder()
+    monkeypatch.setattr(module, "HERE", tmp_path)
+    targets = [tmp_path / name for name in module.PUBLISHED_ARTIFACT_NAMES]
+    originals = {target: f"old:{target.name}\n".encode() for target in targets}
+    candidates = {target: f"new:{target.name}\n".encode() for target in targets}
+    for target, payload in originals.items():
+        target.write_bytes(payload)
+    real_replace = Path.replace
+    replacements = 0
+
+    def fail_third_candidate(source: Path, target: Path):
+        nonlocal replacements
+        if source.suffix == ".tmp":
+            replacements += 1
+            if replacements == 3:
+                raise OSError("simulated publication failure")
+        return real_replace(source, target)
+
+    monkeypatch.setattr(Path, "replace", fail_third_candidate)
+
+    with pytest.raises(OSError, match="simulated publication failure"):
+        module.publish_exact_candidate_bytes(candidates)
+
+    assert {target: target.read_bytes() for target in targets} == originals
+    assert not list(tmp_path.glob(".*.tmp"))
+    assert not list(tmp_path.glob(".*.rollback"))
