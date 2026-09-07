@@ -2688,6 +2688,32 @@ def test_symlinked_project_record_is_not_read(tmp_path: Path) -> None:
     assert "SECRET_OUTSIDE_RECORD" not in json.dumps(result)
 
 
+@pytest.mark.parametrize(
+    ("audience", "signal"),
+    [
+        ("technical", "technical_depth"),
+        ("humanities", "conceptual_depth"),
+        ("business", "commercial_relevance"),
+    ],
+)
+def test_symlinked_audience_file_does_not_award_a_signal_bonus(
+    tmp_path: Path,
+    audience: str,
+    signal: str,
+) -> None:
+    repository = tmp_path / "repository"
+    audience_dir = repository / "docs/audiences"
+    audience_dir.mkdir(parents=True)
+    (repository / "README.md").write_text("# Repository\n", encoding="utf-8")
+    outside = tmp_path / f"{audience}.md"
+    outside.write_text("outside audience material\n", encoding="utf-8")
+    (audience_dir / f"{audience}.md").symlink_to(outside)
+
+    result = audit_repository(repository)
+
+    assert result["signals"][signal] == 0
+
+
 def test_workspace_discovery_keeps_repositories_named_like_generated_dirs(
     tmp_path: Path,
 ) -> None:
@@ -2937,6 +2963,55 @@ def test_commit_bound_evidence_bytes_must_equal_the_head_blob(
     assert replaced is True
     assert not any("body_hash does not match raw bytes" in error for error in errors)
     assert any("evidence bytes do not match HEAD" in error for error in errors)
+
+
+def test_commit_bound_validation_pins_one_head_and_rejects_head_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record = _write_git_fixture(tmp_path)
+    _git(tmp_path, "commit", "--allow-empty", "-m", "validation head")
+    pinned_head = _git(tmp_path, "rev-parse", "HEAD").decode().strip()
+    prior_head = _git(tmp_path, "rev-parse", "HEAD^").decode().strip()
+    real_check = documentation_record._git_tracked_path_errors
+    real_stream = documentation_record._stream_git_object_sha256
+    blob_names: list[str] = []
+    moved = False
+
+    def move_head_after_first_check(**kwargs):
+        nonlocal moved
+        result = real_check(**kwargs)
+        if not moved:
+            _git(tmp_path, "checkout", "--detach", prior_head)
+            moved = True
+        return result
+
+    def capture_blob_name(root: Path, object_type: str, object_name: str):
+        if object_type == "blob":
+            blob_names.append(object_name)
+        return real_stream(root, object_type, object_name)
+
+    monkeypatch.setattr(
+        documentation_record,
+        "_git_tracked_path_errors",
+        move_head_after_first_check,
+    )
+    monkeypatch.setattr(
+        documentation_record,
+        "_stream_git_object_sha256",
+        capture_blob_name,
+    )
+
+    errors = validate_project_record(
+        record,
+        root=tmp_path,
+        require_git_tracked_evidence=True,
+    )
+
+    assert moved is True
+    assert blob_names
+    assert all(name.startswith(f"{pinned_head}:") for name in blob_names)
+    assert any("HEAD changed during validation" in error for error in errors)
 
 
 def test_markdown_audit_skips_an_unstable_replacement(
@@ -3218,18 +3293,18 @@ def test_audit_artifact_publication_restores_the_complete_preimage_set(
     candidates = {target: f"new:{target.name}\n".encode() for target in targets}
     for target, payload in originals.items():
         target.write_bytes(payload)
-    real_replace = Path.replace
-    replacements = 0
+    real_link = module.os.link
+    candidate_links = 0
 
-    def fail_third_candidate(source: Path, target: Path):
-        nonlocal replacements
+    def fail_third_candidate(source, target, **kwargs):
+        nonlocal candidate_links
         if source.suffix == ".tmp":
-            replacements += 1
-            if replacements == 3:
+            candidate_links += 1
+            if candidate_links == 3:
                 raise OSError("simulated publication failure")
-        return real_replace(source, target)
+        return real_link(source, target, **kwargs)
 
-    monkeypatch.setattr(Path, "replace", fail_third_candidate)
+    monkeypatch.setattr(module.os, "link", fail_third_candidate)
 
     with pytest.raises(OSError, match="simulated publication failure"):
         module.publish_exact_candidate_bytes(candidates)
@@ -3237,3 +3312,70 @@ def test_audit_artifact_publication_restores_the_complete_preimage_set(
     assert {target: target.read_bytes() for target in targets} == originals
     assert not list(tmp_path.glob(".*.tmp"))
     assert not list(tmp_path.glob(".*.rollback"))
+
+
+def test_audit_publication_preserves_a_concurrent_edit_at_the_swap_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_audit_builder()
+    monkeypatch.setattr(module, "HERE", tmp_path)
+    targets = [tmp_path / name for name in module.PUBLISHED_ARTIFACT_NAMES]
+    candidates = {target: f"new:{target.name}\n".encode() for target in targets}
+    for target in targets:
+        target.write_text(f"old:{target.name}\n", encoding="utf-8")
+    raced_target = targets[1]
+    concurrent = b"concurrent user edit\n"
+    real_rename = Path.rename
+    raced = False
+
+    def edit_before_move(source: Path, target: Path):
+        nonlocal raced
+        if source == raced_target and not raced:
+            source.write_bytes(concurrent)
+            raced = True
+        return real_rename(source, target)
+
+    monkeypatch.setattr(Path, "rename", edit_before_move)
+
+    with pytest.raises(RuntimeError, match="changed before publication"):
+        module.publish_exact_candidate_bytes(candidates)
+
+    assert raced is True
+    assert raced_target.read_bytes() == concurrent
+    assert targets[0].read_bytes() == f"old:{targets[0].name}\n".encode()
+    assert not list(tmp_path.glob(".*.displaced"))
+    assert not list(tmp_path.glob(".*.failed"))
+
+
+def test_audit_rollback_never_overwrites_a_concurrent_edit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_audit_builder()
+    monkeypatch.setattr(module, "HERE", tmp_path)
+    targets = [tmp_path / name for name in module.PUBLISHED_ARTIFACT_NAMES]
+    candidates = {target: f"new:{target.name}\n".encode() for target in targets}
+    for target in targets:
+        target.write_text(f"old:{target.name}\n", encoding="utf-8")
+    concurrently_edited = targets[0]
+    concurrent = b"concurrent edit after publication\n"
+    real_link = module.os.link
+    candidate_links = 0
+
+    def edit_then_fail(source, target, **kwargs):
+        nonlocal candidate_links
+        if source.suffix == ".tmp":
+            candidate_links += 1
+            if candidate_links == 3:
+                concurrently_edited.write_bytes(concurrent)
+                raise OSError("simulated late publication failure")
+        return real_link(source, target, **kwargs)
+
+    monkeypatch.setattr(module.os, "link", edit_then_fail)
+
+    with pytest.raises(RuntimeError, match="rollback was incomplete"):
+        module.publish_exact_candidate_bytes(candidates)
+
+    assert concurrently_edited.read_bytes() == concurrent
+    assert targets[1].read_bytes() == f"old:{targets[1].name}\n".encode()

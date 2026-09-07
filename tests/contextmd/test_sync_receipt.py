@@ -555,6 +555,42 @@ def test_receipt_fails_if_generator_identity_changes_during_sync(
             receipt_path=receipt_path,
         )
     assert not receipt_path.exists()
+    assert not (workspace / "AGENTS.md").exists()
+    assert not (workspace / "CLAUDE.md").exists()
+    assert not (workspace / "GEMINI.md").exists()
+
+
+def test_receipt_write_failure_restores_every_generated_output(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    import organvm_engine.contextmd.receipt as receipt_mod
+
+    _isolate_emitters(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    receipt_path = workspace / "receipt.json"
+    agents = workspace / "AGENTS.md"
+    original = b"manual context\n"
+    agents.write_bytes(original)
+
+    def fail_receipt_write(*_args, **_kwargs):
+        raise OSError("simulated receipt fsync failure")
+
+    monkeypatch.setattr(receipt_mod, "write_context_sync_receipt", fail_receipt_write)
+
+    with pytest.raises(RuntimeError, match="context sync receipt creation failed"):
+        sync_all(
+            workspace=workspace,
+            registry_path=str(FIXTURES / "registry-minimal.json"),
+            additional_workspace_roots=[],
+            receipt_path=receipt_path,
+        )
+
+    assert agents.read_bytes() == original
+    assert not (workspace / "CLAUDE.md").exists()
+    assert not (workspace / "GEMINI.md").exists()
+    assert not receipt_path.exists()
 
 
 def test_custodied_unchanged_context_binds_exact_trailing_newline(tmp_path) -> None:

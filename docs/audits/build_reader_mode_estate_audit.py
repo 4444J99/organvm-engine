@@ -1446,7 +1446,8 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
     """Publish one recoverable artifact set from already-scanned candidate bytes."""
     temporary_paths: dict[Path, Path] = {}
     rollback_paths: dict[Path, Path | None] = {}
-    published: list[Path] = []
+    preimage_statuses: dict[Path, os.stat_result | None] = {}
+    published: dict[Path, tuple[os.stat_result, bytes]] = {}
     try:
         for target, payload in candidate_bytes.items():
             descriptor, temporary_name = tempfile.mkstemp(
@@ -1471,23 +1472,15 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 initial = target.stat(follow_symlinks=False)
             except FileNotFoundError:
                 rollback_paths[target] = None
+                preimage_statuses[target] = None
                 continue
             if not stat.S_ISREG(initial.st_mode):
                 raise RuntimeError(f"Published artifact {target.name!r} is not a regular file")
             preimage = _read_regular_bytes_once(target)
             current = target.stat(follow_symlinks=False)
-            if (
-                initial.st_dev,
-                initial.st_ino,
-                initial.st_size,
-                initial.st_mtime_ns,
-            ) != (
-                current.st_dev,
-                current.st_ino,
-                current.st_size,
-                current.st_mtime_ns,
-            ):
+            if not _same_artifact_identity(initial, current):
                 raise RuntimeError(f"Published artifact {target.name!r} changed at preflight")
+            preimage_statuses[target] = initial
             descriptor, rollback_name = tempfile.mkstemp(
                 dir=target.parent,
                 prefix=f".{target.name}.",
@@ -1507,37 +1500,138 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 raise
         try:
             for target, temporary in temporary_paths.items():
-                temporary.replace(target)
-                published.append(target)
-        except Exception as publication_error:
-            rollback_errors: list[str] = []
-            for target in reversed(published):
-                rollback = rollback_paths[target]
+                candidate_status = temporary.stat(follow_symlinks=False)
+                preimage_status = preimage_statuses[target]
+                displaced: Path | None = None
                 try:
-                    if rollback is None:
-                        target.unlink()
-                    else:
-                        rollback.replace(target)
-                        rollback_paths[target] = None
-                except Exception as exc:
-                    rollback_errors.append(f"{target.name}: {exc}")
+                    if preimage_status is not None:
+                        displaced = _unused_artifact_transaction_path(target, ".displaced")
+                        target.rename(displaced)
+                        moved_status = displaced.stat(follow_symlinks=False)
+                        rollback = rollback_paths[target]
+                        assert rollback is not None
+                        if (
+                            not _same_artifact_identity(preimage_status, moved_status)
+                            or _read_regular_bytes_once(displaced)
+                            != _read_regular_bytes_once(rollback)
+                        ):
+                            _restore_displaced_artifact(displaced, target)
+                            displaced = None
+                            raise RuntimeError(
+                                f"Published artifact {target.name!r} changed before publication",
+                            )
+                    os.link(temporary, target, follow_symlinks=False)
+                    installed = target.stat(follow_symlinks=False)
+                    if not _same_artifact_identity(candidate_status, installed):
+                        raise RuntimeError(
+                            f"Published artifact {target.name!r} changed during publication",
+                        )
+                    published[target] = (candidate_status, candidate_bytes[target])
+                    temporary.unlink()
+                except Exception:
+                    if displaced is not None:
+                        _restore_displaced_artifact(displaced, target)
+                        displaced = None
+                    raise
+                finally:
+                    if displaced is not None:
+                        displaced.unlink(missing_ok=True)
+
+            directory_descriptor = os.open(HERE, os.O_RDONLY)
+            try:
+                os.fsync(directory_descriptor)
+            finally:
+                os.close(directory_descriptor)
+        except Exception as publication_error:
+            rollback_errors = _rollback_published_artifacts(
+                published,
+                rollback_paths,
+            )
             if rollback_errors:
                 raise RuntimeError(
                     "Audit artifact publication failed and rollback was incomplete: "
                     + "; ".join(rollback_errors),
                 ) from publication_error
             raise
-        directory_descriptor = os.open(HERE, os.O_RDONLY)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
     finally:
         for temporary in temporary_paths.values():
             temporary.unlink(missing_ok=True)
         for rollback in rollback_paths.values():
             if rollback is not None:
                 rollback.unlink(missing_ok=True)
+
+
+def _same_artifact_identity(left: os.stat_result, right: os.stat_result) -> bool:
+    return (
+        left.st_dev,
+        left.st_ino,
+        left.st_size,
+        left.st_mtime_ns,
+    ) == (
+        right.st_dev,
+        right.st_ino,
+        right.st_size,
+        right.st_mtime_ns,
+    )
+
+
+def _unused_artifact_transaction_path(target: Path, suffix: str) -> Path:
+    descriptor, name = tempfile.mkstemp(
+        dir=target.parent,
+        prefix=f".{target.name}.",
+        suffix=suffix,
+    )
+    os.close(descriptor)
+    path = Path(name)
+    path.unlink()
+    return path
+
+
+def _restore_displaced_artifact(displaced: Path, target: Path) -> None:
+    """Restore a moved public name without replacing a concurrent edit."""
+    try:
+        os.link(displaced, target, follow_symlinks=False)
+    except FileExistsError:
+        pass
+    finally:
+        displaced.unlink(missing_ok=True)
+
+
+def _rollback_published_artifacts(
+    published: dict[Path, tuple[os.stat_result, bytes]],
+    rollback_paths: dict[Path, Path | None],
+) -> list[str]:
+    """Rollback installed candidates only while their exact identity remains public."""
+    errors: list[str] = []
+    for target in reversed(published):
+        expected_status, expected_payload = published[target]
+        displaced = _unused_artifact_transaction_path(target, ".failed")
+        try:
+            try:
+                target.rename(displaced)
+            except FileNotFoundError:
+                errors.append(f"{target.name}: published artifact was removed concurrently")
+                continue
+            moved_status = displaced.stat(follow_symlinks=False)
+            if (
+                not _same_artifact_identity(expected_status, moved_status)
+                or _read_regular_bytes_once(displaced) != expected_payload
+            ):
+                _restore_displaced_artifact(displaced, target)
+                errors.append(f"{target.name}: published artifact changed before rollback")
+                continue
+            rollback = rollback_paths[target]
+            if rollback is not None:
+                try:
+                    os.link(rollback, target, follow_symlinks=False)
+                except FileExistsError:
+                    errors.append(f"{target.name}: concurrent edit prevented rollback")
+        except Exception as exc:
+            _restore_displaced_artifact(displaced, target)
+            errors.append(f"{target.name}: {exc}")
+        finally:
+            displaced.unlink(missing_ok=True)
+    return errors
 
 
 def main() -> None:

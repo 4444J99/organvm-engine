@@ -128,7 +128,10 @@ def audit_repository(root: str | Path) -> dict[str, Any]:
                 ("api", "interface", "schema", "endpoint", "protocol"),
                 ("failure mode", "observability", "security", "technical debt", "operations"),
             ),
-            bonus=(root_path / "docs/audiences/technical.md").is_file(),
+            bonus=_safe_markdown_file(
+                root_path,
+                root_path / "docs/audiences/technical.md",
+            ),
         ),
         "conceptual_depth": _score_categories(
             lowered,
@@ -138,7 +141,10 @@ def audit_repository(root: str | Path) -> dict[str, Any]:
                 ("genealogy", "related work", "prior art", "tradition"),
                 ("ethic", "pedagog", "authorship", "interpretation", "narrative"),
             ),
-            bonus=(root_path / "docs/audiences/humanities.md").is_file(),
+            bonus=_safe_markdown_file(
+                root_path,
+                root_path / "docs/audiences/humanities.md",
+            ),
         ),
         "commercial_relevance": _score_categories(
             lowered,
@@ -149,7 +155,10 @@ def audit_repository(root: str | Path) -> dict[str, Any]:
                 ("integration", "risk", "constraint", "implementation requirement"),
                 ("deployment status", "projected value", "operational", "industry"),
             ),
-            bonus=(root_path / "docs/audiences/business.md").is_file(),
+            bonus=_safe_markdown_file(
+                root_path,
+                root_path / "docs/audiences/business.md",
+            ),
         ),
         "evidence": _score_categories(
             lowered,

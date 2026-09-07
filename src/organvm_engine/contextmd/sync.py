@@ -461,77 +461,87 @@ def sync_all(
             write_context_sync_receipt,
         )
 
-        assert receipt_generator_identity is not None
-        assert receipt_expected_inputs is not None
-        assert receipt_sop_inputs is not None
-        assert receipt_validation_policy is not None
-        bound_output_labels = {
-            str(binding["path"]) for binding in expected_output_bindings
-        }
-        for missing_label in sorted(
-            {str(binding["path"]) for binding in target_preimages}
-            - bound_output_labels,
-        ):
-            errors.append(
+        try:
+            assert receipt_generator_identity is not None
+            assert receipt_expected_inputs is not None
+            assert receipt_sop_inputs is not None
+            assert receipt_validation_policy is not None
+            bound_output_labels = {
+                str(binding["path"]) for binding in expected_output_bindings
+            }
+            for missing_label in sorted(
+                {str(binding["path"]) for binding in target_preimages}
+                - bound_output_labels,
+            ):
+                errors.append(
+                    {
+                        "path": str(ws / missing_label),
+                        "error": "receipted target did not produce a bound output",
+                    },
+                )
+            output_paths = [
+                Path(path)
+                for path in (*updated, *created, *skipped, *failed_output_paths)
+            ]
+            invocation = {
+                "organs": sorted(target_organs),
+                "organ_directory_map": {
+                    key: organ_directory_map[key]
+                    for key in sorted(target_organs)
+                    if key in organ_directory_map
+                },
+                "additional_workspace_roots": sorted(
+                    _receipt_path_label(root, ws) for root in extra_roots
+                ),
+                "targets": sorted(str(binding["path"]) for binding in target_preimages),
+            }
+            receipt_expected_inputs.update(
                 {
-                    "path": str(ws / missing_label),
-                    "error": "receipted target did not produce a bound output",
+                    "sops": receipt_sop_inputs,
+                    "render_profile": render_profile,
+                    "invocation": invocation,
+                    "target_preimages": sorted(
+                        target_preimages,
+                        key=lambda item: str(item.get("path", "")),
+                    ),
+                    "target_preimages_manifest_sha256": _canonical_receipt_digest(
+                        target_preimages,
+                    ),
                 },
             )
-        output_paths = [
-            Path(path)
-            for path in (*updated, *created, *skipped, *failed_output_paths)
-        ]
-        invocation = {
-            "organs": sorted(target_organs),
-            "organ_directory_map": {
-                key: organ_directory_map[key]
-                for key in sorted(target_organs)
-                if key in organ_directory_map
-            },
-            "additional_workspace_roots": sorted(
-                _receipt_path_label(root, ws) for root in extra_roots
-            ),
-            "targets": sorted(str(binding["path"]) for binding in target_preimages),
-        }
-        receipt_expected_inputs.update(
-            {
-                "sops": receipt_sop_inputs,
-                "render_profile": render_profile,
-                "invocation": invocation,
-                "target_preimages": sorted(
-                    target_preimages,
-                    key=lambda item: str(item.get("path", "")),
-                ),
-                "target_preimages_manifest_sha256": _canonical_receipt_digest(
-                    target_preimages,
-                ),
-            },
-        )
-        post_generator_identity = generator_git_identity(
-            allowed_dirty_paths=output_paths,
-        )
-        receipt = build_context_sync_receipt(
-            workspace=ws,
-            registry_path=registry_source,
-            seed_paths=seed_paths,
-            remote_references=rendered_remote_references,
-            output_paths=output_paths,
-            errors=errors,
-            generator_identity=receipt_generator_identity,
-            post_generator_identity=post_generator_identity,
-            expected_inputs=receipt_expected_inputs,
-            expected_output_bindings=expected_output_bindings,
-            generated_at=receipt_generated_at,
-            sop_entries=all_sops,
-            render_profile=render_profile,
-            invocation=invocation,
-            target_preimages=target_preimages,
-            workspace_identity=receipt_workspace_identity,
-            registry_validation_policy=receipt_validation_policy.evidence(),
-        )
-        receipt_target = Path(receipt_path).expanduser()
-        receipt_digest = write_context_sync_receipt(receipt_target, receipt)
+            post_generator_identity = generator_git_identity(
+                allowed_dirty_paths=output_paths,
+            )
+            receipt = build_context_sync_receipt(
+                workspace=ws,
+                registry_path=registry_source,
+                seed_paths=seed_paths,
+                remote_references=rendered_remote_references,
+                output_paths=output_paths,
+                errors=errors,
+                generator_identity=receipt_generator_identity,
+                post_generator_identity=post_generator_identity,
+                expected_inputs=receipt_expected_inputs,
+                expected_output_bindings=expected_output_bindings,
+                generated_at=receipt_generated_at,
+                sop_entries=all_sops,
+                render_profile=render_profile,
+                invocation=invocation,
+                target_preimages=target_preimages,
+                workspace_identity=receipt_workspace_identity,
+                registry_validation_policy=receipt_validation_policy.evidence(),
+            )
+            receipt_target = Path(receipt_path).expanduser()
+            receipt_digest = write_context_sync_receipt(receipt_target, receipt)
+        except Exception as exc:
+            _raise_after_receipted_rollback(
+                f"context sync receipt creation failed: {exc}",
+                workspace=ws,
+                target_preimages=target_preimages,
+                expected_output_bindings=expected_output_bindings,
+                workspace_identity=receipt_workspace_identity,
+                cause=exc,
+            )
         result["receipt_path"] = str(receipt_target)
         result["receipt_sha256"] = receipt_digest
 
@@ -1193,6 +1203,7 @@ def _raise_after_receipted_rollback(
     target_preimages: list[dict[str, Any]],
     expected_output_bindings: list[dict[str, str | int]],
     workspace_identity: dict[str, int] | None,
+    cause: Exception | None = None,
 ) -> None:
     """Restore every published context target before reporting late input drift."""
     try:
@@ -1204,6 +1215,8 @@ def _raise_after_receipted_rollback(
         )
     except Exception as exc:
         raise RuntimeError(f"{message}; context output rollback failed: {exc}") from exc
+    if cause is not None:
+        raise RuntimeError(message) from cause
     raise RuntimeError(message)
 
 

@@ -675,8 +675,12 @@ def validate_project_record(
     for intent in _duplicates(search_intent_names):
         errors.append(f"duplicate search intent: {intent}")
 
+    pinned_head: str | None = None
     if root is not None:
         root_path = Path(root).resolve()
+        if require_git_tracked_evidence:
+            pinned_head, head_errors = _resolve_validation_head(root_path)
+            errors.extend(head_errors)
         evidence_digest_cache: dict[str, tuple[str | None, str | None]] = {}
         evidence_identity_cache: dict[tuple[Path, str], str | None] = {}
         for relative in route_paths:
@@ -703,6 +707,7 @@ def validate_project_record(
                 assertion_schema=assertion_schema,
                 now=validation_now,
                 require_git_tracked_evidence=require_git_tracked_evidence,
+                pinned_head=pinned_head,
                 evidence_digest_cache=evidence_digest_cache,
                 evidence_identity_cache=evidence_identity_cache,
             )
@@ -719,6 +724,7 @@ def validate_project_record(
                 assertion_schema=assertion_schema,
                 now=validation_now,
                 require_git_tracked_evidence=require_git_tracked_evidence,
+                pinned_head=pinned_head,
                 evidence_digest_cache=evidence_digest_cache,
                 evidence_identity_cache=evidence_identity_cache,
             )
@@ -756,6 +762,8 @@ def validate_project_record(
         errors.extend(
             _schema_errors(_normalize_yaml_datetimes(dict(record)), schema, prefix="schema"),
         )
+    if root is not None and require_git_tracked_evidence and pinned_head is not None:
+        errors.extend(_validation_head_drift_errors(root_path, pinned_head))
     return sorted(set(errors))
 
 
@@ -768,6 +776,7 @@ def _validate_assertion_target(
     assertion_schema: Mapping[str, Any] | None,
     now: datetime,
     require_git_tracked_evidence: bool,
+    pinned_head: str | None,
     evidence_digest_cache: dict[str, tuple[str | None, str | None]],
     evidence_identity_cache: dict[tuple[Path, str], str | None],
 ) -> tuple[Mapping[str, Any] | None, list[str]]:
@@ -788,6 +797,7 @@ def _validate_assertion_target(
             relative=reference,
             label=label,
             object_name="assertion",
+            pinned_head=pinned_head,
         )
         errors.extend(assertion_binding_errors)
     try:
@@ -802,6 +812,7 @@ def _validate_assertion_target(
                 payload=assertion_payload,
                 label=label,
                 object_name="assertion",
+                pinned_head=pinned_head,
             ),
         )
 
@@ -836,6 +847,7 @@ def _validate_assertion_target(
                 root=root,
                 reference=reference,
                 require_git_tracked_evidence=require_git_tracked_evidence,
+                pinned_head=pinned_head,
                 evidence_digest_cache=evidence_digest_cache,
                 evidence_identity_cache=evidence_identity_cache,
             ),
@@ -1326,6 +1338,7 @@ def _assertion_evidence_binding_errors(
     root: Path,
     reference: str,
     require_git_tracked_evidence: bool,
+    pinned_head: str | None,
     evidence_digest_cache: dict[str, tuple[str | None, str | None]],
     evidence_identity_cache: dict[tuple[Path, str], str | None],
 ) -> list[str]:
@@ -1389,6 +1402,7 @@ def _assertion_evidence_binding_errors(
                 root=root,
                 relative=evidence_reference,
                 label=label,
+                pinned_head=pinned_head,
             )
             errors.extend(evidence_binding_errors)
         initial_identity = _cached_evidence_identity(
@@ -1435,6 +1449,7 @@ def _assertion_evidence_binding_errors(
                     digest=actual,
                     label=label,
                     object_name="evidence",
+                    pinned_head=pinned_head,
                 ),
             )
     return errors
@@ -1621,6 +1636,7 @@ def _git_head_payload_errors(
     payload: bytes,
     label: str,
     object_name: str,
+    pinned_head: str | None,
 ) -> list[str]:
     """Require captured working-tree bytes to equal one exact HEAD blob."""
     digest = "sha256:" + hashlib.sha256(payload).hexdigest()
@@ -1630,6 +1646,7 @@ def _git_head_payload_errors(
         digest=digest,
         label=label,
         object_name=object_name,
+        pinned_head=pinned_head,
     )
 
 
@@ -1640,17 +1657,16 @@ def _git_head_digest_errors(
     digest: str,
     label: str,
     object_name: str,
+    pinned_head: str | None,
 ) -> list[str]:
-    """Compare captured bytes with the blob from a captured HEAD commit."""
-    resolved_head = _run_git(root, "rev-parse", "--verify", "HEAD^{commit}")
-    head = resolved_head.stdout.strip().decode("ascii", errors="replace")
-    if resolved_head.returncode != 0 or re.fullmatch(r"[a-f0-9]{40,64}", head) is None:
+    """Compare captured bytes with the blob from the validation-wide HEAD."""
+    if pinned_head is None:
         return [f"{label} cannot resolve HEAD for committed {object_name}: {relative}"]
     try:
         head_digest, returncode = _stream_git_object_sha256(
             root,
             "blob",
-            f"{head}:{relative}",
+            f"{pinned_head}:{relative}",
         )
     except StableReadError as exc:
         return [f"{label} cannot read committed {object_name} bytes: {exc}"]
@@ -1659,7 +1675,7 @@ def _git_head_digest_errors(
         return [f"{label} cannot resolve committed {object_name} path: {relative}"]
     if digest != expected:
         return [
-            f"{label} {object_name} bytes do not match HEAD {head}: {relative}",
+            f"{label} {object_name} bytes do not match HEAD {pinned_head}: {relative}",
         ]
     return []
 
@@ -1670,6 +1686,7 @@ def _git_tracked_path_errors(
     relative: str,
     label: str,
     object_name: str = "evidence",
+    pinned_head: str | None = None,
 ) -> list[str]:
     inside = _run_git(root, "rev-parse", "--is-inside-work-tree")
     if inside.returncode != 0 or inside.stdout.strip() != b"true":
@@ -1706,9 +1723,12 @@ def _git_tracked_path_errors(
     if index_errors:
         return index_errors
 
+    if pinned_head is None:
+        return [f"{label} cannot resolve HEAD for committed {object_name}: {relative}"]
+
     for args in (
-        ("diff", "--quiet", "HEAD", "--", literal_pathspec),
-        ("diff", "--cached", "--quiet", "HEAD", "--", literal_pathspec),
+        ("diff", "--quiet", pinned_head, "--", literal_pathspec),
+        ("diff", "--cached", "--quiet", pinned_head, "--", literal_pathspec),
     ):
         result = _run_git(root, *args)
         if result.returncode == 1:
@@ -1719,6 +1739,27 @@ def _git_tracked_path_errors(
             return [
                 f"{label} cannot verify committed {object_name} path: {relative}",
             ]
+    return []
+
+
+def _resolve_validation_head(root: Path) -> tuple[str | None, list[str]]:
+    """Resolve the single commit used by every commit-bound comparison."""
+    resolved = _run_git(root, "rev-parse", "--verify", "HEAD^{commit}")
+    head = resolved.stdout.strip().decode("ascii", errors="replace")
+    if resolved.returncode != 0 or re.fullmatch(r"[a-f0-9]{40,64}", head) is None:
+        return None, ["commit-bound validation cannot resolve HEAD"]
+    return head, []
+
+
+def _validation_head_drift_errors(root: Path, pinned_head: str) -> list[str]:
+    """Reject a run if HEAD moved after the validation snapshot was pinned."""
+    resolved = _run_git(root, "rev-parse", "--verify", "HEAD^{commit}")
+    current = resolved.stdout.strip().decode("ascii", errors="replace")
+    if resolved.returncode != 0 or current != pinned_head:
+        return [
+            "commit-bound validation HEAD changed during validation: "
+            f"expected {pinned_head}, found {current or '<unresolved>'}",
+        ]
     return []
 
 
