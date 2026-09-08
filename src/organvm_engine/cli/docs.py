@@ -19,7 +19,7 @@ from organvm_engine.documentation.record import load_project_record, validate_pr
 
 def cmd_docs_validate(args) -> int:
     """Validate a canonical project record and its declared local routes."""
-    record_path = Path(args.record).resolve()
+    record_path = Path(args.record).absolute()
     root = Path(args.root).resolve() if args.root else record_path.parent
     try:
         record = load_project_record(record_path)

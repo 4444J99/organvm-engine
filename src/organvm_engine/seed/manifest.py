@@ -12,12 +12,9 @@ keys used by the `organvm` CLI and `organ_config.organ_dir_map()`.
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 from organvm_engine._stable_io import read_stable_regular_bytes
-
-logger = logging.getLogger(__name__)
 
 
 def load_workspace_manifest(path: Path | str) -> dict | None:
@@ -30,19 +27,26 @@ def load_workspace_manifest(path: Path | str) -> dict | None:
         Parsed manifest dict, or None if the file doesn't exist.
     """
     manifest_path = Path(path)
-    if not manifest_path.is_file():
+    # Only an absent pathname means a full workspace. Unsafe existing inputs
+    # must never broaden discovery to every organ.
+    try:
+        manifest_path.lstat()
+    except FileNotFoundError:
         return None
 
-    try:
-        import yaml
+    import yaml
 
-        data = yaml.safe_load(read_stable_regular_bytes(manifest_path))
-        if isinstance(data, dict):
-            return data
-    except Exception:
-        logger.debug("Failed to load workspace manifest: %s", path, exc_info=True)
+    data = yaml.safe_load(read_stable_regular_bytes(manifest_path))
+    if not isinstance(data, dict):
+        raise ValueError(f"Workspace manifest must be a mapping: {manifest_path}")
+    organs = data.get("organs_present")
+    if not isinstance(organs, list) or any(not isinstance(organ, str) for organ in organs):
+        raise ValueError(f"Workspace manifest requires organs_present strings: {manifest_path}")
+    from organvm_engine.organ_config import organ_dir_map
 
-    return None
+    if any(organ not in organ_dir_map() for organ in organs):
+        raise ValueError(f"Workspace manifest contains unknown organs: {manifest_path}")
+    return data
 
 
 def organs_in_manifest(manifest: dict | None) -> list[str]:

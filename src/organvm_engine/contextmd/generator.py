@@ -66,19 +66,28 @@ def _context_ref(
         value = declaration.get(key)
         if isinstance(value, str) and value.strip():
             return value.strip(), f"seed.{key}"
-    result = find_repo(registry, repo)
-    if result:
-        _organ_key, entry = result
-        registered_owner = entry.get("org")
-        if (
-            isinstance(registered_owner, str)
-            and registered_owner.strip().casefold() == owner.casefold()
-        ):
-            for key in ("default_branch", "defaultBranch"):
-                value = entry.get(key)
-                if isinstance(value, str) and value.strip():
-                    return value.strip(), f"registry.{key}"
+    entry = _registered_context_repository(registry, owner, repo)
+    for key in ("default_branch", "defaultBranch"):
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip(), f"registry.{key}"
     return DEFAULT_CONTEXT_REF, "fallback.main"
+
+
+def _registered_context_repository(registry: dict, owner: str, repo: str) -> dict:
+    """Bind a context ref to the declared owner/name, never name alone."""
+    matches = [
+        entry
+        for organ in registry.get("organs", {}).values()
+        for entry in organ.get("repositories", [])
+        if isinstance(entry.get("name"), str)
+        and entry["name"].casefold() == repo.casefold()
+        and isinstance(entry.get("org"), str)
+        and entry["org"].strip().casefold() == owner.casefold()
+    ]
+    if len(matches) > 1:
+        raise ValueError(f"Ambiguous context repository identity: {owner}/{repo}")
+    return matches[0] if matches else {}
 
 
 def _remote_context_reference(
@@ -114,7 +123,11 @@ def _produced_consumer_reference(
     repo = raw_repo.strip()
     result = find_repo(registry, repo)
     entry = result[1] if result else {}
-    raw_owner = entry.get("org") or consumer.get("github_org") or default_owner
+    raw_owner = (
+        consumer["github_org"]
+        if "github_org" in consumer
+        else entry.get("org") or default_owner
+    )
     if not isinstance(raw_owner, str) or not raw_owner.strip():
         return None
     return _remote_context_reference(

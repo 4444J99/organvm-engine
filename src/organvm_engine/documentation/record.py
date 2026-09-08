@@ -176,70 +176,22 @@ def load_project_record(path: str | Path) -> dict[str, Any]:
 
 def _builtin_record_shape_errors(record: Mapping[str, Any]) -> list[str]:
     """Enforce the project-record.v1 baseline without an optional schema file."""
-    errors: list[str] = []
-    project_id = record.get("project_id")
-    if not isinstance(project_id, str) or PROJECT_ID.fullmatch(project_id) is None:
-        errors.append("project_id must be a lowercase slug")
+    return _schema_errors(
+        _normalize_yaml_datetimes(dict(record)),
+        _builtin_schema("project-record-v1.schema.json"),
+        prefix="project-record.v1",
+    )
 
-    for field, minimum, maximum in (
-        ("name", 1, 160),
-        ("one_sentence", 20, 300),
-        ("problem", 20, None),
-    ):
-        value = record.get(field)
-        if (
-            not isinstance(value, str)
-            or len(value) < minimum
-            or (maximum is not None and len(value) > maximum)
-        ):
-            rendered_maximum = "" if maximum is None else f" and at most {maximum}"
-            errors.append(
-                f"{field} must be a string with at least {minimum}"
-                f"{rendered_maximum} characters",
-            )
 
-    intended_users = record.get("intended_users")
-    if (
-        not isinstance(intended_users, list)
-        or not intended_users
-        or any(not isinstance(value, str) or len(value) < 2 for value in intended_users)
-        or len(set(intended_users)) != len(intended_users)
-    ):
-        errors.append(
-            "intended_users must be a non-empty list of unique strings "
-            "with at least 2 characters",
-        )
+def _builtin_schema(name: str) -> dict:
+    """Load the packaged canonical contract; caller schemas are additive."""
+    from importlib.resources import files
 
-    authorship = record.get("authorship")
-    if not isinstance(authorship, Mapping):
-        errors.append("authorship must be a mapping")
-    else:
-        unknown = sorted(
-            str(key) for key in authorship if not isinstance(key, str) or key not in AUTHORSHIP_FIELDS
-        )
-        if unknown:
-            errors.append(f"authorship contains unsupported fields: {unknown}")
-        for field, minimum in (("owner", 1), ("role", 3)):
-            value = authorship.get(field)
-            if not isinstance(value, str) or len(value) < minimum:
-                errors.append(
-                    f"authorship.{field} must be a string with at least {minimum} characters",
-                )
-        for field in ("contributions", "collaborators", "generated", "inherited", "external"):
-            value = authorship.get(field)
-            if field == "contributions" and (not isinstance(value, list) or not value):
-                errors.append("authorship.contributions must be a non-empty list")
-                continue
-            if value is None and field != "contributions":
-                continue
-            if (
-                not isinstance(value, list)
-                or any(not isinstance(item, str) for item in value)
-                or len(set(value)) != len(value)
-                or (field == "contributions" and any(len(item) < 2 for item in value))
-            ):
-                errors.append(f"authorship.{field} must be a list of unique strings")
-    return errors
+    return json.loads(
+        files("organvm_engine.documentation").joinpath("schemas", name).read_text(
+            encoding="utf-8",
+        ),
+    )
 
 
 def validate_project_record(
@@ -1081,7 +1033,11 @@ def _assertion_semantic_errors(
     evidence_identity_cache: dict[tuple[Path, str], str | None],
 ) -> list[str]:
     """Validate assertion-evidence invariants that JSON Schema cannot express."""
-    errors: list[str] = []
+    errors = _schema_errors(
+        _normalize_yaml_datetimes(dict(assertion)),
+        _builtin_schema("assertion-evidence.v1.schema.json"),
+        prefix="assertion-evidence.v1",
+    )
     assertion_class = assertion.get("assertion_class")
     if not isinstance(assertion_class, str) or assertion_class not in ASSERTION_CLASSES:
         errors.append(f"invalid assertion_class: {assertion_class!r}")

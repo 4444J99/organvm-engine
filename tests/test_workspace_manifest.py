@@ -4,8 +4,9 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from conftest import replace_with_nonregular
+
+from organvm_engine._stable_io import StableReadError
 from organvm_engine.seed.manifest import (
     is_partial_workspace,
     load_workspace_manifest,
@@ -42,7 +43,7 @@ class TestManifestLoading:
         assert is_partial_workspace(None) is False
 
     @pytest.mark.parametrize("replacement_kind", ["fifo", "symlink", "directory"])
-    def test_is_file_to_nonregular_swap_returns_none_without_blocking(
+    def test_is_file_to_nonregular_swap_fails_closed_without_blocking(
         self,
         tmp_path,
         monkeypatch,
@@ -70,7 +71,8 @@ class TestManifestLoading:
             swap_after_is_file,
         )
 
-        assert load_workspace_manifest(manifest_path) is None
+        with pytest.raises(StableReadError):
+            load_workspace_manifest(manifest_path)
         assert swapped is True
 
 

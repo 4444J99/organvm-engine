@@ -28,6 +28,9 @@ organvm = "organvm_engine.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"organvm_engine.documentation" = ["schemas/*.json", "schemas/README.md"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

@@ -72,10 +72,14 @@ def _record() -> dict:
             {
                 "mode": "general",
                 "path": "docs/audiences/general.md",
+                "primary_question": "What does this project do?",
+                "surface": "public",
             },
             {
                 "mode": "technical",
                 "path": "docs/audiences/technical.md",
+                "primary_question": "How is this project implemented?",
+                "surface": "public",
             },
         ],
         "search_intents": [],
@@ -1786,6 +1790,7 @@ def test_repeated_git_evidence_resolves_identity_once_per_validation(
     record["limitations"] = [
         {
             "id": "shared-assertion-consumer",
+            "statement": "The evidence is shared across these claims.",
             "assertion_id": "validation",
             "assertion_ref": "docs/evidence/claims/validation.json",
         },
