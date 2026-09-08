@@ -345,6 +345,8 @@ def _bind_sop_inputs(entries: Iterable[Any], workspace: Path) -> dict[str, Any]:
         for field in ("org", "repo", "filename", "doc_type", "scope", "phase"):
             if not isinstance(getattr(entry, field), str):
                 raise ContextSyncReceiptError(f"SOP metadata {field} must be a string: {label}")
+        if entry.phase not in {"genesis", "foundation", "hardening", "graduation", "sustaining", "any"}:
+            raise ContextSyncReceiptError(f"SOP metadata phase is unsupported: {label}")
         for field in ("title", "overrides", "sop_name"):
             value = getattr(entry, field)
             if value is not None and not isinstance(value, str):

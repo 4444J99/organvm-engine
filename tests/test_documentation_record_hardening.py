@@ -3319,6 +3319,69 @@ def test_audit_artifact_publication_restores_the_complete_preimage_set(
     assert not list(tmp_path.glob(".*.rollback"))
 
 
+@pytest.mark.parametrize("has_preimage", [True, False])
+def test_audit_publication_recovers_failure_immediately_after_link(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    has_preimage: bool,
+) -> None:
+    module = _load_audit_builder()
+    monkeypatch.setattr(module, "HERE", tmp_path)
+    target = tmp_path / "report.md"
+    if has_preimage:
+        target.write_bytes(b"original")
+    real_link, real_stat = module.os.link, Path.stat
+    linked = False
+
+    def capture_link(source, destination, **kwargs):
+        nonlocal linked
+        result = real_link(source, destination, **kwargs)
+        if source.suffix == ".tmp":
+            linked = True
+        return result
+
+    def fail_first_installed_stat(path, **kwargs):
+        nonlocal linked
+        if path == target and linked:
+            linked = False
+            raise OSError("installed observation failed")
+        return real_stat(path, **kwargs)
+
+    monkeypatch.setattr(module.os, "link", capture_link)
+    monkeypatch.setattr(Path, "stat", fail_first_installed_stat)
+    with pytest.raises(OSError, match="installed observation failed"):
+        module.publish_exact_candidate_bytes({target: b"candidate"})
+    if has_preimage:
+        assert target.read_bytes() == b"original"
+    else:
+        assert not target.exists()
+    assert not list(tmp_path.glob(".*.rollback"))
+
+
+def test_audit_publication_preserves_replacement_after_link_and_original_custody(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_audit_builder()
+    monkeypatch.setattr(module, "HERE", tmp_path)
+    target = tmp_path / "report.md"
+    target.write_bytes(b"original")
+    real_link = module.os.link
+
+    def replace_after_link(source, destination, **kwargs):
+        result = real_link(source, destination, **kwargs)
+        if source.suffix == ".tmp":
+            destination.unlink()
+            destination.write_bytes(b"concurrent")
+        return result
+
+    monkeypatch.setattr(module.os, "link", replace_after_link)
+    with pytest.raises(RuntimeError, match="rollback was incomplete"):
+        module.publish_exact_candidate_bytes({target: b"candidate"})
+    assert target.read_bytes() == b"concurrent"
+    assert [path.read_bytes() for path in tmp_path.glob(".*.rollback")] == [b"original"]
+
+
 def test_audit_publication_preserves_a_concurrent_edit_at_the_swap_boundary(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

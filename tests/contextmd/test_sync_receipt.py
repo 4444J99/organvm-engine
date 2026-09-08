@@ -1843,19 +1843,20 @@ def test_rendering_exception_restores_preexisting_organ_context(tmp_path, monkey
     assert {target: target.read_text(encoding="utf-8") for target in originals} == originals
 
 
-def test_malformed_sop_override_rejected_before_context_publication(tmp_path, monkeypatch):
+@pytest.mark.parametrize("metadata,field", [("overrides: [other]", "overrides"), ("phase: hardning", "phase")])
+def test_malformed_sop_override_rejected_before_context_publication(tmp_path, monkeypatch, metadata, field):
     from organvm_engine.contextmd.receipt import ContextSyncReceiptError
 
     workspace = tmp_path / "workspace"
     organ = workspace / "organvm-i-theoria"
     sops = organ / "recursive-engine" / ".sops"
     sops.mkdir(parents=True)
-    (sops / "bad.md").write_text("---\nname: example\nscope: repo\noverrides: [other]\n---\nDirective.\n")
+    (sops / "bad.md").write_text(f"---\nname: example\nscope: repo\n{metadata}\n---\nDirective.\n")
     _isolate_emitters(monkeypatch)
     originals = {organ / name: f"manual {name}\n" for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")}
     for target, content in originals.items():
         target.write_text(content, encoding="utf-8")
-    with pytest.raises(ContextSyncReceiptError, match="SOP metadata overrides"):
+    with pytest.raises(ContextSyncReceiptError, match=f"SOP metadata {field}"):
         sync_all(
             workspace=workspace,
             registry_path=str(FIXTURES / "registry-minimal.json"),

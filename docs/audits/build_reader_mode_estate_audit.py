@@ -1448,6 +1448,7 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
     rollback_paths: dict[Path, Path | None] = {}
     preimage_statuses: dict[Path, os.stat_result | None] = {}
     published: dict[Path, tuple[os.stat_result, bytes]] = {}
+    retain_rollback = False
     try:
         for target, payload in candidate_bytes.items():
             descriptor, temporary_name = tempfile.mkstemp(
@@ -1521,15 +1522,18 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                                 f"Published artifact {target.name!r} changed before publication",
                             )
                     os.link(temporary, target, follow_symlinks=False)
+                    # Once linked, rollback owns this candidate even when its first
+                    # identity check fails. Bind the expected inode before any
+                    # fallible observation; rollback conditionally preserves races.
+                    published[target] = (candidate_status, candidate_bytes[target])
                     installed = target.stat(follow_symlinks=False)
                     if not _same_artifact_identity(candidate_status, installed):
                         raise RuntimeError(
                             f"Published artifact {target.name!r} changed during publication",
                         )
-                    published[target] = (candidate_status, candidate_bytes[target])
                     temporary.unlink()
                 except Exception:
-                    if displaced is not None:
+                    if displaced is not None and target not in published:
                         _restore_displaced_artifact(displaced, target)
                         displaced = None
                     raise
@@ -1548,16 +1552,18 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 rollback_paths,
             )
             if rollback_errors:
+                retain_rollback = True
                 raise RuntimeError(
                     "Audit artifact publication failed and rollback was incomplete: "
-                    + "; ".join(rollback_errors),
+                    + "; ".join(rollback_errors)
+                    + "; original preimages retained in .rollback files",
                 ) from publication_error
             raise
     finally:
         for temporary in temporary_paths.values():
             temporary.unlink(missing_ok=True)
         for rollback in rollback_paths.values():
-            if rollback is not None:
+            if rollback is not None and not retain_rollback:
                 rollback.unlink(missing_ok=True)
 
 
