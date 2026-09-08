@@ -342,6 +342,17 @@ def _bind_sop_inputs(entries: Iterable[Any], workspace: Path) -> dict[str, Any]:
     for entry in entries:
         path = Path(entry.path).expanduser()
         label = _portable_input_path(path, workspace)
+        for field in ("org", "repo", "filename", "doc_type", "scope", "phase"):
+            if not isinstance(getattr(entry, field), str):
+                raise ContextSyncReceiptError(f"SOP metadata {field} must be a string: {label}")
+        for field in ("title", "overrides", "sop_name"):
+            value = getattr(entry, field)
+            if value is not None and not isinstance(value, str):
+                raise ContextSyncReceiptError(f"SOP metadata {field} must be a string or null: {label}")
+        for field in ("triggers", "complements"):
+            value = getattr(entry, field)
+            if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+                raise ContextSyncReceiptError(f"SOP metadata {field} must be a string list: {label}")
         record = {
             "path": label,
             "org": str(entry.org),

@@ -4,8 +4,8 @@ import stat
 from pathlib import Path
 
 import pytest
-
 from conftest import replace_with_nonregular
+
 from organvm_engine._stable_io import StableReadError, read_stable_regular_bytes
 from organvm_engine.sop.discover import (
     _derive_sop_name,

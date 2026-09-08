@@ -260,158 +260,171 @@ def sync_all(
         str(binding["path"]): binding for binding in target_preimages
     }
 
-    for organ_key in target_organs:
-        organ_dir_name = organ_directory_map.get(organ_key)
-        if not organ_dir_name:
-            continue
+    try:
+        for organ_key in target_organs:
+            organ_dir_name = organ_directory_map.get(organ_key)
+            if not organ_dir_name:
+                continue
 
-        organ_data = reg.get("organs", {}).get(organ_key, {})
-        organ_path = ws / organ_dir_name
+            organ_data = reg.get("organs", {}).get(organ_key, {})
+            organ_path = ws / organ_dir_name
 
-        if organ_path.is_dir():
-            # 2. Sync organ-level context files
-            for filename in ["CLAUDE.md", "GEMINI.md", "AGENTS.md"]:
-                try:
-                    organ_section = generate_organ_section(
-                        organ_key,
-                        reg,
-                        all_seeds,
-                        timestamp=render_timestamp,
+            if organ_path.is_dir():
+                # 2. Sync organ-level context files
+                for filename in ["CLAUDE.md", "GEMINI.md", "AGENTS.md"]:
+                    try:
+                        organ_section = generate_organ_section(
+                            organ_key,
+                            reg,
+                            all_seeds,
+                            timestamp=render_timestamp,
+                            include_live_context=not receipt_enabled,
+                        )
+                        res = _inject_section_result(
+                            organ_path / filename,
+                            organ_section,
+                            dry_run,
+                            custody_root=ws if receipt_enabled else None,
+                            expected_input_bindings=(
+                                target_preimage_map if receipt_enabled else None
+                            ),
+                            custody_root_identity=receipt_workspace_identity,
+                        )
+                        _record_sync_result(
+                            res,
+                            updated,
+                            created,
+                            skipped,
+                            changes,
+                            expected_output_bindings,
+                            target_preimages,
+                        )
+                    except Exception as e:
+                        _record_sync_error(
+                            e,
+                            organ_path / filename,
+                            errors,
+                            expected_output_bindings,
+                            failed_output_paths,
+                        )
+
+                # 3. Sync repo-level context files for the hierarchical workspace layout.
+                for repo_entry in organ_data.get("repositories", []):
+                    repo_name = repo_entry.get("name")
+                    repo_path = organ_path / repo_name
+                    if not repo_path.is_dir():
+                        continue
+                    _sync_repo_context_files(
+                        repo_path=repo_path,
+                        repo_entry=repo_entry,
+                        organ_dir_name=organ_dir_name,
+                        registry=reg,
+                        repo_to_seed=repo_to_seed,
+                        all_sops=all_sops,
+                        dry_run=dry_run,
+                        updated=updated,
+                        created=created,
+                        skipped=skipped,
+                        changes=changes,
+                        errors=errors,
+                        rendered_remote_references=rendered_remote_references,
+                        expected_output_bindings=expected_output_bindings,
+                        failed_output_paths=failed_output_paths,
+                        target_preimages=target_preimages,
+                        target_preimage_map=target_preimage_map,
+                        receipt_workspace_identity=receipt_workspace_identity,
+                        receipt_workspace=ws if receipt_enabled else None,
+                        render_timestamp=render_timestamp,
                         include_live_context=not receipt_enabled,
-                    )
-                    res = _inject_section_result(
-                        organ_path / filename,
-                        organ_section,
-                        dry_run,
-                        custody_root=ws if receipt_enabled else None,
-                        expected_input_bindings=(
-                            target_preimage_map if receipt_enabled else None
-                        ),
-                        custody_root_identity=receipt_workspace_identity,
-                    )
-                    _record_sync_result(
-                        res,
-                        updated,
-                        created,
-                        skipped,
-                        changes,
-                        expected_output_bindings,
-                        target_preimages,
-                    )
-                except Exception as e:
-                    _record_sync_error(
-                        e,
-                        organ_path / filename,
-                        errors,
-                        expected_output_bindings,
-                        failed_output_paths,
+                        promotion_to_phase=promotion_to_phase,
+                        resolve_all_sops=resolve_all_sops,
                     )
 
-            # 3. Sync repo-level context files for the hierarchical workspace layout.
+            # 3b. Sync repo-level context files for additive flat workspace roots.
             for repo_entry in organ_data.get("repositories", []):
                 repo_name = repo_entry.get("name")
-                repo_path = organ_path / repo_name
-                if not repo_path.is_dir():
+                if not repo_name:
                     continue
-                _sync_repo_context_files(
-                    repo_path=repo_path,
-                    repo_entry=repo_entry,
-                    organ_dir_name=organ_dir_name,
-                    registry=reg,
-                    repo_to_seed=repo_to_seed,
-                    all_sops=all_sops,
-                    dry_run=dry_run,
-                    updated=updated,
-                    created=created,
-                    skipped=skipped,
-                    changes=changes,
-                    errors=errors,
-                    rendered_remote_references=rendered_remote_references,
-                    expected_output_bindings=expected_output_bindings,
-                    failed_output_paths=failed_output_paths,
-                    target_preimages=target_preimages,
-                    target_preimage_map=target_preimage_map,
-                    receipt_workspace_identity=receipt_workspace_identity,
-                    receipt_workspace=ws if receipt_enabled else None,
-                    render_timestamp=render_timestamp,
+                for root in extra_roots:
+                    repo_path = root / repo_name
+                    if not repo_path.is_dir():
+                        continue
+                    if organ_path.is_dir() and repo_path.resolve() == (organ_path / repo_name).resolve():
+                        continue
+                    _sync_repo_context_files(
+                        repo_path=repo_path,
+                        repo_entry=repo_entry,
+                        organ_dir_name=organ_dir_name,
+                        registry=reg,
+                        repo_to_seed=repo_to_seed,
+                        all_sops=all_sops,
+                        dry_run=dry_run,
+                        updated=updated,
+                        created=created,
+                        skipped=skipped,
+                        changes=changes,
+                        errors=errors,
+                        rendered_remote_references=rendered_remote_references,
+                        expected_output_bindings=expected_output_bindings,
+                        failed_output_paths=failed_output_paths,
+                        target_preimages=target_preimages,
+                        target_preimage_map=target_preimage_map,
+                        receipt_workspace_identity=receipt_workspace_identity,
+                        receipt_workspace=ws if receipt_enabled else None,
+                        render_timestamp=render_timestamp,
+                        include_live_context=not receipt_enabled,
+                        promotion_to_phase=promotion_to_phase,
+                        resolve_all_sops=resolve_all_sops,
+                    )
+
+        # 4. Sync workspace-level context files
+        for filename in ["CLAUDE.md", "GEMINI.md", "AGENTS.md"]:
+            try:
+                ws_section = generate_workspace_section(
+                    reg,
+                    all_seeds,
+                    timestamp=render_timestamp,
                     include_live_context=not receipt_enabled,
-                    promotion_to_phase=promotion_to_phase,
-                    resolve_all_sops=resolve_all_sops,
+                )
+                res = _inject_section_result(
+                    ws / filename,
+                    ws_section,
+                    dry_run,
+                    custody_root=ws if receipt_enabled else None,
+                    expected_input_bindings=(
+                        target_preimage_map if receipt_enabled else None
+                    ),
+                    custody_root_identity=receipt_workspace_identity,
+                )
+                _record_sync_result(
+                    res,
+                    updated,
+                    created,
+                    skipped,
+                    changes,
+                    expected_output_bindings,
+                    target_preimages,
+                )
+            except Exception as e:
+                _record_sync_error(
+                    e,
+                    ws / filename,
+                    errors,
+                    expected_output_bindings,
+                    failed_output_paths,
                 )
 
-        # 3b. Sync repo-level context files for additive flat workspace roots.
-        for repo_entry in organ_data.get("repositories", []):
-            repo_name = repo_entry.get("name")
-            if not repo_name:
-                continue
-            for root in extra_roots:
-                repo_path = root / repo_name
-                if not repo_path.is_dir():
-                    continue
-                if organ_path.is_dir() and repo_path.resolve() == (organ_path / repo_name).resolve():
-                    continue
-                _sync_repo_context_files(
-                    repo_path=repo_path,
-                    repo_entry=repo_entry,
-                    organ_dir_name=organ_dir_name,
-                    registry=reg,
-                    repo_to_seed=repo_to_seed,
-                    all_sops=all_sops,
-                    dry_run=dry_run,
-                    updated=updated,
-                    created=created,
-                    skipped=skipped,
-                    changes=changes,
-                    errors=errors,
-                    rendered_remote_references=rendered_remote_references,
-                    expected_output_bindings=expected_output_bindings,
-                    failed_output_paths=failed_output_paths,
-                    target_preimages=target_preimages,
-                    target_preimage_map=target_preimage_map,
-                    receipt_workspace_identity=receipt_workspace_identity,
-                    receipt_workspace=ws if receipt_enabled else None,
-                    render_timestamp=render_timestamp,
-                    include_live_context=not receipt_enabled,
-                    promotion_to_phase=promotion_to_phase,
-                    resolve_all_sops=resolve_all_sops,
-                )
-
-    # 4. Sync workspace-level context files
-    for filename in ["CLAUDE.md", "GEMINI.md", "AGENTS.md"]:
-        try:
-            ws_section = generate_workspace_section(
-                reg,
-                all_seeds,
-                timestamp=render_timestamp,
-                include_live_context=not receipt_enabled,
+    except Exception as exc:
+        if receipt_enabled:
+            _raise_after_receipted_rollback(
+                f"context sync rendering failed: {exc}",
+                workspace=ws,
+                target_preimages=target_preimages,
+                expected_output_bindings=expected_output_bindings,
+                workspace_identity=receipt_workspace_identity,
+                cause=exc,
             )
-            res = _inject_section_result(
-                ws / filename,
-                ws_section,
-                dry_run,
-                custody_root=ws if receipt_enabled else None,
-                expected_input_bindings=(
-                    target_preimage_map if receipt_enabled else None
-                ),
-                custody_root_identity=receipt_workspace_identity,
-            )
-            _record_sync_result(
-                res,
-                updated,
-                created,
-                skipped,
-                changes,
-                expected_output_bindings,
-                target_preimages,
-            )
-        except Exception as e:
-            _record_sync_error(
-                e,
-                ws / filename,
-                errors,
-                expected_output_bindings,
-                failed_output_paths,
-            )
+        raise
 
     result = {
         "updated": updated,
@@ -427,41 +440,29 @@ def sync_all(
 
     if receipt_enabled:
         assert receipt_path is not None
-        rediscovered_seed_paths = discover_seeds(ws)
-        for root in extra_roots:
-            rediscovered_seed_paths.extend(discover_seeds(root))
-            rediscovered_seed_paths.extend(_discover_flat_seeds(root))
-        rediscovered_seed_paths = sorted(
-            set(rediscovered_seed_paths),
-            key=_lexical_absolute,
-        )
-        if rediscovered_seed_paths != seed_paths:
-            _raise_after_receipted_rollback(
-                "seed evidence path set changed while preparing receipted sync",
-                workspace=ws,
-                target_preimages=target_preimages,
-                expected_output_bindings=expected_output_bindings,
-                workspace_identity=receipt_workspace_identity,
-            )
-        rediscovered_sops = discover_sops(workspace=ws)
-        for root in extra_roots:
-            rediscovered_sops.extend(discover_sops(workspace=root))
-            rediscovered_sops.extend(_discover_flat_sops(root))
-        if bind_context_sync_sops(rediscovered_sops, ws) != receipt_sop_inputs:
-            _raise_after_receipted_rollback(
-                "SOP evidence path set changed while preparing receipted sync",
-                workspace=ws,
-                target_preimages=target_preimages,
-                expected_output_bindings=expected_output_bindings,
-                workspace_identity=receipt_workspace_identity,
-            )
-
         from organvm_engine.contextmd.receipt import (
             build_context_sync_receipt,
             write_context_sync_receipt,
         )
 
         try:
+            rediscovered_seed_paths = discover_seeds(ws)
+            for root in extra_roots:
+                rediscovered_seed_paths.extend(discover_seeds(root))
+                rediscovered_seed_paths.extend(_discover_flat_seeds(root))
+            rediscovered_seed_paths = sorted(
+                set(rediscovered_seed_paths),
+                key=_lexical_absolute,
+            )
+            if rediscovered_seed_paths != seed_paths:
+                raise RuntimeError("seed evidence path set changed while preparing receipted sync")
+            rediscovered_sops = discover_sops(workspace=ws)
+            for root in extra_roots:
+                rediscovered_sops.extend(discover_sops(workspace=root))
+                rediscovered_sops.extend(_discover_flat_sops(root))
+            if bind_context_sync_sops(rediscovered_sops, ws) != receipt_sop_inputs:
+                raise RuntimeError("SOP evidence path set changed while preparing receipted sync")
+
             assert receipt_generator_identity is not None
             assert receipt_expected_inputs is not None
             assert receipt_sop_inputs is not None

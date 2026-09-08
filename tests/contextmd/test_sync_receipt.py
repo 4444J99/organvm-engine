@@ -1767,3 +1767,100 @@ def test_receipted_sync_rebinds_sops_at_the_publication_boundary(
     assert not (workspace / "CLAUDE.md").exists()
     assert not (workspace / "GEMINI.md").exists()
     assert not (workspace / "AGENTS.md").exists()
+
+
+@pytest.mark.parametrize("failure", ["seed-discovery", "sop-binding"])
+def test_final_input_rebinding_exceptions_restore_context_preimages(
+    tmp_path, monkeypatch, failure,
+) -> None:
+    import organvm_engine.contextmd.receipt as receipt_mod
+    import organvm_engine.seed.discover as seed_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    _isolate_emitters(monkeypatch)
+    originals = {workspace / name: f"manual {name}\n" for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")}
+    for target, content in originals.items():
+        target.write_text(content, encoding="utf-8")
+    calls = 0
+    if failure == "seed-discovery":
+        real = seed_mod.discover_seeds
+
+        def fail_final(root):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise ValueError("workspace manifest cannot be safely loaded")
+            return real(root)
+
+        monkeypatch.setattr(seed_mod, "discover_seeds", fail_final)
+    else:
+        real = receipt_mod.bind_context_sync_sops
+
+        def fail_final(entries, root):
+            nonlocal calls
+            calls += 1
+            if calls == 3:
+                raise ValueError("SOP input cannot be safely bound")
+            return real(entries, root)
+
+        monkeypatch.setattr(receipt_mod, "bind_context_sync_sops", fail_final)
+    with pytest.raises(RuntimeError, match="context sync receipt creation failed"):
+        sync_all(
+            workspace=workspace,
+            registry_path=str(FIXTURES / "registry-minimal.json"),
+            additional_workspace_roots=[],
+            receipt_path=workspace / "receipt.json",
+        )
+    assert not (workspace / "receipt.json").exists()
+    assert {target: target.read_text(encoding="utf-8") for target in originals} == originals
+
+
+def test_rendering_exception_restores_preexisting_organ_context(tmp_path, monkeypatch):
+    import organvm_engine.sop.resolver as resolver_mod
+
+    workspace = tmp_path / "workspace"
+    organ = workspace / "organvm-i-theoria"
+    (organ / "recursive-engine").mkdir(parents=True)
+    _isolate_emitters(monkeypatch)
+    originals = {organ / name: f"manual {name}\n" for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")}
+    for target, content in originals.items():
+        target.write_text(content, encoding="utf-8")
+
+    def fail_resolution(*args, **kwargs):
+        assert any(target.read_text() != content for target, content in originals.items())
+        raise ValueError("synthetic late SOP resolution failure")
+
+    monkeypatch.setattr(resolver_mod, "resolve_all", fail_resolution)
+    with pytest.raises(RuntimeError, match="context sync rendering failed"):
+        sync_all(
+            workspace=workspace,
+            registry_path=str(FIXTURES / "registry-minimal.json"),
+            additional_workspace_roots=[],
+            receipt_path=workspace / "receipt.json",
+        )
+    assert not (workspace / "receipt.json").exists()
+    assert {target: target.read_text(encoding="utf-8") for target in originals} == originals
+
+
+def test_malformed_sop_override_rejected_before_context_publication(tmp_path, monkeypatch):
+    from organvm_engine.contextmd.receipt import ContextSyncReceiptError
+
+    workspace = tmp_path / "workspace"
+    organ = workspace / "organvm-i-theoria"
+    sops = organ / "recursive-engine" / ".sops"
+    sops.mkdir(parents=True)
+    (sops / "bad.md").write_text("---\nname: example\nscope: repo\noverrides: [other]\n---\nDirective.\n")
+    _isolate_emitters(monkeypatch)
+    originals = {organ / name: f"manual {name}\n" for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")}
+    for target, content in originals.items():
+        target.write_text(content, encoding="utf-8")
+    with pytest.raises(ContextSyncReceiptError, match="SOP metadata overrides"):
+        sync_all(
+            workspace=workspace,
+            registry_path=str(FIXTURES / "registry-minimal.json"),
+            additional_workspace_roots=[],
+            receipt_path=workspace / "receipt.json",
+        )
+    assert not (workspace / "receipt.json").exists()
+    assert {target: target.read_text(encoding="utf-8") for target in originals} == originals
