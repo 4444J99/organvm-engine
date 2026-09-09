@@ -121,7 +121,7 @@ REPOSITORY_ROLES = frozenset(
     },
 )
 GIT_EVIDENCE_REFERENCE = re.compile(
-    r"^git:(?P<commit>[0-9a-fA-F]{40})(?::(?P<path>.+))?$",
+    r"^git:(?P<commit>(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64}))(?::(?P<path>.+))?$",
 )
 REPOSITORY_SLUG = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 AUDIENCE_ROUTE_PATH = re.compile(

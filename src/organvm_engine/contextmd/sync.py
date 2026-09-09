@@ -165,6 +165,11 @@ def sync_all(
     if receipt_enabled:
         target_organs = organs or [str(key) for key in reg.get("organs", {})]
         organ_directory_map = _registry_organ_directory_map(reg, target_organs)
+        _recover_standard_context_outputs(
+            workspace=ws, registry=reg, target_organs=target_organs,
+            extra_roots=extra_roots, organ_directory_map=organ_directory_map,
+            dry_run=dry_run,
+        )
     else:
         from organvm_engine.git.superproject import REGISTRY_KEY_MAP
 
@@ -189,11 +194,11 @@ def sync_all(
                     raise ValueError(f"seed.yaml at {p} is not a YAML mapping")
             else:
                 s = read_seed(p)
-            repo_identity = s.get("repo")
+            repo_identity = (s.get("org"), s.get("repo"))
             if receipt_enabled and repo_identity in repo_to_seed:
                 raise RuntimeError(
                     "receipted context sync rejects duplicate seed repository identity: "
-                    f"{repo_identity}",
+                    f"{repo_identity[0]}/{repo_identity[1]}",
                 )
             all_seeds.append(s)
             repo_to_seed[repo_identity] = s
@@ -715,7 +720,7 @@ def _sync_repo_context_files(
                 repo_name,
                 org_name,
                 registry,
-                repo_to_seed.get(repo_name),
+                repo_to_seed.get((org_name, repo_name)),
                 dry_run,
                 filename=filename,
                 sop_entries=repo_sops,
@@ -751,12 +756,12 @@ def _sync_repo_context_files(
             repo_name,
             org_name,
             registry,
-            repo_to_seed.get(repo_name),
+            repo_to_seed.get((org_name, repo_name)),
             timestamp=render_timestamp,
         )
         if receipt_workspace is not None:
             agents_references = resolve_agents_remote_references(
-                repo_to_seed.get(repo_name),
+                repo_to_seed.get((org_name, repo_name)),
                 registry,
                 default_owner=str(org_name),
             )
@@ -1572,7 +1577,7 @@ def _registry_organ_directory_map(
     selected_keys = list(registry_organs) if organ_keys is None else organ_keys
     for raw_key in selected_keys:
         if raw_key not in registry_organs:
-            continue
+            raise RuntimeError(f"unknown requested organ: {raw_key}")
         organ = registry_organs[raw_key]
         key = str(raw_key)
         for field in ("directory", "dir"):
@@ -1978,6 +1983,11 @@ def _write_custody_payload(
             except Exception as exc:
                 cleanup_error = exc
         if cleanup_error is not None:
+            if published_binding is not None:
+                raise ContextCustodyPublicationError(
+                    f"context publication cleanup failed: {cleanup_error}",
+                    published_binding,
+                ) from cleanup_error
             raise cleanup_error from publication_error
         if published_binding is not None:
             raise ContextCustodyPublicationError(

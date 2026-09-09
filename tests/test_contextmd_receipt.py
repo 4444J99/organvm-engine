@@ -219,9 +219,9 @@ def test_receipt_publication_only_unlinks_private_transaction_aliases(
     assert custody_object.read_bytes() == target.read_bytes()
     assert custody_object.stat().st_ino != target.stat().st_ino
     custody = custody_object.parent.stat()
-    assert len(unlinks) == 1
-    assert unlinks[0][0].endswith(".generated")
-    assert unlinks[0][1:] == (custody.st_dev, custody.st_ino)
+    assert len(unlinks) == 2
+    assert {name.rsplit(".", 1)[1] for name, *_ in unlinks} == {"rollback", "generated"}
+    assert all(item[1:] == (custody.st_dev, custody.st_ino) for item in unlinks)
     assert not list(custody_object.parent.glob("transaction-*"))
     assert not list(tmp_path.glob(".organvm-receipt-transaction.*"))
 
@@ -491,10 +491,8 @@ def test_receipt_failure_only_unlinks_private_cas_transactions(
     custody = cas.stat()
     assert failed is True
     assert target.exists()
-    assert len(unlinks) == 1
-    assert {name.rsplit(".", 1)[-1] for name, _device, _inode in unlinks} == {
-        "generated",
-    }
+    assert len(unlinks) == 2
+    assert {name.rsplit(".", 1)[1] for name, *_ in unlinks} == {"rollback", "generated"}
     assert all(
         (device, inode) == (custody.st_dev, custody.st_ino)
         for _name, device, inode in unlinks

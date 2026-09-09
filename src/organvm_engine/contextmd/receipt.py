@@ -821,16 +821,19 @@ def _ensure_receipt_cas_object(
     payload: bytes,
 ) -> os.stat_result:
     """Create or verify the sole immutable CAS object for these receipt bytes."""
+    staging_name = f"transaction-{secrets.token_hex(24)}.rollback"
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
     try:
-        descriptor = os.open(digest, flags, 0o600, dir_fd=cas_fd)
-    except FileExistsError:
-        status = os.stat(digest, dir_fd=cas_fd, follow_symlinks=False)
-        if not _cas_object_matches(cas_fd, digest, status, payload):
+        existing = os.stat(digest, dir_fd=cas_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        existing = None
+    if existing is not None:
+        if not _cas_object_matches(cas_fd, digest, existing, payload):
             raise ContextSyncReceiptError(
                 f"receipt custody CAS object is corrupt: sha256:{digest}",
             ) from None
-        return status
+        return existing
+    descriptor = os.open(staging_name, flags, 0o600, dir_fd=cas_fd)
     try:
         offset = 0
         while offset < len(payload):
@@ -840,6 +843,21 @@ def _ensure_receipt_cas_object(
         status = os.fstat(descriptor)
     finally:
         os.close(descriptor)
+    try:
+        os.link(
+            staging_name, digest, src_dir_fd=cas_fd, dst_dir_fd=cas_fd,
+            follow_symlinks=False,
+        )
+    except FileExistsError:
+        installed = os.stat(digest, dir_fd=cas_fd, follow_symlinks=False)
+        if not _cas_object_matches(cas_fd, digest, installed, payload):
+            raise ContextSyncReceiptError(
+                f"receipt custody CAS object is corrupt: sha256:{digest}",
+            ) from None
+        status = installed
+    finally:
+        with suppress(FileNotFoundError):
+            os.unlink(staging_name, dir_fd=cas_fd)
     os.fsync(cas_fd)
     if not _cas_object_matches(cas_fd, digest, status, payload):
         raise ContextSyncReceiptError(

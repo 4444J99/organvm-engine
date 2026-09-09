@@ -434,12 +434,20 @@ def _build_organ_edges(
         return "- *No seed data available*"
 
     try:
+        from organvm_engine.organ_config import registry_key_to_dir
         from organvm_engine.seed.graph import SeedGraph
         from organvm_engine.seed.reader import seed_identity
 
+        topology_directories = registry_key_to_dir()
         d2k: dict[str, str] = {}
         for key, organ in (registry or {}).get("organs", {}).items():
             d2k[str(key)] = str(key)
+            directory = organ.get("directory") or organ.get("dir")
+            if isinstance(directory, str) and directory:
+                d2k[directory] = str(key)
+            topology_directory = topology_directories.get(str(key))
+            if isinstance(topology_directory, str) and topology_directory:
+                d2k[topology_directory] = str(key)
             for repo in organ.get("repositories", []):
                 registered_org = repo.get("org")
                 if isinstance(registered_org, str) and registered_org:

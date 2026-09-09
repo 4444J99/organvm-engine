@@ -249,3 +249,35 @@ def test_retained_agents_failure_keeps_rendered_reference_inventory(
         "url": "https://github.com/external/selected/blob/main/CLAUDE.md",
     }]
     assert receipt["resolved_remote_references"] == ([] if concurrent_winner else expected_references)
+
+
+def test_unknown_requested_organ_is_rejected() -> None:
+    from organvm_engine.contextmd.sync import _registry_organ_directory_map
+
+    with pytest.raises(RuntimeError, match="unknown requested organ: ORAGN-I"):
+        _registry_organ_directory_map({"organs": {"ORGAN-I": {}}}, ["ORAGN-I"])
+
+
+def test_git_evidence_reference_accepts_full_sha256_only() -> None:
+    from organvm_engine.documentation.record import GIT_EVIDENCE_REFERENCE
+
+    assert GIT_EVIDENCE_REFERENCE.fullmatch(f"git:{'a' * 64}:docs/proof.md")
+    assert GIT_EVIDENCE_REFERENCE.fullmatch(f"git:{'b' * 40}")
+    assert not GIT_EVIDENCE_REFERENCE.fullmatch(f"git:{'c' * 63}")
+
+
+def test_organ_edges_resolve_canonical_workspace_directory(monkeypatch) -> None:
+    from organvm_engine.contextmd.generator import _build_organ_edges
+
+    monkeypatch.setattr(
+        "organvm_engine.organ_config.registry_key_to_dir",
+        lambda: {"ORGAN-I": "organvm-i-theoria", "ORGAN-II": "organvm-ii-poiesis"},
+    )
+    seeds = [{
+        "org": "organvm-i-theoria", "repo": "source",
+        "produces": [{"target": "organvm-ii-poiesis/target", "type": "artifact"}],
+    }]
+    registry = {"organs": {"ORGAN-I": {"repositories": []}, "ORGAN-II": {"repositories": []}}}
+
+    rendered = _build_organ_edges("ORGAN-I", seeds, registry)
+    assert "ORGAN-I" in rendered and "ORGAN-II" in rendered
