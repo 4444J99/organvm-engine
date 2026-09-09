@@ -13,11 +13,12 @@ import io
 import json
 import os
 import re
+import secrets
 import stat
 import tempfile
 import tokenize
 import traceback
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from textwrap import dedent
 
@@ -41,6 +42,8 @@ PUBLISHED_ARTIFACT_NAMES = (
     "reader-mode-estate-audit.md",
 )
 MAX_PUBLICATION_ARTIFACT_BYTES = 64_000_000
+ARTIFACT_RECOVERY_NAME = ".reader-mode-publication.recovery"
+MAX_ARTIFACT_RECOVERY_BYTES = 64_000
 SOURCE_FILES = {
     "personal": "personal.json",
     "ergon": "ergon.json",
@@ -1442,15 +1445,264 @@ def privacy_gate_candidate_bytes(
     return len(publication_paths)
 
 
+def _artifact_binding(path: Path) -> dict[str, int | str]:
+    before = path.stat(follow_symlinks=False)
+    payload = _read_regular_bytes_once(path)
+    after = path.stat(follow_symlinks=False)
+    if not _same_artifact_identity(before, after):
+        raise RuntimeError(f"Artifact {path.name!r} changed while binding recovery")
+    return {
+        "device": before.st_dev, "inode": before.st_ino,
+        "bytes": before.st_size, "mtime_ns": before.st_mtime_ns,
+        "mode": stat.S_IMODE(before.st_mode),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+    }
+
+
+def _artifact_matches(path: Path, binding: dict | None) -> bool:
+    if binding is None:
+        return not path.exists() and not path.is_symlink()
+    try:
+        return _artifact_binding(path) == binding
+    except (OSError, RuntimeError):
+        return False
+
+
+def _fsync_artifact_directory() -> None:
+    descriptor = os.open(HERE, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+@contextmanager
+def _artifact_publication_lock():
+    import fcntl
+
+    descriptor = os.open(
+        HERE, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+    )
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(descriptor)
+
+
+def _write_artifact_recovery(record: dict) -> None:
+    """Durably replace complete metadata, never truncate the active recovery WAL."""
+    payload = (json.dumps(record, sort_keys=True) + "\n").encode()
+    if len(payload) > MAX_ARTIFACT_RECOVERY_BYTES:
+        raise RuntimeError("Audit artifact recovery metadata exceeds its size limit")
+    descriptor, name = tempfile.mkstemp(dir=HERE, prefix=".reader-mode-recovery.", suffix=".pending")
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.rename(HERE / ARTIFACT_RECOVERY_NAME)
+        _fsync_artifact_directory()
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _read_artifact_recovery() -> dict | None:
+    path = HERE / ARTIFACT_RECOVERY_NAME
+    try:
+        status = path.stat(follow_symlinks=False)
+    except FileNotFoundError:
+        return None
+    if (
+        not stat.S_ISREG(status.st_mode) or stat.S_IMODE(status.st_mode) != 0o600
+        or status.st_nlink != 1 or status.st_size > MAX_ARTIFACT_RECOVERY_BYTES
+        or status.st_uid != os.geteuid()
+    ):
+        raise RuntimeError("Unsafe audit artifact recovery metadata")
+    try:
+        payload = _read_regular_bytes_once(path)
+        rebound = path.stat(follow_symlinks=False)
+        if any(getattr(status, field) != getattr(rebound, field) for field in (
+            "st_dev", "st_ino", "st_mode", "st_uid", "st_nlink", "st_size",
+            "st_mtime_ns", "st_ctime_ns",
+        )):
+            raise RuntimeError("Audit artifact recovery metadata changed while reading")
+        record = json.loads(payload)
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise RuntimeError("Malformed audit artifact recovery metadata") from exc
+    root = HERE.stat()
+    if (
+        not isinstance(record, dict) or record.get("version") != 1
+        or record.get("state") not in {"pending", "committed"}
+        or record.get("root") != {"device": root.st_dev, "inode": root.st_ino}
+        or not isinstance(record.get("transaction"), str)
+        or not re.fullmatch(r"[0-9a-f]{48}", record["transaction"])
+        or not isinstance(record.get("artifacts"), list)
+        or not 1 <= len(record["artifacts"]) <= 64
+    ):
+        raise RuntimeError("Invalid audit artifact recovery metadata")
+    targets: set[str] = set()
+    for entry in record["artifacts"]:
+        if not isinstance(entry, dict) or set(entry) != {
+            "target", "temporary", "rollback", "displaced", "failed",
+            "original_binding", "candidate_binding", "rollback_binding",
+        }:
+            raise RuntimeError("Invalid audit artifact recovery entry")
+        target = entry.get("target")
+        if (
+            not isinstance(target, str) or not target or target.startswith(".")
+            or Path(target).name != target or "/" in target or "\\" in target
+            or target in targets
+        ):
+            raise RuntimeError("Unsafe audit artifact recovery target")
+        targets.add(target)
+        for field, suffix in (
+            ("temporary", ".tmp"), ("rollback", ".rollback"),
+            ("displaced", ".displaced"), ("failed", ".failed"),
+        ):
+            value = entry.get(field)
+            if value is None and field == "rollback" and entry.get("original_binding") is None:
+                continue
+            if (
+                not isinstance(value, str) or Path(value).name != value
+                or not value.startswith(f".{target}.") or not value.endswith(suffix)
+                or "/" in value or "\\" in value
+            ):
+                raise RuntimeError("Unsafe audit artifact recovery transaction path")
+        for field in ("original_binding", "candidate_binding", "rollback_binding"):
+            binding = entry.get(field)
+            if binding is None and field != "candidate_binding":
+                continue
+            if (
+                not isinstance(binding, dict)
+                or set(binding) != {"device", "inode", "bytes", "mtime_ns", "mode", "sha256"}
+                or any(type(binding[key]) is not int or binding[key] < 0 for key in (
+                    "device", "inode", "bytes", "mtime_ns", "mode",
+                ))
+                or not isinstance(binding["sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", binding["sha256"])
+            ):
+                raise RuntimeError("Invalid audit artifact recovery byte binding")
+        if (entry["original_binding"] is None) != (entry["rollback_binding"] is None):
+            raise RuntimeError("Incomplete audit artifact recovery preimage")
+    return record
+
+
+def _cleanup_artifact_recovery(record: dict) -> None:
+    """Retire only exact recorded private aliases after the public state is durable."""
+    _assert_artifact_recovery_root(record)
+    for entry in record["artifacts"]:
+        for field, binding_field in (
+            ("temporary", "candidate_binding"), ("rollback", "rollback_binding"),
+            ("displaced", "original_binding"), ("failed", "candidate_binding"),
+        ):
+            name = entry[field]
+            if name is None:
+                continue
+            path = HERE / name
+            if not path.exists() and not path.is_symlink():
+                continue
+            if not _artifact_matches(path, entry[binding_field]):
+                raise RuntimeError(f"Audit recovery alias changed; retained {name}")
+            _assert_artifact_recovery_root(record)
+            path.unlink()
+    _fsync_artifact_directory()
+    _assert_artifact_recovery_root(record)
+    (HERE / ARTIFACT_RECOVERY_NAME).unlink()
+    _fsync_artifact_directory()
+
+
+def _assert_artifact_recovery_root(record: dict) -> None:
+    status = HERE.lstat()
+    if not stat.S_ISDIR(status.st_mode) or record["root"] != {
+        "device": status.st_dev, "inode": status.st_ino,
+    }:
+        raise RuntimeError("Audit artifact recovery directory changed")
+
+
+def _recover_artifact_publication_locked() -> None:
+    record = _read_artifact_recovery()
+    if record is None:
+        return
+    if record["state"] == "committed":
+        # A completed publication stays completed even if a user later edits it.
+        _cleanup_artifact_recovery(record)
+        return
+    errors = []
+    for entry in reversed(record["artifacts"]):
+        _assert_artifact_recovery_root(record)
+        target = HERE / entry["target"]
+        original = entry["original_binding"]
+        rollback = HERE / entry["rollback"] if entry["rollback"] is not None else None
+        failed, displaced = HERE / entry["failed"], HERE / entry["displaced"]
+        try:
+            if _artifact_matches(target, original) or (
+                rollback is not None and _artifact_matches(target, entry["rollback_binding"])
+            ):
+                continue
+            if _artifact_matches(target, entry["candidate_binding"]):
+                if failed.exists() or failed.is_symlink():
+                    if not _artifact_matches(failed, entry["candidate_binding"]):
+                        raise RuntimeError("rollback displacement changed")
+                    _assert_artifact_recovery_root(record)
+                    failed.unlink()
+                    _fsync_artifact_directory()
+                _assert_artifact_recovery_root(record)
+                target.rename(failed)
+                if not _artifact_matches(failed, entry["candidate_binding"]):
+                    _restore_displaced_artifact(failed, target)
+                    raise RuntimeError("candidate changed at recovery boundary")
+                _fsync_artifact_directory()
+            elif target.exists() or target.is_symlink():
+                raise RuntimeError("concurrent public artifact preserved")
+            if original is not None:
+                if _artifact_matches(displaced, original):
+                    source = displaced
+                elif _artifact_matches(failed, entry["candidate_binding"]):
+                    if rollback is None or not _artifact_matches(rollback, entry["rollback_binding"]):
+                        raise RuntimeError("recorded rollback preimage is unavailable")
+                    source = rollback
+                else:
+                    raise RuntimeError("recorded displacement is unavailable or changed")
+                _assert_artifact_recovery_root(record)
+                os.link(source, target, follow_symlinks=False)
+            _fsync_artifact_directory()
+        except (OSError, RuntimeError) as exc:
+            errors.append(f"{target.name}: {exc}")
+    if errors:
+        raise RuntimeError("Audit artifact recovery incomplete; custody retained: " + "; ".join(errors))
+    _fsync_artifact_directory()
+    _cleanup_artifact_recovery(record)
+
+
+def recover_artifact_publication() -> None:
+    """Restore a pending public artifact set before consulting private inputs."""
+    with _artifact_publication_lock():
+        _recover_artifact_publication_locked()
+
+
 def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
+    with _artifact_publication_lock():
+        _recover_artifact_publication_locked()
+        if candidate_bytes:
+            _publish_exact_candidate_bytes_locked(candidate_bytes)
+
+
+def _publish_exact_candidate_bytes_locked(candidate_bytes: dict[Path, bytes]) -> None:
     """Publish one recoverable artifact set from already-scanned candidate bytes."""
     temporary_paths: dict[Path, Path] = {}
     rollback_paths: dict[Path, Path | None] = {}
     preimage_statuses: dict[Path, os.stat_result | None] = {}
     published: dict[Path, tuple[os.stat_result, bytes]] = {}
+    recovery: dict | None = None
+    recovery_entries: dict[Path, dict] = {}
     retain_rollback = False
+    committing = False
     try:
         for target, payload in candidate_bytes.items():
+            if target.parent != HERE or target.name.startswith("."):
+                raise RuntimeError("Audit publication target must be a direct public artifact")
             descriptor, temporary_name = tempfile.mkstemp(
                 dir=target.parent,
                 prefix=f".{target.name}.",
@@ -1499,6 +1751,32 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 with suppress(OSError):
                     os.close(descriptor)
                 raise
+        root = HERE.stat()
+        for target, temporary in temporary_paths.items():
+            rollback = rollback_paths[target]
+            recovery_entries[target] = {
+                "target": target.name, "temporary": temporary.name,
+                "rollback": rollback.name if rollback is not None else None,
+                "displaced": _unused_artifact_transaction_path(target, ".displaced").name,
+                "failed": _unused_artifact_transaction_path(target, ".failed").name,
+                "original_binding": _artifact_binding(target) if rollback is not None else None,
+                "candidate_binding": _artifact_binding(temporary),
+                "rollback_binding": _artifact_binding(rollback) if rollback is not None else None,
+            }
+            original_binding = recovery_entries[target]["original_binding"]
+            initial = preimage_statuses[target]
+            if original_binding is not None and initial is not None and (
+                tuple(original_binding[key] for key in ("device", "inode", "bytes", "mtime_ns"))
+                != (initial.st_dev, initial.st_ino, initial.st_size, initial.st_mtime_ns)
+                or original_binding["sha256"] != recovery_entries[target]["rollback_binding"]["sha256"]
+            ):
+                raise RuntimeError(f"Published artifact {target.name!r} changed while preparing recovery")
+        recovery = {
+            "version": 1, "transaction": secrets.token_hex(24), "state": "pending",
+            "root": {"device": root.st_dev, "inode": root.st_ino},
+            "artifacts": list(recovery_entries.values()),
+        }
+        _write_artifact_recovery(recovery)
         try:
             for target, temporary in temporary_paths.items():
                 candidate_status = temporary.stat(follow_symlinks=False)
@@ -1506,7 +1784,7 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 displaced: Path | None = None
                 try:
                     if preimage_status is not None:
-                        displaced = _unused_artifact_transaction_path(target, ".displaced")
+                        displaced = HERE / recovery_entries[target]["displaced"]
                         target.rename(displaced)
                         moved_status = displaced.stat(follow_symlinks=False)
                         rollback = rollback_paths[target]
@@ -1546,10 +1824,19 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 os.fsync(directory_descriptor)
             finally:
                 os.close(directory_descriptor)
+            recovery["state"] = "committed"
+            committing = True
+            _write_artifact_recovery(recovery)
         except Exception as publication_error:
+            if committing:
+                # The marker may already be durable. Leave both generations in
+                # custody; restart follows whichever complete WAL state survived.
+                retain_rollback = True
+                raise
             rollback_errors = _rollback_published_artifacts(
                 published,
                 rollback_paths,
+                recovery_entries,
             )
             if isinstance(publication_error, _ArtifactRestoreError):
                 rollback_errors.insert(0, str(publication_error))
@@ -1562,11 +1849,18 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 ) from publication_error
             raise
     finally:
+        active_recovery = (HERE / ARTIFACT_RECOVERY_NAME).exists()
+        if active_recovery and not retain_rollback:
+            _fsync_artifact_directory()
         for temporary in temporary_paths.values():
             temporary.unlink(missing_ok=True)
         for rollback in rollback_paths.values():
             if rollback is not None and not retain_rollback:
                 rollback.unlink(missing_ok=True)
+        if active_recovery and recovery is not None and not retain_rollback:
+            _fsync_artifact_directory()
+            (HERE / ARTIFACT_RECOVERY_NAME).unlink()
+            _fsync_artifact_directory()
 
 
 def _same_artifact_identity(left: os.stat_result, right: os.stat_result) -> bool:
@@ -1614,12 +1908,16 @@ def _restore_displaced_artifact(displaced: Path, target: Path) -> None:
 def _rollback_published_artifacts(
     published: dict[Path, tuple[os.stat_result, bytes]],
     rollback_paths: dict[Path, Path | None],
+    recovery_entries: dict[Path, dict] | None = None,
 ) -> list[str]:
     """Rollback installed candidates only while their exact identity remains public."""
     errors: list[str] = []
     for target in reversed(published):
         expected_status, expected_payload = published[target]
-        displaced: Path | None = _unused_artifact_transaction_path(target, ".failed")
+        displaced: Path | None = (
+            HERE / recovery_entries[target]["failed"] if recovery_entries is not None
+            else _unused_artifact_transaction_path(target, ".failed")
+        )
         try:
             try:
                 target.rename(displaced)
@@ -1657,6 +1955,7 @@ def _rollback_published_artifacts(
 
 def main() -> None:
     """Build, scan, and publish a complete candidate without pre-gate live writes."""
+    recover_artifact_publication()
     (
         _manifest,
         manifest_bytes,
