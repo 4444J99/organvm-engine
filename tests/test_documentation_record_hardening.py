@@ -2754,6 +2754,66 @@ def test_workspace_discovery_keeps_repositories_named_like_generated_dirs(
     assert discover_repositories(tmp_path) == expected
 
 
+@pytest.mark.parametrize("inside_repository", [False, True])
+@pytest.mark.parametrize("symlinked_component", ["docs", "evidence", "README.md"])
+def test_symlinked_evidence_readme_does_not_hide_sparse_evidence(
+    tmp_path: Path,
+    inside_repository: bool,
+    symlinked_component: str,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    (repository / "README.md").write_text("# Repository\n\nTests.\n", encoding="utf-8")
+    destination = (repository if inside_repository else tmp_path) / "material"
+    destination.mkdir()
+    if symlinked_component == "docs":
+        (destination / "evidence").mkdir()
+        (destination / "evidence/README.md").write_text("Material\n", encoding="utf-8")
+        (repository / "docs").symlink_to(destination, target_is_directory=True)
+    elif symlinked_component == "evidence":
+        (repository / "docs").mkdir()
+        (destination / "README.md").write_text("Material\n", encoding="utf-8")
+        (repository / "docs/evidence").symlink_to(destination, target_is_directory=True)
+    else:
+        (repository / "docs/evidence").mkdir(parents=True)
+        (destination / "README.md").write_text("Material\n", encoding="utf-8")
+        (repository / "docs/evidence/README.md").symlink_to(destination / "README.md")
+
+    result = audit_repository(repository)
+
+    assert result["signals"]["evidence"] == 1
+    assert "few-evidence-signals" in {finding["code"] for finding in result["findings"]}
+
+
+@pytest.mark.parametrize("inside_repository", [False, True])
+@pytest.mark.parametrize("symlinked_component", ["docs", "audiences"])
+def test_symlinked_audience_directory_does_not_hide_weak_cross_links(
+    tmp_path: Path,
+    inside_repository: bool,
+    symlinked_component: str,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    (repository / "README.md").write_text(
+        "# Repository\n\nRelated systems: [one](https://example.org).\n",
+        encoding="utf-8",
+    )
+    destination = (repository if inside_repository else tmp_path) / "material"
+    destination.mkdir()
+    if symlinked_component == "docs":
+        (destination / "audiences").mkdir()
+        (repository / "docs").symlink_to(destination, target_is_directory=True)
+    else:
+        (repository / "docs").mkdir()
+        (repository / "docs/audiences").symlink_to(destination, target_is_directory=True)
+
+    result = audit_repository(repository)
+
+    assert result["signals"]["cross_linking"] == 1
+    findings = {finding["code"] for finding in result["findings"]}
+    assert {"few-cross-linking-signals", "orphan-docs"} <= findings
+
+
 def test_builder_rejects_explicit_invalid_visibility() -> None:
     builder_path = (
         Path(__file__).parents[1] / "docs/audits/build_reader_mode_estate_audit.py"

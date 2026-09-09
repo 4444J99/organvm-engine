@@ -169,7 +169,10 @@ def audit_repository(root: str | Path) -> dict[str, Any]:
                 ("limitation", "incomplete", "known issue", "not yet"),
                 ("evidence record", "evidence", "verified", "proposed"),
             ),
-            bonus=record_path is not None or (root_path / "docs/evidence/README.md").is_file(),
+            bonus=record_path is not None or _safe_markdown_file(
+                root_path,
+                root_path / "docs/evidence/README.md",
+            ),
         ),
         "seo_surface": _score_seo(root_path, readme_lower, markdown_files),
         "cross_linking": _score_cross_linking(
@@ -324,7 +327,7 @@ def _score_cross_linking(root: Path, documents: list[str], *, valid_local_links:
         for document in documents
         for term in ("related systems", "dependencies", "implemented by", "canonical project")
     )
-    if typed_graph and (root / "docs/audiences").is_dir():
+    if typed_graph and _safe_audit_directory(root, root / "docs/audiences"):
         score += 1
     return min(4, score)
 
@@ -521,6 +524,21 @@ def _safe_markdown_file(root: Path, path: Path) -> bool:
     return _safe_audit_file(root, path)
 
 
+def _safe_audit_directory(root: Path, path: Path) -> bool:
+    """Require a contained directory reached without traversing a symlink."""
+    try:
+        relative = path.relative_to(root)
+        current = root
+        for part in relative.parts:
+            current = current / part
+            if current.is_symlink() or not current.is_dir():
+                return False
+        path.resolve(strict=True).relative_to(root)
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return True
+
+
 def _read_bounded_markdown(path: Path) -> str | None:
     """Read at most the documented Markdown input limit, including races."""
     payload = _read_bounded_markdown_payload(path)
@@ -542,7 +560,11 @@ def _read_bounded_markdown_payload(path: Path) -> tuple[str, int] | None:
 def _safe_audit_file(root: Path, path: Path) -> bool:
     """Return whether an audit input is a regular in-repository file."""
     try:
-        if path.is_symlink() or not path.is_file():
+        if (
+            not _safe_audit_directory(root, path.parent)
+            or path.is_symlink()
+            or not path.is_file()
+        ):
             return False
         path.resolve(strict=True).relative_to(root)
     except (OSError, ValueError):
