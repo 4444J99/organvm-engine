@@ -1516,8 +1516,8 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                             or _read_regular_bytes_once(displaced)
                             != _read_regular_bytes_once(rollback)
                         ):
-                            _restore_displaced_artifact(displaced, target)
-                            displaced = None
+                            restoring, displaced = displaced, None
+                            _restore_displaced_artifact(restoring, target)
                             raise RuntimeError(
                                 f"Published artifact {target.name!r} changed before publication",
                             )
@@ -1534,8 +1534,8 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                     temporary.unlink()
                 except Exception:
                     if displaced is not None and target not in published:
-                        _restore_displaced_artifact(displaced, target)
-                        displaced = None
+                        restoring, displaced = displaced, None
+                        _restore_displaced_artifact(restoring, target)
                     raise
                 finally:
                     if displaced is not None:
@@ -1551,6 +1551,8 @@ def publish_exact_candidate_bytes(candidate_bytes: dict[Path, bytes]) -> None:
                 published,
                 rollback_paths,
             )
+            if isinstance(publication_error, _ArtifactRestoreError):
+                rollback_errors.insert(0, str(publication_error))
             if rollback_errors:
                 retain_rollback = True
                 raise RuntimeError(
@@ -1593,14 +1595,20 @@ def _unused_artifact_transaction_path(target: Path, suffix: str) -> Path:
     return path
 
 
+class _ArtifactRestoreError(RuntimeError):
+    """A displaced artifact remains in custody because restoration failed."""
+
+
 def _restore_displaced_artifact(displaced: Path, target: Path) -> None:
-    """Restore a moved public name without replacing a concurrent edit."""
+    """Take custody of a moved name; delete it only after a successful restore."""
     try:
         os.link(displaced, target, follow_symlinks=False)
-    except FileExistsError:
-        pass
-    finally:
         displaced.unlink(missing_ok=True)
+    except OSError as exc:
+        raise _ArtifactRestoreError(
+            f"{target.name}: displaced artifact retained at {displaced}; "
+            f"restoration failed: {exc}",
+        ) from exc
 
 
 def _rollback_published_artifacts(
@@ -1611,7 +1619,7 @@ def _rollback_published_artifacts(
     errors: list[str] = []
     for target in reversed(published):
         expected_status, expected_payload = published[target]
-        displaced = _unused_artifact_transaction_path(target, ".failed")
+        displaced: Path | None = _unused_artifact_transaction_path(target, ".failed")
         try:
             try:
                 target.rename(displaced)
@@ -1623,7 +1631,8 @@ def _rollback_published_artifacts(
                 not _same_artifact_identity(expected_status, moved_status)
                 or _read_regular_bytes_once(displaced) != expected_payload
             ):
-                _restore_displaced_artifact(displaced, target)
+                restoring, displaced = displaced, None
+                _restore_displaced_artifact(restoring, target)
                 errors.append(f"{target.name}: published artifact changed before rollback")
                 continue
             rollback = rollback_paths[target]
@@ -1633,10 +1642,16 @@ def _rollback_published_artifacts(
                 except FileExistsError:
                     errors.append(f"{target.name}: concurrent edit prevented rollback")
         except Exception as exc:
-            _restore_displaced_artifact(displaced, target)
             errors.append(f"{target.name}: {exc}")
+            if displaced is not None:
+                restoring, displaced = displaced, None
+                try:
+                    _restore_displaced_artifact(restoring, target)
+                except _ArtifactRestoreError as restore_error:
+                    errors.append(str(restore_error))
         finally:
-            displaced.unlink(missing_ok=True)
+            if displaced is not None:
+                displaced.unlink(missing_ok=True)
     return errors
 
 

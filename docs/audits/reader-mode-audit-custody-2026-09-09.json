@@ -1,0 +1,91 @@
+{
+  "receipt_type": "reader-mode-audit-custody-acceptance",
+  "recorded_at": "2026-09-09T12:52:00.622747+00:00",
+  "repository": "organvm/organvm-engine",
+  "owner_pr": 175,
+  "parent_commit": "afab6a0ca4328f5862e0aff1f39176e9fcad1cb7",
+  "repair": "Preserve displaced writer bytes on restoration collision during both publication and rollback. Callers transfer cleanup custody before restoration; failed restoration names the retained path and retains original rollback preimages.",
+  "source_and_test_sha256": {
+    "docs/audits/build_reader_mode_estate_audit.py": "sha256:e40d51b55b697f69d74edc32773b485df74ce1d357a58075434d34d854020593",
+    "tests/test_documentation_record_hardening.py": "sha256:7e74eb16fa536d90591e0b29f1806b2404039e43d5eea545f3ecd0bd5e601b99"
+  },
+  "verification": {
+    "command": "pytest -q tests/test_documentation_record_hardening.py -k audit_",
+    "passed": 46,
+    "failed": 0,
+    "new_two_writer_cases": 2,
+    "both_new_cases_failed_at_parent": true,
+    "ruff": "PASS",
+    "diff_hygiene": "PASS",
+    "independent_review": {
+      "reviewer": "Codex peer /root/product_backlog",
+      "source_review": "clear",
+      "counterexample_replay": "Public writer-B, displaced writer-A, and original preimage all survive the explicit incomplete-rollback hold."
+    }
+  },
+  "preserved_verification": {
+    "parent_commit": "afab6a0ca4328f5862e0aff1f39176e9fcad1cb7",
+    "affected_tests_passed": 505,
+    "supplemental_tests_passed": 45,
+    "supplemental_command": "pytest -q tests/test_reader_mode_boundaries.py tests/test_contextmd_remote_links.py tests/test_workspace_manifest.py",
+    "boundary": "These retain their original parent binding. Only the audit publication shard changed; its 46 cases include the two new counterexamples. This is not a new complete-suite run."
+  },
+  "historical_review_dispositions": {
+    "reviewed_parent": "afab6a0ca4328f5862e0aff1f39176e9fcad1cb7",
+    "source_fixed_at_parent": [
+      "PRRT_kwDORSsFes6eDyyt",
+      "PRRT_kwDORSsFes6eDyyz",
+      "PRRT_kwDORSsFes6eDyy5",
+      "PRRT_kwDORSsFes6eDyy_",
+      "PRRT_kwDORSsFes6eDyzE",
+      "PRRT_kwDORSsFes6eDyzI",
+      "PRRT_kwDORSsFes6eEP2F",
+      "PRRT_kwDORSsFes6eEP2Q",
+      "PRRT_kwDORSsFes6eEP2X",
+      "PRRT_kwDORSsFes6eFezj",
+      "PRRT_kwDORSsFes6eFezr",
+      "PRRT_kwDORSsFes6eFezw",
+      "PRRT_kwDORSsFes6eFez2",
+      "PRRT_kwDORSsFes6f820K",
+      "PRRT_kwDORSsFes6f820Y",
+      "PRRT_kwDORSsFes6f820i",
+      "PRRT_kwDORSsFes6f9lYy",
+      "PRRT_kwDORSsFes6f9lY4",
+      "PRRT_kwDORSsFes6f9lY_",
+      "PRRT_kwDORSsFes6f9lZE",
+      "PRRT_kwDORSsFes6f9lZN",
+      "PRRT_kwDORSsFes6gTVDo"
+    ],
+    "source_fixed_by_this_candidate": [
+      "PRRT_kwDORSsFes6f820S"
+    ],
+    "method": "Independent bounded source review plus named existing regression coverage and the two new baseline-failing restore-collision cases."
+  },
+  "merge_gate": {
+    "class": "governed_public; no single-owner override",
+    "rail": "scripts/merge-drain.py --repo organvm/organvm-engine --pr 175 --expected-head <published-head>",
+    "submission_attempt": "Failed before queue: FileNotFoundError gh; no queue acceptance asserted.",
+    "credential_bootstrap": [
+      {
+        "command": "bash scripts/gh-app-token.sh --repo organvm/organvm-engine --which",
+        "result": "none (no credential available)"
+      },
+      {
+        "command": "bash scripts/gh-app-token.sh --repo organvm/organvm-engine --verify-app",
+        "exit_code": 2,
+        "result": "missing GITHUB_APP_ID or GITHUB_APP_PRIVATE_KEY"
+      }
+    ],
+    "owner": "Existing Engine #175; authenticated shared-writer integration operator",
+    "next_action": "Restore documented exact-repository credentials and gh, submit published exact head once through merge-drain, then retain the actual merge receipt."
+  },
+  "hosted_parent_observation": {
+    "commit": "afab6a0ca4328f5862e0aff1f39176e9fcad1cb7",
+    "run_id": 34352042532,
+    "executed_steps": 0,
+    "one_retry_attempted": true,
+    "classification": "admission/execution unestablished; no code-test failure inferred"
+  },
+  "downstream": "Editorial #12 remains draft and awaits actual merged Engine for generated context; Limen #2553 source repair is published at fc14f633bb478c97e4e3b2ca23a239cd1e94e930 but retains its declared dependency and About metadata gate.",
+  "boundary": "Source and recovery custody acceptance only; no private audit regeneration, installed activation or deployment attestation."
+}

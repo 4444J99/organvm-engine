@@ -3468,3 +3468,51 @@ def test_audit_rollback_never_overwrites_a_concurrent_edit(
 
     assert concurrently_edited.read_bytes() == concurrent
     assert targets[1].read_bytes() == f"old:{targets[1].name}\n".encode()
+
+
+@pytest.mark.parametrize("during_rollback", [False, True])
+def test_audit_restore_collision_preserves_both_concurrent_writers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    during_rollback: bool,
+) -> None:
+    module = _load_audit_builder()
+    monkeypatch.setattr(module, "HERE", tmp_path)
+    target = tmp_path / "report.md"
+    target.write_bytes(b"original")
+    second_target = tmp_path / "second.md"
+    second_target.write_bytes(b"second original")
+    candidates = {target: b"candidate", second_target: b"second candidate"}
+    real_rename, real_link = Path.rename, module.os.link
+    retained_suffix = ".failed" if during_rollback else ".displaced"
+    raced = False
+
+    def two_writers_at_move(source: Path, destination: Path):
+        nonlocal raced
+        if source == target and destination.suffix == retained_suffix and not raced:
+            raced = True
+            source.write_bytes(b"writer-A")
+            result = real_rename(source, destination)
+            source.write_bytes(b"writer-B")
+            return result
+        return real_rename(source, destination)
+
+    def fail_second_publication(source: Path, destination: Path, **kwargs):
+        if during_rollback and source.suffix == ".tmp" and destination == second_target:
+            raise OSError("force rollback after first publication")
+        return real_link(source, destination, **kwargs)
+
+    monkeypatch.setattr(Path, "rename", two_writers_at_move)
+    monkeypatch.setattr(module.os, "link", fail_second_publication)
+    with pytest.raises(RuntimeError, match="rollback was incomplete") as failure:
+        module.publish_exact_candidate_bytes(candidates)
+
+    assert raced
+    assert target.read_bytes() == b"writer-B"
+    retained = list(tmp_path.glob(f".*{retained_suffix}"))
+    assert len(retained) == 1
+    assert retained[0].read_bytes() == b"writer-A"
+    assert str(retained[0]) in str(failure.value)
+    assert b"original" in [path.read_bytes() for path in tmp_path.glob(".*.rollback")]
+    assert second_target.read_bytes() == b"second original"
+    assert not list(tmp_path.glob(".*.tmp"))
