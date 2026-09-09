@@ -174,7 +174,7 @@ def audit_repository(root: str | Path) -> dict[str, Any]:
         "seo_surface": _score_seo(root_path, readme_lower, markdown_files),
         "cross_linking": _score_cross_linking(
             root_path,
-            corpus,
+            [text for _path, text in markdown_inputs],
             valid_local_links=len(valid_local_links),
         ),
     }
@@ -304,8 +304,13 @@ def _score_seo(root: Path, readme_lower: str, markdown_files: list[Path]) -> int
     return min(4, score)
 
 
-def _score_cross_linking(root: Path, corpus: str, *, valid_local_links: int) -> int:
-    links = [link for link in _markdown_destinations(corpus) if not link.startswith("#")]
+def _score_cross_linking(root: Path, documents: list[str], *, valid_local_links: int) -> int:
+    links = [
+        link
+        for document in documents
+        for link in _markdown_destinations(document)
+        if not link.startswith("#")
+    ]
     if not links:
         return 0
     score = 1
@@ -315,7 +320,8 @@ def _score_cross_linking(root: Path, corpus: str, *, valid_local_links: int) -> 
     if len(external_repo) >= 2:
         score += 1
     typed_graph = any(
-        term in corpus.lower()
+        term in document.lower()
+        for document in documents
         for term in ("related systems", "dependencies", "implemented by", "canonical project")
     )
     if typed_graph and (root / "docs/audiences").is_dir():

@@ -436,7 +436,7 @@ def test_receipt_publication_failure_retains_cas_bound_public_bytes(
         return real_fsync(descriptor)
 
     monkeypatch.setattr(receipt_mod.os, "fsync", failing_parent_fsync)
-    with pytest.raises(OSError, match="simulated receipt directory fsync failure"):
+    with pytest.raises(ContextSyncReceiptError, match="simulated receipt directory fsync failure"):
         write_context_sync_receipt(target, {"status": "success"})
 
     assert failed is True
@@ -484,7 +484,7 @@ def test_receipt_failure_only_unlinks_private_cas_transactions(
 
     monkeypatch.setattr(receipt_mod.os, "fsync", failing_parent_fsync)
     monkeypatch.setattr(receipt_mod.os, "unlink", guarded_unlink)
-    with pytest.raises(OSError, match="simulated receipt directory fsync failure"):
+    with pytest.raises(ContextSyncReceiptError, match="simulated receipt directory fsync failure"):
         write_context_sync_receipt(target, {"status": "success"})
 
     cas = tmp_path / ".organvm-receipt-cas" / "sha256"
@@ -538,7 +538,7 @@ def test_receipt_failure_never_moves_a_concurrent_symlink(
 
     monkeypatch.setattr(receipt_mod.os, "fsync", fail_parent_fsync)
     monkeypatch.setattr(receipt_mod.os, "rename", forbid_public_rename)
-    with pytest.raises(OSError, match="simulated receipt directory fsync failure"):
+    with pytest.raises(ContextSyncReceiptError, match="simulated receipt directory fsync failure"):
         write_context_sync_receipt(target, generated)
 
     cas = tmp_path / ".organvm-receipt-cas" / "sha256"
@@ -581,7 +581,7 @@ def test_receipt_failure_never_moves_an_oversized_concurrent_file(
         return real_fsync(descriptor)
 
     monkeypatch.setattr(receipt_mod.os, "fsync", replace_at_parent_fsync)
-    with pytest.raises(OSError, match="simulated receipt directory fsync failure"):
+    with pytest.raises(ContextSyncReceiptError, match="simulated receipt directory fsync failure"):
         write_context_sync_receipt(target, generated)
 
     cas = tmp_path / ".organvm-receipt-cas" / "sha256"
@@ -825,7 +825,7 @@ def test_receipt_fsync_failure_never_unlinks_a_concurrent_replacement(
 
     monkeypatch.setattr(receipt_mod.os, "fsync", replace_then_fail)
     monkeypatch.setattr(receipt_mod.os, "rename", track_public_rename)
-    with pytest.raises(OSError, match="simulated parent fsync failure"):
+    with pytest.raises(ContextSyncReceiptError, match="simulated parent fsync failure"):
         write_context_sync_receipt(target, {"status": "success"})
 
     assert replaced is True

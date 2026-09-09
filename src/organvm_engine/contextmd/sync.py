@@ -75,6 +75,11 @@ def sync_all(
         else resolve_additional_roots(workspace=ws)
     )
     receipt_enabled = receipt_path is not None and not dry_run
+    if receipt_enabled:
+        # Caller spelling is not a registry-derived output component. Resolve it
+        # once before composing targets; output component traversal stays invalid.
+        ws = ws.resolve(strict=True)
+        extra_roots = [root.resolve(strict=False) for root in extra_roots]
     receipt_generated_at = (
         datetime.now(timezone.utc).replace(microsecond=0) if receipt_enabled else None
     )
@@ -535,6 +540,13 @@ def sync_all(
             receipt_target = Path(receipt_path).expanduser()
             receipt_digest = write_context_sync_receipt(receipt_target, receipt)
         except Exception as exc:
+            from organvm_engine.contextmd.receipt import ContextSyncReceiptPublicationError
+
+            if isinstance(exc, ContextSyncReceiptPublicationError):
+                # Publication has escaped the transaction. Preserve the matching
+                # output set even if the public receipt was subsequently replaced;
+                # a success receipt may already have been observed or copied.
+                raise
             _raise_after_receipted_rollback(
                 f"context sync receipt creation failed: {exc}",
                 workspace=ws,

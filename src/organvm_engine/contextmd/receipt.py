@@ -29,6 +29,15 @@ class ContextSyncReceiptError(RuntimeError):
     """Raised when a context receipt cannot bind all required local evidence."""
 
 
+class ContextSyncReceiptPublicationError(ContextSyncReceiptError):
+    """Receipt installation occurred; matching outputs must not be rolled back."""
+
+    def __init__(self, message: str, path: Path, receipt_sha256: str) -> None:
+        super().__init__(message)
+        self.receipt_path = str(path)
+        self.receipt_sha256 = receipt_sha256
+
+
 def generator_git_identity(
     repository_root: Path | None = None,
     *,
@@ -555,6 +564,7 @@ def write_context_sync_receipt(path: Path, receipt: dict[str, Any]) -> str:
     cas_fd: int | None = None
     staging_name: str | None = None
     staging_status: os.stat_result | None = None
+    installed = False
     try:
         try:
             os.stat(filename, dir_fd=parent_fd, follow_symlinks=False)
@@ -581,6 +591,7 @@ def write_context_sync_receipt(path: Path, receipt: dict[str, Any]) -> str:
             dst_dir_fd=parent_fd,
             follow_symlinks=False,
         )
+        installed = True
         # The public name now owns its link. Retire the private staging alias
         # before any durability work so later cleanup never has to rename,
         # unlink, or otherwise race the public receipt path.
@@ -623,15 +634,36 @@ def write_context_sync_receipt(path: Path, receipt: dict[str, Any]) -> str:
             raise ContextSyncReceiptError(
                 "receipt destination changed during publication",
             )
-    except Exception:
+    except Exception as exc:
         if staging_name is not None and cas_fd is not None:
             with suppress(Exception):
                 _preserve_and_remove_private_receipt_alias(cas_fd, staging_name)
+        if installed:
+            raise ContextSyncReceiptPublicationError(
+                f"receipt installed; final durability or identity verification failed: {exc}",
+                path,
+                "sha256:" + payload_digest,
+            ) from exc
         raise
     finally:
-        if cas_fd is not None:
-            os.close(cas_fd)
-        os.close(parent_fd)
+        active_error = sys.exc_info()[0] is not None
+        close_error: OSError | None = None
+        for descriptor in (cas_fd, parent_fd):
+            if descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except OSError as exc:
+                    close_error = close_error or exc
+        # Attempt both closes without masking an already classified publication
+        # failure. A cleanup-only error crossed the same install boundary.
+        if close_error is not None and not active_error:
+            if installed:
+                raise ContextSyncReceiptPublicationError(
+                    f"receipt installed; descriptor cleanup failed: {close_error}",
+                    path,
+                    "sha256:" + payload_digest,
+                ) from close_error
+            raise close_error
     return "sha256:" + payload_digest
 
 

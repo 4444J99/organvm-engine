@@ -79,8 +79,8 @@ def _record(doc_class: str = "B") -> dict:
             {
                 "id": "project-status",
                 "assertion_contract": "assertion-evidence.v1",
-                "assertion_id": "validation",
-                "assertion_ref": "docs/evidence/claims/validation.json",
+                "assertion_id": "project-status",
+                "assertion_ref": "docs/evidence/claims/status.json",
                 "scope": "status",
                 "claim_posture": "implemented",
             },
@@ -162,6 +162,22 @@ def _write_routes(root: Path, record: dict) -> None:
         ),
         encoding="utf-8",
     )
+    status_assertion = json.loads(assertion.read_text(encoding="utf-8"))
+    status_assertion["assertion_id"] = "project-status"
+    status_source = root / "docs/evidence/sources/status.txt"
+    status_source.write_bytes(b"committed implementation status\n")
+    status_assertion["evidence_references"][0].update({
+        "reference": status_source.relative_to(root).as_posix(),
+        "body_hash": "sha256:" + hashlib.sha256(status_source.read_bytes()).hexdigest(),
+    })
+    status_assertion["fact"] = {
+        "predicate": "implementation_status",
+        "subject": record["canonical_repository"],
+        "value": record["implementation_status"],
+    }
+    (assertion.parent / "status.json").write_text(
+        json.dumps(status_assertion), encoding="utf-8",
+    )
 
 
 def _assertion_path(root: Path) -> Path:
@@ -174,6 +190,24 @@ def _load_assertion(root: Path) -> dict:
 
 def _write_assertion(root: Path, assertion: dict) -> None:
     _assertion_path(root).write_text(json.dumps(assertion), encoding="utf-8")
+
+
+def _current_state_assertion(assertion: dict) -> dict:
+    assertion["assertion_class"] = "current_state"
+    assertion["freshness"] = {
+        "status": "fresh",
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "max_age_seconds": 3600,
+    }
+    artifact = assertion["evidence_references"][0]
+    assertion["evidence_references"] = [
+        {**artifact, "evidence_id": "owner", "evidence_type": "owner_record"},
+        {
+            **artifact, "evidence_id": "verifier", "evidence_type": "fresh_verifier_receipt",
+            "observed_at": assertion["freshness"]["verified_at"],
+        },
+    ]
+    return assertion
 
 
 def _git(root: Path, *args: str) -> bytes:
@@ -259,7 +293,7 @@ def test_industry_evidence_scope_verification_and_proposed_inference(tmp_path):
     _write_assertion(tmp_path, assertion)
 
     errors = validate_project_record(record, root=tmp_path)
-    assert any("must use deployment, adoption, or outcome scope" in error for error in errors)
+    assert any("must use deployment or adoption scope" in error for error in errors)
     assert any("must resolve to a verified assertion" in error for error in errors)
 
     proposed = _record()
@@ -368,7 +402,7 @@ def test_pilot_and_public_deployments_require_bounded_verified_claims(tmp_path):
         record = _record()
         _write_routes(tmp_path, record)
         deployment_claim = {
-            **record["claim_references"][0],
+            **record["claim_references"][1],
             "id": f"{deployment_status}-deployment",
             "scope": "deployment",
             "claim_posture": "proposed",
@@ -387,8 +421,9 @@ def test_pilot_and_public_deployments_require_bounded_verified_claims(tmp_path):
         assertion["fact"] = {
             "predicate": "deployment_status",
             "value": deployment_status,
+            "subject": record["canonical_repository"],
         }
-        _write_assertion(tmp_path, assertion)
+        _write_assertion(tmp_path, _current_state_assertion(assertion))
         assert validate_project_record(record, root=tmp_path) == []
 
         assertion["verification_state"] = "unverified"
@@ -404,7 +439,7 @@ def test_retired_deployment_requires_verified_history_or_unavailability(tmp_path
     record = _record()
     _write_routes(tmp_path, record)
     deployment_claim = {
-        **record["claim_references"][0],
+        **record["claim_references"][1],
         "id": "retired-deployment",
         "scope": "deployment",
         "claim_posture": "contradicted",

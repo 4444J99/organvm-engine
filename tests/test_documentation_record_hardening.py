@@ -15,6 +15,7 @@ from pathlib import Path
 import nbformat
 import pytest
 import yaml
+from test_documentation import _current_state_assertion
 
 from organvm_engine.cli.docs import cmd_docs_audit, cmd_docs_validate
 from organvm_engine.documentation import audit as documentation_audit
@@ -53,8 +54,8 @@ def _record() -> dict:
             {
                 "id": "project-status",
                 "assertion_contract": "assertion-evidence.v1",
-                "assertion_id": "validation",
-                "assertion_ref": "docs/evidence/claims/validation.json",
+                "assertion_id": "project-status",
+                "assertion_ref": "docs/evidence/claims/status.json",
                 "scope": "status",
                 "claim_posture": "implemented",
             },
@@ -138,6 +139,22 @@ def _write_git_fixture(root: Path) -> dict:
         ),
         encoding="utf-8",
     )
+    status_assertion = json.loads(assertion_path.read_text(encoding="utf-8"))
+    status_assertion["assertion_id"] = "project-status"
+    status_source = root / "docs/evidence/sources/status.txt"
+    status_source.write_bytes(b"committed implementation status\n")
+    status_assertion["evidence_references"][0].update({
+        "reference": status_source.relative_to(root).as_posix(),
+        "body_hash": "sha256:" + hashlib.sha256(status_source.read_bytes()).hexdigest(),
+    })
+    status_assertion["fact"] = {
+        "predicate": "implementation_status",
+        "subject": record["canonical_repository"],
+        "value": record["implementation_status"],
+    }
+    (assertion_path.parent / "status.json").write_text(
+        json.dumps(status_assertion), encoding="utf-8",
+    )
     _git(root, "init")
     _git(root, "config", "user.name", "Record Hardening Tests")
     _git(root, "config", "user.email", "record-hardening@example.test")
@@ -165,11 +182,12 @@ def test_audience_routes_require_one_canonical_slug_file(route: str) -> None:
 
 
 @pytest.mark.parametrize("slug", ["technical-review", "technical--deep", "technical-"])
-def test_audience_route_accepts_schema_permitted_hyphenated_slugs(slug: str) -> None:
-    record = _record()
+def test_audience_route_accepts_schema_permitted_hyphenated_slugs(slug: str, tmp_path: Path) -> None:
+    record = _write_git_fixture(tmp_path)
     record["audience_routes"][1]["path"] = f"docs/audiences/{slug}.md"
+    (tmp_path / record["audience_routes"][1]["path"]).write_text("# Technical\n")
 
-    assert validate_project_record(record) == []
+    assert validate_project_record(record, root=tmp_path) == []
 
 
 @pytest.mark.parametrize(
@@ -388,9 +406,10 @@ def test_repository_slugs_reject_dot_segments(repository: str) -> None:
 
 
 def test_yaml_native_datetimes_are_normalized_before_validation(tmp_path: Path) -> None:
+    fixture = _write_git_fixture(tmp_path)
     record_path = tmp_path / "project-record.yml"
     record_path.write_text(
-        yaml.safe_dump(_record(), sort_keys=False).replace(
+        yaml.safe_dump(fixture, sort_keys=False).replace(
             "'2025-01-01T00:00:00Z'",
             "2025-01-01T00:00:00Z",
         ),
@@ -403,6 +422,7 @@ def test_yaml_native_datetimes_are_normalized_before_validation(tmp_path: Path) 
     assert validate_project_record(
         record,
         now=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        root=tmp_path,
     ) == []
 
 
@@ -507,7 +527,7 @@ def test_verified_deployment_status_requires_a_repository_root() -> None:
     record["deployment_status"] = "public"
     record["claim_references"].append(
         {
-            **record["claim_references"][0],
+            **record["claim_references"][1],
             "id": "public-deployment",
             "scope": "deployment",
             "claim_posture": "partial",
@@ -551,12 +571,12 @@ def test_repository_role_requires_the_supported_schema_vocabulary(
 
 @pytest.mark.parametrize("repository_role", ["profile", "governance"])
 def test_schema_supported_noncanonical_roles_remain_valid(
-    repository_role: str,
+    repository_role: str, tmp_path: Path,
 ) -> None:
-    record = _record()
+    record = _write_git_fixture(tmp_path)
     record["repository_role"] = repository_role
 
-    assert validate_project_record(record) == []
+    assert validate_project_record(record, root=tmp_path) == []
 
 
 @pytest.mark.parametrize("repository_role", [[], {}])
@@ -582,7 +602,7 @@ def test_deployment_posture_membership_rejects_unhashable_values(
     record["deployment_status"] = "public"
     record["claim_references"].append(
         {
-            **record["claim_references"][0],
+            **record["claim_references"][1],
             "id": "public-deployment",
             "scope": "deployment",
             "claim_posture": claim_posture,
@@ -607,7 +627,7 @@ def test_industry_evidence_rejects_an_unhashable_claim_scope(tmp_path: Path) -> 
     ]
 
     assert any(
-        "must use deployment, adoption, or outcome scope" in error
+        "must use deployment or adoption scope" in error
         for error in validate_project_record(record, root=tmp_path)
     )
 
@@ -1491,7 +1511,7 @@ def test_lifecycle_assertion_fact_must_match_the_project_state(tmp_path: Path) -
     record["deployment_status"] = "public"
     record["claim_references"].append(
         {
-            **record["claim_references"][0],
+            **record["claim_references"][1],
             "id": "public-deployment",
             "scope": "deployment",
             "claim_posture": "partial",
@@ -1499,7 +1519,8 @@ def test_lifecycle_assertion_fact_must_match_the_project_state(tmp_path: Path) -
     )
     assertion_path = tmp_path / "docs/evidence/claims/validation.json"
     assertion = json.loads(assertion_path.read_text(encoding="utf-8"))
-    assertion["fact"] = {"predicate": "deployment_status", "value": "public"}
+    assertion["fact"] = {"predicate": "deployment_status", "value": "public", "subject": record["canonical_repository"]}
+    assertion = _current_state_assertion(assertion)
     assertion_path.write_text(json.dumps(assertion), encoding="utf-8")
 
     assert validate_project_record(record, root=tmp_path) == []
@@ -1708,11 +1729,10 @@ def test_repeated_local_evidence_references_share_one_streamed_digest(
     ]
     assertion_path.write_text(json.dumps(assertion), encoding="utf-8")
     original = documentation_record._stream_sha256
-    stream_calls = 0
+    stream_calls: list[Path] = []
 
     def counted_stream(path: Path) -> str:
-        nonlocal stream_calls
-        stream_calls += 1
+        stream_calls.append(path)
         return original(path)
 
     monkeypatch.setattr(documentation_record, "_stream_sha256", counted_stream)
@@ -1720,7 +1740,8 @@ def test_repeated_local_evidence_references_share_one_streamed_digest(
     errors = validate_project_record(record, root=tmp_path)
 
     assert not any("body_hash does not match" in error for error in errors)
-    assert stream_calls == 1
+    assert stream_calls.count(tmp_path / first["reference"]) == 1
+    assert len(stream_calls) == len(set(stream_calls)) == 2
 
 
 def test_repeated_git_evidence_references_share_one_streamed_digest(
@@ -2903,7 +2924,7 @@ def test_commit_bound_assertion_bytes_must_equal_the_head_blob(
     def replace_after_git_check(**kwargs):
         nonlocal replaced
         result = real_check(**kwargs)
-        if kwargs.get("object_name") == "assertion" and not replaced:
+        if kwargs.get("relative") == assertion_path.relative_to(tmp_path).as_posix() and not replaced:
             assertion_path.write_text(
                 assertion_path.read_text(encoding="utf-8") + "\n",
                 encoding="utf-8",

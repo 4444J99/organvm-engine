@@ -463,6 +463,17 @@ def validate_project_record(
     claim_id_set = set(claim_ids)
     if "status" not in claim_scopes:
         errors.append("project record requires a 'status' claim reference")
+    qualifying_status_claim_ids = [
+        claim_id
+        for claim_id, claim in claims_by_id.items()
+        if claim.get("scope") == "status"
+        and isinstance(claim.get("claim_posture"), str)
+        and claim.get("claim_posture") in {"implemented", "partial"}
+    ]
+    if not qualifying_status_claim_ids:
+        errors.append("implementation_status requires an implemented or partial status claim")
+    if root is None:
+        errors.append("implementation_status requires a repository root to verify assertion evidence")
     qualifying_deployment_claim_ids: list[str] = []
     allowed_deployment_postures = (
         DEPLOYMENT_STATUS_POSTURES.get(deployment_status)
@@ -682,6 +693,20 @@ def validate_project_record(
             )
             errors.extend(assertion_errors)
 
+        if not any(
+            _verified_status_fact_matches(
+                resolved_claim_assertions.get(claim_id),
+                "implementation_status",
+                implementation_status,
+                record.get("canonical_repository"),
+            )
+            for claim_id in qualifying_status_claim_ids
+        ):
+            errors.append(
+                "implementation_status requires a verified implementation_status fact "
+                "whose subject is canonical_repository and whose value matches implementation_status",
+            )
+
         if (
             allowed_deployment_postures is not None
             and qualifying_deployment_claim_ids
@@ -693,13 +718,17 @@ def validate_project_record(
                 if _verified_deployment_fact_matches(
                     resolved_claim_assertions.get(claim_id),
                     deployment_status,
+                    canonical_repository=record.get("canonical_repository"),
+                    now=validation_now,
                 )
             ]
             if not verified_deployment_claims:
                 errors.append(
                     f"deployment_status {deployment_status!r} requires at least one "
                     "qualifying deployment claim that resolves to a verified assertion "
-                    "whose fact predicate/value exactly matches deployment_status",
+                    "whose fact predicate/value exactly matches deployment_status; "
+                    "pilot/public additionally require a fresh current_state fact "
+                    "whose subject is canonical_repository",
                 )
 
         errors.extend(
@@ -707,6 +736,8 @@ def validate_project_record(
                 industries,
                 claims_by_id=claims_by_id,
                 resolved_assertions=resolved_claim_assertions,
+                canonical_repository=record.get("canonical_repository"),
+                now=validation_now,
             ),
         )
 
@@ -820,9 +851,11 @@ def _industry_evidence_errors(
     *,
     claims_by_id: Mapping[str, Mapping[str, Any]],
     resolved_assertions: Mapping[str, Mapping[str, Any]],
+    canonical_repository: Any,
+    now: datetime,
 ) -> list[str]:
     errors: list[str] = []
-    evidence_scopes = {"deployment", "adoption", "outcome"}
+    evidence_scopes = {"deployment", "adoption"}
     for index, industry in enumerate(industries):
         if not isinstance(industry, Mapping):
             continue
@@ -830,6 +863,7 @@ def _industry_evidence_errors(
         references = industry.get("claim_references", [])
         if not isinstance(references, list):
             continue
+        matching_fact = False
         for claim_id in references:
             if not isinstance(claim_id, str) or claim_id not in claims_by_id:
                 continue
@@ -840,13 +874,23 @@ def _industry_evidence_errors(
                 if not isinstance(claim_scope, str) or claim_scope not in evidence_scopes:
                     errors.append(
                         f"industries[{index}] {status!r} claim {claim_id!r} must use "
-                        "deployment, adoption, or outcome scope",
+                        "deployment or adoption scope",
                     )
                 if assertion is not None and assertion.get("verification_state") != "verified":
                     errors.append(
                         f"industries[{index}] {status!r} claim {claim_id!r} must resolve "
                         "to a verified assertion",
                     )
+                if (
+                    isinstance(claim_scope, str)
+                    and claim_scope in evidence_scopes
+                    and _verified_status_fact_matches(
+                        assertion, "industry_status", status, industry.get("name"),
+                    )
+                    and _fresh_current_state(assertion, now)
+                    and assertion["fact"].get("project_repository") == canonical_repository
+                ):
+                    matching_fact = True
             elif status == "proposed":
                 if claim.get("claim_posture") != "proposed":
                     errors.append(
@@ -862,6 +906,12 @@ def _industry_evidence_errors(
                         f"industries[{index}] proposed claim {claim_id!r} must resolve "
                         "to a labeled inference",
                     )
+        if isinstance(status, str) and status in {"deployed", "piloted"} and not matching_fact:
+            errors.append(
+                f"industries[{index}] {status!r} requires a fresh current_state industry_status "
+                "fact whose subject is the industry name, whose value matches its status, "
+                "and whose project_repository is canonical_repository",
+            )
     return errors
 
 
@@ -1258,15 +1308,58 @@ def _assertion_semantic_errors(
 def _verified_deployment_fact_matches(
     assertion: Mapping[str, Any] | None,
     deployment_status: str,
+    *,
+    canonical_repository: Any,
+    now: datetime,
 ) -> bool:
     """Return whether verified evidence asserts this exact deployment state."""
     if assertion is None or assertion.get("verification_state") != "verified":
         return False
+    if deployment_status in {"pilot", "public"}:
+        return _fresh_current_state(assertion, now) and _verified_status_fact_matches(
+            assertion, "deployment_status", deployment_status, canonical_repository,
+        )
     fact = assertion.get("fact")
     return (
         isinstance(fact, Mapping)
         and fact.get("predicate") == "deployment_status"
         and fact.get("value") == deployment_status
+    )
+
+
+def _verified_status_fact_matches(
+    assertion: Mapping[str, Any] | None,
+    predicate: str,
+    value: Any,
+    subject: Any,
+) -> bool:
+    if assertion is None or assertion.get("verification_state") != "verified":
+        return False
+    fact = assertion.get("fact")
+    return (
+        isinstance(fact, Mapping)
+        and isinstance(subject, str)
+        and bool(subject)
+        and fact.get("predicate") == predicate
+        and fact.get("subject") == subject
+        and fact.get("value") == value
+    )
+
+
+def _fresh_current_state(assertion: Mapping[str, Any] | None, now: datetime) -> bool:
+    if assertion is None or assertion.get("assertion_class") != "current_state":
+        return False
+    freshness = assertion.get("freshness")
+    if not isinstance(freshness, Mapping) or freshness.get("status") != "fresh":
+        return False
+    maximum_age = freshness.get("max_age_seconds")
+    verified_at = _parse_datetime(freshness.get("verified_at"))
+    return (
+        isinstance(maximum_age, int)
+        and not isinstance(maximum_age, bool)
+        and 0 < maximum_age <= MAX_FRESHNESS_AGE_SECONDS
+        and verified_at is not None
+        and 0 <= (now.astimezone(timezone.utc) - verified_at).total_seconds() <= maximum_age
     )
 
 
