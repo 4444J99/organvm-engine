@@ -1998,11 +1998,11 @@ def _custody_object_name(payload: bytes) -> str:
 def _ensure_custody_object(journal_fd: int, payload: bytes) -> str:
     """Create or verify one immutable content-addressed journal object."""
     name = _custody_object_name(payload)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
     try:
-        descriptor = os.open(name, flags, 0o600, dir_fd=journal_fd)
-    except FileExistsError:
         status = os.stat(name, dir_fd=journal_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        pass
+    else:
         if (
             not stat.S_ISREG(status.st_mode)
             or stat.S_IMODE(status.st_mode) != 0o400
@@ -2013,27 +2013,58 @@ def _ensure_custody_object(journal_fd: int, payload: bytes) -> str:
         if existing != payload:
             raise RuntimeError(
                 f"custody object digest collision or corruption: {name}",
-            ) from None
+            )
         return name
+
+    # Build complete, immutable bytes under a recoverable private alias. Writing
+    # the canonical digest name directly would let an interrupted write poison
+    # every subsequent attempt to bind the same payload.
+    temporary_name = f"transaction-{secrets.token_hex(24)}.generated"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
+    descriptor = os.open(temporary_name, flags, 0o600, dir_fd=journal_fd)
+    temporary_status = os.fstat(descriptor)
+    temporary_identity = (temporary_status.st_dev, temporary_status.st_ino)
+    published = False
     try:
-        offset = 0
-        while offset < len(payload):
-            offset += os.write(descriptor, payload[offset:])
-        os.fchmod(descriptor, 0o400)
-        os.fsync(descriptor)
-        created = os.fstat(descriptor)
+        try:
+            offset = 0
+            while offset < len(payload):
+                written = os.write(descriptor, payload[offset:])
+                if written <= 0:
+                    raise RuntimeError("cannot write context custody object")
+                offset += written
+            os.fchmod(descriptor, 0o400)
+            os.fsync(descriptor)
+            created = os.fstat(descriptor)
+        finally:
+            os.close(descriptor)
+        # All callers hold the journal lock. As with recovery metadata, refuse
+        # any observed winner, then rename atomically without a two-link state.
+        # Uncooperative private-namespace mutation remains outside custody.
+        try:
+            os.stat(name, dir_fd=journal_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            raise RuntimeError(f"custody object appeared before publication: {name}")
+        os.rename(temporary_name, name, src_dir_fd=journal_fd, dst_dir_fd=journal_fd)
+        published = True
+        os.fsync(journal_fd)
+        live = os.stat(name, dir_fd=journal_fd, follow_symlinks=False)
+        if (
+            (live.st_dev, live.st_ino) != (created.st_dev, created.st_ino)
+            or stat.S_IMODE(live.st_mode) != 0o400
+            or live.st_nlink != 1
+            or _read_custody_payload(journal_fd, name) != payload
+        ):
+            raise RuntimeError(f"custody object changed during publication: {name}")
+        return name
     finally:
-        os.close(descriptor)
-    os.fsync(journal_fd)
-    live = os.stat(name, dir_fd=journal_fd, follow_symlinks=False)
-    if (
-        (live.st_dev, live.st_ino) != (created.st_dev, created.st_ino)
-        or stat.S_IMODE(live.st_mode) != 0o400
-        or live.st_nlink != 1
-        or _read_custody_payload(journal_fd, name) != payload
-    ):
-        raise RuntimeError(f"custody object changed during publication: {name}")
-    return name
+        if not published:
+            _remove_private_journal_alias(
+                journal_fd, temporary_name, temporary_identity, None,
+            )
+            os.fsync(journal_fd)
 
 
 def _create_custody_staging(
@@ -2071,9 +2102,10 @@ def _remove_private_journal_alias(
     The journal directory is a private capability namespace. Concurrent writers
     are supported on public output names, but mutation of a 192-bit transaction
     alias inside that private directory is outside the custody threat contract.
-    ``expected_payload=None`` is reserved for a generated staging alias whose
-    immutable payload object was already made durable, or unpublished recovery
-    metadata whose source target has not moved. Identity-only retirement prevents
+    ``expected_payload=None`` permits a generated staging alias whose immutable
+    payload object is durable, an unpublished CAS copy whose source remains
+    untouched, or unpublished recovery metadata whose source target has not
+    moved. Identity-only retirement prevents
     a public in-place edit from poisoning the private transaction queue.
     """
     if not CUSTODY_TRANSACTION_ALIAS.fullmatch(name):
