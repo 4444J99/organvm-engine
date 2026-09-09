@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import difflib
 import hashlib
+import json
 import os
 import re
 import secrets
@@ -35,6 +36,8 @@ MAX_CONTEXT_OUTPUT_BYTES = 16_000_000
 CUSTODY_TRANSACTION_ALIAS = re.compile(
     r"^transaction-[0-9a-f]{48}\.(?:generated|preimage|rollback)$",
 )
+CUSTODY_RECOVERY_RECORD = re.compile(r"^recovery-[0-9a-f]{64}\.json$")
+MAX_CUSTODY_RECOVERY_BYTES = 4096
 
 
 class ContextCustodyPublicationError(RuntimeError):
@@ -81,7 +84,7 @@ def sync_all(
         # Caller spelling is not a registry-derived output component. Resolve it
         # once before composing targets; output component traversal stays invalid.
         ws = ws.resolve(strict=True)
-        extra_roots = [root.resolve(strict=False) for root in extra_roots]
+        extra_roots = list(dict.fromkeys(root.resolve(strict=False) for root in extra_roots))
     receipt_generated_at = (
         datetime.now(timezone.utc).replace(microsecond=0) if receipt_enabled else None
     )
@@ -167,6 +170,14 @@ def sync_all(
 
         organ_directory_map = REGISTRY_KEY_MAP
         target_organs = organs or list(organ_directory_map)
+        _recover_standard_context_outputs(
+            workspace=ws,
+            registry=reg,
+            target_organs=target_organs,
+            extra_roots=extra_roots,
+            organ_directory_map=organ_directory_map,
+            dry_run=dry_run,
+        )
 
     all_seeds = []
     repo_to_seed = {}
@@ -734,6 +745,7 @@ def _sync_repo_context_files(
                 failed_output_paths,
             )
 
+    agents_references: list[dict[str, str]] = []
     try:
         agents_section = generate_agents_section(
             repo_name,
@@ -742,6 +754,12 @@ def _sync_repo_context_files(
             repo_to_seed.get(repo_name),
             timestamp=render_timestamp,
         )
+        if receipt_workspace is not None:
+            agents_references = resolve_agents_remote_references(
+                repo_to_seed.get(repo_name),
+                registry,
+                default_owner=str(org_name),
+            )
         res = _inject_section_result(
             repo_path / "AGENTS.md",
             agents_section,
@@ -766,11 +784,7 @@ def _sync_repo_context_files(
             if not isinstance(output_binding, dict):
                 raise RuntimeError("receipted AGENTS output is missing its byte binding")
             output_label = str(output_binding["path"])
-            for reference in resolve_agents_remote_references(
-                repo_to_seed.get(repo_name),
-                registry,
-                default_owner=str(org_name),
-            ):
+            for reference in agents_references:
                 rendered_remote_references.append(
                     {**reference, "output_path": output_label},
                 )
@@ -782,6 +796,24 @@ def _sync_repo_context_files(
             expected_output_bindings,
             failed_output_paths,
         )
+        if isinstance(e, ContextCustodyPublicationError):
+            output_label = str(e.output_binding["path"])
+            assert receipt_workspace is not None
+            parent_fd, filename, label = _open_custody_parent(
+                repo_path / "AGENTS.md", receipt_workspace,
+                expected_root_identity=receipt_workspace_identity,
+            )
+            try:
+                retained_payload = _read_custody_payload(parent_fd, filename)
+            finally:
+                os.close(parent_fd)
+            if retained_payload is None or _payload_binding(label, retained_payload) != e.output_binding:
+                raise RuntimeError("retained AGENTS output changed before reference binding") from e
+            rendered_remote_references.extend(
+                {**reference, "output_path": output_label}
+                for reference in agents_references
+                if reference["url"].encode("utf-8") in retained_payload
+            )
 
 
 def sync_repo(
@@ -857,6 +889,14 @@ def _inject_section_result(
             expected_root_identity=custody_root_identity,
         )
         try:
+            _recover_custody_target_before_read(
+                parent_fd,
+                filename,
+                output_label,
+                custody_root,
+                custody_root_identity,
+                dry_run=dry_run,
+            )
             existing_payload = _read_custody_payload(parent_fd, filename)
             parent_identity = _custody_parent_identity(parent_fd)
         finally:
@@ -1141,21 +1181,21 @@ def _open_custody_parent(
     return parent_fd, lexical_target.name, lexical_relative.as_posix()
 
 
-def _preflight_context_outputs(
+def _context_output_targets(
     *,
     workspace: Path,
     registry: dict,
     target_organs: list[str],
     extra_roots: list[Path],
     organ_directory_map: dict[str, str],
-    workspace_identity: dict[str, int] | None = None,
-) -> list[dict[str, Any]]:
-    """Reject unsafe targets and bind every preimage before the first write."""
+    strict: bool = True,
+) -> list[Path]:
+    """Enumerate selected output paths without creating or changing them."""
     targets = [workspace / name for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")]
     for organ_key in target_organs:
         organ_name = organ_directory_map.get(organ_key)
         if not _safe_path_component(organ_name):
-            if organ_name:
+            if organ_name and strict:
                 raise RuntimeError(f"invalid organ directory component: {organ_name}")
             continue
         assert isinstance(organ_name, str)
@@ -1168,7 +1208,7 @@ def _preflight_context_outputs(
         for repo_entry in organ_data.get("repositories", []):
             repo_name = repo_entry.get("name")
             if not _safe_path_component(repo_name):
-                if repo_name:
+                if repo_name and strict:
                     raise RuntimeError(f"invalid repository path component: {repo_name}")
                 continue
             candidates = [organ_path / repo_name]
@@ -1180,14 +1220,103 @@ def _preflight_context_outputs(
                     repo_path / name
                     for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")
                 )
+    return sorted(set(targets), key=_lexical_absolute)
+
+
+def _recover_standard_context_outputs(
+    *,
+    workspace: Path,
+    registry: dict,
+    target_organs: list[str],
+    extra_roots: list[Path],
+    organ_directory_map: dict[str, str],
+    dry_run: bool,
+) -> None:
+    """Recover prior receipted writes even when the next public run is ordinary.
+
+    Probe existing journals without opening output files or creating storage.
+    Apply strict target custody only when target-specific recovery is pending;
+    ordinary behavior without a journal, including symlink outputs, is unchanged.
+    """
+    if not workspace.is_dir():
+        return
+    root = workspace.resolve(strict=True)
+    lexical_root = _lexical_absolute(workspace)
+    targets = _context_output_targets(
+        workspace=workspace, registry=registry, target_organs=target_organs,
+        extra_roots=extra_roots, organ_directory_map=organ_directory_map, strict=False,
+    )
+    for target in targets:
+        try:
+            label = _lexical_absolute(target).relative_to(lexical_root).as_posix()
+        except ValueError:
+            # Receipted sync rejects external additional roots, so no pending
+            # transaction for this workspace can authorize recovery there.
+            continue
+        contained_target = root / label
+        try:
+            # This is a read-only directory probe. No output is opened and no
+            # mutation uses this descriptor; pending recovery reopens strictly.
+            probe_fd = os.open(
+                contained_target.parent,
+                os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0),
+            )
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+        try:
+            try:
+                journal_fd = _open_custody_journal(root, label, probe_fd, None, create=False)
+            except FileNotFoundError:
+                continue
+            try:
+                _lock_custody_journal(journal_fd)
+                records = _custody_recovery_records(journal_fd)
+                if _custody_recovery_name(label) not in records:
+                    continue
+                parent_fd, filename, opened_label = _open_custody_parent(contained_target, root)
+                try:
+                    _recover_locked_custody_target(
+                        journal_fd, parent_fd, filename, opened_label, root, None,
+                        dry_run=dry_run,
+                    )
+                    _reap_custody_transactions(journal_fd)
+                finally:
+                    os.close(parent_fd)
+            finally:
+                os.close(journal_fd)
+        finally:
+            os.close(probe_fd)
+
+
+def _preflight_context_outputs(
+    *,
+    workspace: Path,
+    registry: dict,
+    target_organs: list[str],
+    extra_roots: list[Path],
+    organ_directory_map: dict[str, str],
+    workspace_identity: dict[str, int] | None = None,
+) -> list[dict[str, Any]]:
+    """Reject unsafe targets and bind every preimage before the first write."""
+    targets = _context_output_targets(
+        workspace=workspace, registry=registry, target_organs=target_organs,
+        extra_roots=extra_roots, organ_directory_map=organ_directory_map,
+    )
     bindings: list[dict[str, Any]] = []
-    for target in sorted(set(targets), key=_lexical_absolute):
+    for target in targets:
         parent_fd, filename, label = _open_custody_parent(
             target,
             workspace,
             expected_root_identity=workspace_identity,
         )
         try:
+            _recover_custody_target_before_read(
+                parent_fd,
+                filename,
+                label,
+                workspace,
+                workspace_identity,
+            )
             payload = _read_custody_payload(parent_fd, filename)
             parent_identity = _custody_parent_identity(parent_fd)
         finally:
@@ -1434,6 +1563,9 @@ def _registry_organ_directory_map(
     organ_keys: list[str] | None = None,
 ) -> dict[str, str]:
     """Derive receipted output roots only for the selected registry organs."""
+    from organvm_engine.organ_config import registry_key_to_dir
+
+    topology_directories = registry_key_to_dir()
     mapping: dict[str, str] = {}
     claimed: dict[str, str] = {}
     registry_organs = registry.get("organs", {})
@@ -1443,21 +1575,19 @@ def _registry_organ_directory_map(
             continue
         organ = registry_organs[raw_key]
         key = str(raw_key)
+        for field in ("directory", "dir"):
+            if field in organ and not _safe_path_component(organ[field]):
+                raise RuntimeError(f"invalid explicit organ directory for {key}: {field}")
         candidates = {
             value
             for value in (
                 organ.get("directory"),
                 organ.get("dir"),
-                organ.get("github_org"),
-                organ.get("org"),
             )
             if _safe_path_component(value)
         }
-        candidates.update(
-            repo.get("org")
-            for repo in organ.get("repositories", [])
-            if _safe_path_component(repo.get("org"))
-        )
+        if not candidates and _safe_path_component(topology_directories.get(key)):
+            candidates.add(topology_directories[key])
         if len(candidates) != 1:
             raise RuntimeError(
                 "receipted context sync requires one registry-bound directory "
@@ -1606,8 +1736,10 @@ def _write_custody_payload(
 ) -> None:
     """Install bytes through a bounded, content-addressed custody journal.
 
-    Cooperating writers serialize through the private journal lock. Observed
-    regular replacements within ``MAX_CONTEXT_OUTPUT_BYTES`` are restored and
+    Cooperating writers serialize through the private journal lock. A durable
+    target-specific record restores interrupted preimages before the next read;
+    the capture/link pair still has a brief reader-visible missing-name window.
+    Observed regular replacements within ``MAX_CONTEXT_OUTPUT_BYTES`` are restored and
     CAS-bound. An uncooperative non-regular or oversized replacement injected
     in the final public-name syscall is retained privately when possible and
     aborts the operation; it can never produce a success receipt. Once generated
@@ -1624,9 +1756,14 @@ def _write_custody_payload(
     staging_identity: tuple[int, int] | None = None
     backup_name: str | None = None
     backup_identity: tuple[int, int] | None = None
+    recovery_name: str | None = None
     published = False
     try:
         _lock_custody_journal(journal_fd)
+        _recover_locked_custody_target(
+            journal_fd, parent_fd, filename, output_label, custody_root,
+            custody_root_identity,
+        )
         _reap_custody_transactions(journal_fd)
         _assert_custody_parent_is_live(
             parent_fd,
@@ -1682,6 +1819,11 @@ def _write_custody_payload(
                 custody_root_identity,
             )
             backup_name = f"transaction-{secrets.token_hex(24)}.preimage"
+            recovery_name = _write_custody_recovery_record(
+                journal_fd, parent_fd, output_label, custody_root, backup_name,
+                (opened.st_dev, opened.st_ino), expected_preimage,
+                staging_identity, payload,
+            )
             os.rename(
                 filename,
                 backup_name,
@@ -1760,6 +1902,9 @@ def _write_custody_payload(
             )
             backup_name = None
         os.fsync(journal_fd)
+        if recovery_name is not None:
+            _retire_custody_recovery_record(journal_fd, recovery_name)
+            recovery_name = None
         # The object itself is content-addressed, reused, and lives outside the
         # visible worktree whenever a Git admin directory is available.
         assert generated_object == _custody_object_name(payload)
@@ -1783,6 +1928,7 @@ def _write_custody_payload(
             if backup_name is not None and backup_identity is not None:
                 try:
                     assert expected_preimage is not None
+                    os.fsync(parent_fd)
                     _remove_private_journal_alias(
                         journal_fd,
                         backup_name,
@@ -1825,6 +1971,12 @@ def _write_custody_payload(
             except Exception as exc:
                 if cleanup_error is None:
                     cleanup_error = exc
+        if recovery_name is not None and backup_name is None and cleanup_error is None:
+            try:
+                os.fsync(parent_fd)
+                _retire_custody_recovery_record(journal_fd, recovery_name)
+            except Exception as exc:
+                cleanup_error = exc
         if cleanup_error is not None:
             raise cleanup_error from publication_error
         if published_binding is not None:
@@ -1920,8 +2072,9 @@ def _remove_private_journal_alias(
     are supported on public output names, but mutation of a 192-bit transaction
     alias inside that private directory is outside the custody threat contract.
     ``expected_payload=None`` is reserved for a generated staging alias whose
-    immutable payload object was already made durable; identity-only retirement
-    prevents a public in-place edit from poisoning the private transaction queue.
+    immutable payload object was already made durable, or unpublished recovery
+    metadata whose source target has not moved. Identity-only retirement prevents
+    a public in-place edit from poisoning the private transaction queue.
     """
     if not CUSTODY_TRANSACTION_ALIAS.fullmatch(name):
         raise RuntimeError(f"refusing to remove non-transaction custody path: {name}")
@@ -1935,10 +2088,339 @@ def _remove_private_journal_alias(
     os.unlink(name, dir_fd=journal_fd)
 
 
+def _custody_recovery_name(output_label: str) -> str:
+    return f"recovery-{hashlib.sha256(output_label.encode('utf-8')).hexdigest()}.json"
+
+
+def _unique_custody_recovery_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate context custody recovery field")
+        result[key] = value
+    return result
+
+
+def _read_custody_recovery_record(journal_fd: int, name: str) -> dict[str, Any]:
+    """Read bounded, private write-ahead metadata without following links."""
+    if not CUSTODY_RECOVERY_RECORD.fullmatch(name):
+        raise RuntimeError("invalid context custody recovery record name")
+    descriptor = os.open(name, _custody_read_flags(), dir_fd=journal_fd)
+    try:
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or stat.S_IMODE(before.st_mode) != 0o600
+            or before.st_nlink != 1
+            or before.st_size > MAX_CUSTODY_RECOVERY_BYTES
+        ):
+            raise RuntimeError("context custody recovery record is not bounded and private")
+        chunks: list[bytes] = []
+        remaining = MAX_CUSTODY_RECOVERY_BYTES + 1
+        while remaining > 0:
+            chunk = os.read(descriptor, remaining)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        payload = b"".join(chunks)
+        after = os.fstat(descriptor)
+        live = os.stat(name, dir_fd=journal_fd, follow_symlinks=False)
+        fields = ("st_dev", "st_ino", "st_mode", "st_size", "st_mtime_ns", "st_ctime_ns")
+        if len(payload) != before.st_size or len(payload) > MAX_CUSTODY_RECOVERY_BYTES or any(
+            getattr(before, field) != getattr(after, field)
+            or getattr(before, field) != getattr(live, field)
+            for field in fields
+        ):
+            raise RuntimeError("context custody recovery record changed while reading")
+    finally:
+        os.close(descriptor)
+    try:
+        record = json.loads(payload, object_pairs_hook=_unique_custody_recovery_pairs)
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise RuntimeError("context custody recovery record is malformed") from exc
+    required = {
+        "version", "output_label", "root_identity", "parent_identity", "backup_name",
+        "source_identity", "preimage_sha256", "preimage_size_bytes",
+        "generated_identity", "generated_sha256", "generated_size_bytes",
+    }
+    if not isinstance(record, dict) or set(record) != required:
+        raise RuntimeError("context custody recovery record has an invalid schema")
+    label = record["output_label"]
+    if (
+        type(record["version"]) is not int
+        or record["version"] != 1
+        or not isinstance(label, str)
+        or not label
+        or len(label) > 2048
+        or "\\" in label
+        or "\x00" in label
+        or any(part in ("", ".", "..") for part in label.split("/"))
+        or _custody_recovery_name(label) != name
+    ):
+        raise RuntimeError("context custody recovery target is invalid")
+    for field in ("root_identity", "parent_identity", "source_identity", "generated_identity"):
+        identity = record[field]
+        if (
+            not isinstance(identity, dict)
+            or set(identity) != {"device", "inode"}
+            or type(identity["device"]) is not int
+            or identity["device"] < 0
+            or type(identity["inode"]) is not int
+            or identity["inode"] <= 0
+        ):
+            raise RuntimeError("context custody recovery identity is invalid")
+    backup_name = record["backup_name"]
+    if not isinstance(backup_name, str) or not re.fullmatch(
+        r"transaction-[0-9a-f]{48}\.preimage", backup_name,
+    ):
+        raise RuntimeError("context custody recovery capture is invalid")
+    for prefix in ("preimage", "generated"):
+        digest = record[f"{prefix}_sha256"]
+        size = record[f"{prefix}_size_bytes"]
+        if (
+            not isinstance(digest, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", digest)
+            or type(size) is not int
+            or not 0 <= size <= MAX_CONTEXT_OUTPUT_BYTES
+        ):
+            raise RuntimeError("context custody recovery payload binding is invalid")
+    return record
+
+
+def _custody_recovery_records(journal_fd: int) -> dict[str, dict[str, Any]]:
+    names = sorted(os.listdir(journal_fd))
+    records = {
+        name: _read_custody_recovery_record(journal_fd, name)
+        for name in names if CUSTODY_RECOVERY_RECORD.fullmatch(name)
+    }
+    captures = {record["backup_name"] for record in records.values()}
+    if len(captures) != len(records):
+        raise RuntimeError("context custody recovery captures have ambiguous target identities")
+    for name in names:
+        if (
+            CUSTODY_TRANSACTION_ALIAS.fullmatch(name)
+            and name.endswith(".preimage")
+            and name not in captures
+        ):
+            raise RuntimeError(
+                "unassociated legacy context preimage requires explicit recovery; "
+                f"retained private capture: {name}",
+            )
+    return records
+
+
+def _write_custody_recovery_record(
+    journal_fd: int,
+    parent_fd: int,
+    output_label: str,
+    custody_root: Path,
+    backup_name: str,
+    source_identity: tuple[int, int],
+    preimage: bytes,
+    generated_identity: tuple[int, int],
+    generated: bytes,
+) -> str:
+    """Durably associate a target with its capture before removing its live name."""
+    record = {
+        "version": 1,
+        "output_label": output_label,
+        "root_identity": _capture_custody_root_identity(custody_root),
+        "parent_identity": _custody_parent_identity(parent_fd),
+        "backup_name": backup_name,
+        "source_identity": {"device": source_identity[0], "inode": source_identity[1]},
+        "preimage_sha256": hashlib.sha256(preimage).hexdigest(),
+        "preimage_size_bytes": len(preimage),
+        "generated_identity": {"device": generated_identity[0], "inode": generated_identity[1]},
+        "generated_sha256": hashlib.sha256(generated).hexdigest(),
+        "generated_size_bytes": len(generated),
+    }
+    payload = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    if len(payload) > MAX_CUSTODY_RECOVERY_BYTES:
+        raise RuntimeError("context custody recovery record exceeds its size limit")
+    name = _custody_recovery_name(output_label)
+    _require_absent_custody_recovery_record(journal_fd, name)
+    temporary_name = f"transaction-{secrets.token_hex(24)}.generated"
+    descriptor = os.open(
+        temporary_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0),
+        0o600, dir_fd=journal_fd,
+    )
+    temporary_status = os.fstat(descriptor)
+    temporary_identity = (temporary_status.st_dev, temporary_status.st_ino)
+    published = False
+    try:
+        try:
+            os.fchmod(descriptor, 0o600)
+            offset = 0
+            while offset < len(payload):
+                written = os.write(descriptor, payload[offset:])
+                if written <= 0:
+                    raise RuntimeError("cannot write context custody recovery record")
+                offset += written
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        # The held journal lock excludes cooperating metadata writers; mutation
+        # of this private namespace by an uncooperative actor is outside custody.
+        # Refuse an existing record, then atomically rename complete metadata.
+        # This avoids both partial canonical JSON and a two-hardlink crash state.
+        _require_absent_custody_recovery_record(journal_fd, name)
+        os.rename(temporary_name, name, src_dir_fd=journal_fd, dst_dir_fd=journal_fd)
+        published = True
+        os.fsync(journal_fd)
+        if _read_custody_recovery_record(journal_fd, name) != record:
+            raise RuntimeError("context custody recovery record changed before publication")
+    finally:
+        if not published:
+            _remove_private_journal_alias(journal_fd, temporary_name, temporary_identity, None)
+            os.fsync(journal_fd)
+    return name
+
+
+def _require_absent_custody_recovery_record(journal_fd: int, name: str) -> None:
+    try:
+        os.stat(name, dir_fd=journal_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    raise RuntimeError("context custody recovery record already exists; refusing to replace it")
+
+
+def _retire_custody_recovery_record(journal_fd: int, name: str) -> None:
+    _read_custody_recovery_record(journal_fd, name)
+    os.unlink(name, dir_fd=journal_fd)
+    os.fsync(journal_fd)
+
+
+def _recovery_payload_matches(
+    parent_fd: int,
+    filename: str,
+    payload: bytes | None,
+    record: dict[str, Any],
+    prefix: str,
+) -> bool:
+    if payload is None:
+        return False
+    status = os.stat(filename, dir_fd=parent_fd, follow_symlinks=False)
+    identity = record["source_identity" if prefix == "preimage" else "generated_identity"]
+    return (
+        (status.st_dev, status.st_ino) == (identity["device"], identity["inode"])
+        and len(payload) == record[f"{prefix}_size_bytes"]
+        and hashlib.sha256(payload).hexdigest() == record[f"{prefix}_sha256"]
+    )
+
+
+def _recover_locked_custody_target(
+    journal_fd: int,
+    parent_fd: int,
+    filename: str,
+    output_label: str,
+    custody_root: Path,
+    custody_root_identity: dict[str, int] | None,
+    *,
+    dry_run: bool = False,
+) -> None:
+    records = _custody_recovery_records(journal_fd)
+    name = _custody_recovery_name(output_label)
+    record = records.get(name)
+    if record is None:
+        return
+    _assert_custody_parent_is_live(
+        parent_fd, filename, output_label, custody_root, custody_root_identity,
+    )
+    if (
+        record["output_label"] != output_label
+        or record["root_identity"] != _capture_custody_root_identity(custody_root)
+        or record["parent_identity"] != _custody_parent_identity(parent_fd)
+    ):
+        raise RuntimeError("context custody recovery target identity changed; capture retained")
+    if dry_run:
+        raise RuntimeError("pending context custody recovery requires a non-dry-run invocation")
+    capture_name = record["backup_name"]
+    capture = _read_custody_payload(journal_fd, capture_name)
+    current = _read_custody_payload(parent_fd, filename)
+    if capture is not None and not _recovery_payload_matches(
+        journal_fd, capture_name, capture, record, "preimage",
+    ):
+        raise RuntimeError("context custody recovery preimage changed; capture retained")
+    if capture is not None:
+        _ensure_custody_object(journal_fd, capture)
+    if current is None:
+        if capture is None:
+            raise RuntimeError("context custody recovery has no public target or capture")
+        _assert_custody_parent_is_live(
+            parent_fd, filename, output_label, custody_root, custody_root_identity,
+        )
+        try:
+            os.link(
+                capture_name, filename, src_dir_fd=journal_fd, dst_dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
+        except FileExistsError as exc:
+            raise RuntimeError(
+                "context custody recovery target appeared concurrently; capture retained",
+            ) from exc
+        current = _read_custody_payload(parent_fd, filename)
+    if not any(
+        _recovery_payload_matches(parent_fd, filename, current, record, prefix)
+        for prefix in ("preimage", "generated")
+    ):
+        raise RuntimeError("context custody recovery target conflicts with capture; both retained")
+    # A restart may occur after relinking but before alias retirement. Make the
+    # public directory durable first; the same record can safely recover again.
+    os.fsync(parent_fd)
+    _assert_custody_parent_is_live(
+        parent_fd, filename, output_label, custody_root, custody_root_identity,
+    )
+    current = _read_custody_payload(parent_fd, filename)
+    if not any(
+        _recovery_payload_matches(parent_fd, filename, current, record, prefix)
+        for prefix in ("preimage", "generated")
+    ):
+        raise RuntimeError(
+            "context custody recovery target changed during durability check; capture retained",
+        )
+    if capture is not None:
+        identity = record["source_identity"]
+        _remove_private_journal_alias(
+            journal_fd, capture_name, (identity["device"], identity["inode"]), capture,
+        )
+        os.fsync(journal_fd)
+    _retire_custody_recovery_record(journal_fd, name)
+
+
+def _recover_custody_target_before_read(
+    parent_fd: int,
+    filename: str,
+    output_label: str,
+    custody_root: Path,
+    custody_root_identity: dict[str, int] | None,
+    *,
+    dry_run: bool = False,
+) -> None:
+    try:
+        journal_fd = _open_custody_journal(
+            custody_root, output_label, parent_fd, custody_root_identity, create=False,
+        )
+    except FileNotFoundError:
+        return
+    try:
+        _lock_custody_journal(journal_fd)
+        _recover_locked_custody_target(
+            journal_fd, parent_fd, filename, output_label, custody_root,
+            custody_root_identity, dry_run=dry_run,
+        )
+    finally:
+        os.close(journal_fd)
+
+
 def _reap_custody_transactions(journal_fd: int) -> None:
-    """CAS-bind and remove private aliases left by an interrupted writer."""
+    """Reap generated aliases while preserving every pending target capture."""
+    records = _custody_recovery_records(journal_fd)
+    captures = {record["backup_name"] for record in records.values()}
     for name in sorted(os.listdir(journal_fd)):
         if not CUSTODY_TRANSACTION_ALIAS.fullmatch(name):
+            continue
+        if name in captures:
             continue
         payload = _read_custody_payload(journal_fd, name)
         if payload is None:
@@ -1998,6 +2480,9 @@ def _restore_journal_capture(
         restored = False
     else:
         restored = True
+        # Keep the only durable recovery name until its replacement directory
+        # entry has reached stable storage.
+        os.fsync(parent_fd)
     _remove_private_journal_alias(
         journal_fd,
         capture_name,
@@ -2026,6 +2511,10 @@ def _open_custody_journal(
         except FileNotFoundError:
             git_status = None
         if git_status is not None:
+            if not create and stat.S_ISDIR(git_status.st_mode):
+                # Absence needs no strict output-parent traversal during an
+                # ordinary sync's read-only recovery probe.
+                (git_admin / "organvm-context-cas").lstat()
             git_fd = _open_git_admin_directory(
                 git_admin,
                 git_status,
@@ -2088,6 +2577,8 @@ def _open_or_create_journal_directory(
     try:
         journal_fd = os.open(directory_name, flags, dir_fd=base_fd)
     except OSError as exc:
+        if not create and isinstance(exc, FileNotFoundError):
+            raise
         raise RuntimeError("context custody journal is not a real directory") from exc
     if os.fstat(journal_fd).st_dev != os.fstat(base_fd).st_dev:
         os.close(journal_fd)

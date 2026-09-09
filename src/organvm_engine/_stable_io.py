@@ -13,6 +13,10 @@ class StableReadError(RuntimeError):
     """Raised when a discovery input cannot be read as one stable regular file."""
 
 
+class StableReadSizeLimitError(StableReadError):
+    """A regular input exceeded the declared byte limit before or during reading."""
+
+
 def read_stable_regular_bytes(
     path: Path | str,
     *,
@@ -36,7 +40,7 @@ def read_stable_regular_bytes(
         if not stat.S_ISREG(initial.st_mode):
             raise StableReadError(f"discovery input is not a regular file: {candidate}")
         if initial.st_size > maximum_bytes:
-            raise StableReadError(f"discovery input exceeds size limit: {candidate}")
+            raise StableReadSizeLimitError(f"discovery input exceeds size limit: {candidate}")
         flags = (
             os.O_RDONLY
             | getattr(os, "O_BINARY", 0)
@@ -57,7 +61,7 @@ def read_stable_regular_bytes(
         while chunk := os.read(descriptor, 128 * 1024):
             total += len(chunk)
             if total > maximum_bytes:
-                raise StableReadError(f"discovery input exceeds size limit: {candidate}")
+                raise StableReadSizeLimitError(f"discovery input exceeds size limit: {candidate}")
             chunks.append(chunk)
         after = os.fstat(descriptor)
         current = os.stat(filename, dir_fd=parent_fd, follow_symlinks=False)

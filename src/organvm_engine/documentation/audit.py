@@ -11,7 +11,11 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
-from organvm_engine._stable_io import StableReadError, read_stable_regular_bytes
+from organvm_engine._stable_io import (
+    StableReadError,
+    StableReadSizeLimitError,
+    read_stable_regular_bytes,
+)
 from organvm_engine.documentation.record import load_project_record, validate_project_record
 
 DIMENSIONS = (
@@ -245,7 +249,10 @@ def _markdown_inputs(root: Path) -> tuple[list[tuple[Path, str]], bool]:
                     continue
             except OSError:
                 continue
-            payload = _read_bounded_markdown_payload(path)
+            try:
+                payload = _read_bounded_markdown_payload(path)
+            except StableReadSizeLimitError:
+                return inputs, True
             if payload is None:
                 continue
             text, byte_count = payload
@@ -541,7 +548,10 @@ def _safe_audit_directory(root: Path, path: Path) -> bool:
 
 def _read_bounded_markdown(path: Path) -> str | None:
     """Read at most the documented Markdown input limit, including races."""
-    payload = _read_bounded_markdown_payload(path)
+    try:
+        payload = _read_bounded_markdown_payload(path)
+    except StableReadSizeLimitError:
+        return None
     return payload[0] if payload is not None else None
 
 
@@ -552,6 +562,8 @@ def _read_bounded_markdown_payload(path: Path) -> tuple[str, int] | None:
             path,
             maximum_bytes=MAX_MARKDOWN_FILE_BYTES,
         )
+    except StableReadSizeLimitError:
+        raise
     except StableReadError:
         return None
     return payload.decode("utf-8", errors="replace"), len(payload)

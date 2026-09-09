@@ -18,7 +18,7 @@ from typing import Any, Iterable
 
 CONTEXT_SYNC_RECEIPT_SCHEMA = "organvm.context-sync-receipt.v1"
 MAX_RECEIPT_INPUT_BYTES = 16_000_000
-GIT_OBJECT_ID = re.compile(r"^[0-9a-f]{40}$")
+GIT_OBJECT_ID = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 SHA256_IDENTITY = re.compile(r"^sha256:[0-9a-f]{64}$")
 RECEIPT_TRANSACTION_ALIAS = re.compile(
     r"^transaction-[0-9a-f]{48}\.(?:generated|rollback)$",
@@ -66,7 +66,11 @@ def generator_git_identity(
         )
     commit = _git(root, "rev-parse", "HEAD")
     tree = _git(root, "rev-parse", f"{commit}^{{tree}}")
-    if not GIT_OBJECT_ID.fullmatch(commit) or not GIT_OBJECT_ID.fullmatch(tree):
+    if (
+        not GIT_OBJECT_ID.fullmatch(commit)
+        or not GIT_OBJECT_ID.fullmatch(tree)
+        or len(commit) != len(tree)
+    ):
         raise ContextSyncReceiptError("generator Git identity is malformed")
     return {"commit": commit, "tree": tree}
 
@@ -1087,8 +1091,14 @@ def _git(root: Path, *args: str) -> str:
 def _validated_generator_identity(identity: dict[str, str]) -> dict[str, str]:
     commit = identity.get("commit", "")
     tree = identity.get("tree", "")
-    if not GIT_OBJECT_ID.fullmatch(commit) or not GIT_OBJECT_ID.fullmatch(tree):
-        raise ContextSyncReceiptError("generator identity requires exact commit and tree SHA-1s")
+    if (
+        not GIT_OBJECT_ID.fullmatch(commit)
+        or not GIT_OBJECT_ID.fullmatch(tree)
+        or len(commit) != len(tree)
+    ):
+        raise ContextSyncReceiptError(
+            "generator identity requires exact commit and tree with matching-format Git object IDs",
+        )
     return {"commit": commit, "tree": tree}
 
 

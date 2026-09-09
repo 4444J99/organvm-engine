@@ -1343,7 +1343,11 @@ def test_custody_only_deletes_private_journal_aliases(tmp_path, monkeypatch) -> 
     assert result["action"] == "updated"
     assert "new" in target.read_text(encoding="utf-8")
     assert deletions
-    assert all(str(path).startswith("transaction-") for path, _fd in deletions)
+    assert all(
+        sync_mod.CUSTODY_TRANSACTION_ALIAS.fullmatch(str(path))
+        or sync_mod.CUSTODY_RECOVERY_RECORD.fullmatch(str(path))
+        for path, _fd in deletions
+    )
     assert all(".organvm-context-cas" in directory for _path, directory in deletions)
     assert not list(workspace.glob(".organvm-context-transaction.*"))
 
@@ -1489,8 +1493,8 @@ def test_custody_reaps_only_private_transactions_into_the_cas(tmp_path) -> None:
     workspace.mkdir()
     journal = workspace / ".organvm-context-cas"
     journal.mkdir(mode=0o700)
-    interrupted_payload = b"interrupted preimage\n"
-    transaction = journal / ("transaction-" + "a" * 48 + ".preimage")
+    interrupted_payload = b"interrupted generated output\n"
+    transaction = journal / ("transaction-" + "a" * 48 + ".generated")
     transaction.write_bytes(interrupted_payload)
     unrelated = journal / "operator-note"
     unrelated.write_text("keep", encoding="utf-8")
@@ -1508,6 +1512,503 @@ def test_custody_reaps_only_private_transactions_into_the_cas(tmp_path) -> None:
     assert (journal / f"sha256-{digest}.object").read_bytes() == interrupted_payload
     assert unrelated.read_text(encoding="utf-8") == "keep"
     assert not list(journal.glob("transaction-*"))
+
+
+def _interrupt_custody_writer(workspace: Path, boundary: str = "after-rename") -> None:
+    """Stop a real writer without allowing Python exception cleanup to run."""
+    import subprocess
+    import sys
+
+    source = Path(__file__).resolve().parents[2] / "src"
+    program = r'''
+import os
+import sys
+from pathlib import Path
+import organvm_engine.contextmd.sync as sync_mod
+from organvm_engine.contextmd import AUTO_START, AUTO_END
+
+workspace = Path(sys.argv[1])
+boundary = sys.argv[2]
+real_rename = sync_mod.os.rename
+real_link = sync_mod.os.link
+real_write = sync_mod.os.write
+real_retire = sync_mod._retire_custody_recovery_record
+
+def interrupted_rename(src, dst, *args, **kwargs):
+    if str(dst).startswith("recovery-") and boundary == "before-wal-publication":
+        os._exit(73)
+    if src == "AGENTS.md" and boundary == "before-rename":
+        os._exit(73)
+    result = real_rename(src, dst, *args, **kwargs)
+    if str(dst).startswith("recovery-") and boundary == "after-wal-publication":
+        os._exit(73)
+    if src == "AGENTS.md" and boundary == "after-rename":
+        os._exit(73)
+    return result
+
+def interrupted_write(descriptor, payload):
+    if boundary == "partial-wal" and payload.startswith(b'{"backup_name":'):
+        real_write(descriptor, payload[:17])
+        os._exit(73)
+    return real_write(descriptor, payload)
+
+def interrupted_link(src, dst, *args, **kwargs):
+    result = real_link(src, dst, *args, **kwargs)
+    if dst == "AGENTS.md" and boundary == "after-link":
+        os._exit(73)
+    return result
+
+def interrupted_retire(*args, **kwargs):
+    if boundary == "before-retire":
+        os._exit(73)
+    return real_retire(*args, **kwargs)
+
+sync_mod.os.rename = interrupted_rename
+sync_mod.os.link = interrupted_link
+sync_mod.os.write = interrupted_write
+sync_mod._retire_custody_recovery_record = interrupted_retire
+sync_mod._inject_section_result(
+    workspace / "AGENTS.md", f"{AUTO_START}\nfirst generated\n{AUTO_END}",
+    custody_root=workspace,
+)
+raise AssertionError("writer did not reach the requested crash boundary")
+'''
+    completed = subprocess.run(
+        [sys.executable, "-c", program, str(workspace), boundary],
+        env={**os.environ, "PYTHONPATH": str(source)},
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    assert completed.returncode == 73, completed.stderr
+
+
+@pytest.mark.parametrize(
+    "boundary", ["partial-wal", "before-wal-publication", "after-wal-publication"],
+)
+def test_custody_wal_publication_crash_never_exposes_partial_canonical_metadata(
+    tmp_path, boundary,
+) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    original = "manual content survives metadata interruption\n"
+    target.write_text(original)
+    _interrupt_custody_writer(workspace, boundary)
+    journal = workspace / ".organvm-context-cas"
+    assert target.read_text() == original
+    assert not list(journal.glob("transaction-*.preimage"))
+    records = list(journal.glob("recovery-*.json"))
+    if boundary == "after-wal-publication":
+        assert len(records) == 1
+        assert json.loads(records[0].read_text())["output_label"] == "AGENTS.md"
+        assert records[0].stat().st_nlink == 1
+        assert records[0].stat().st_mode & 0o777 == 0o600
+    else:
+        assert not records
+        assert list(journal.glob("transaction-*.generated"))
+    unrelated = sync_mod._inject_section_result(
+        workspace / "CLAUDE.md", "unrelated generated section", custody_root=workspace,
+    )
+    assert unrelated["action"] == "created"
+    result = sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert result["action"] == "updated"
+    assert target.read_text().startswith(original)
+    assert not list(journal.glob("transaction-*"))
+    assert not list(journal.glob("recovery-*.json"))
+
+
+def test_custody_partial_wal_write_failure_cleans_only_unpublished_metadata(
+    tmp_path, monkeypatch,
+) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    original = "manual content survives write failure\n"
+    target.write_text(original)
+    real_write = sync_mod.os.write
+    failed = False
+
+    def fail_partial_metadata(descriptor, payload):
+        nonlocal failed
+        if not failed and payload.startswith(b'{"backup_name":'):
+            failed = True
+            real_write(descriptor, payload[:17])
+            raise OSError("interrupted metadata write")
+        return real_write(descriptor, payload)
+
+    monkeypatch.setattr(sync_mod.os, "write", fail_partial_metadata)
+    with pytest.raises(OSError, match="interrupted metadata write"):
+        sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert failed
+    assert target.read_text() == original
+    journal = workspace / ".organvm-context-cas"
+    assert not list(journal.glob("transaction-*"))
+    assert not list(journal.glob("recovery-*.json"))
+    result = sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert result["action"] == "updated"
+    assert target.read_text().startswith(original)
+
+
+def test_custody_wal_publication_refuses_existing_canonical_record(tmp_path, monkeypatch) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    original = "manual content\n"
+    target.write_text(original)
+    real_publish = sync_mod._write_custody_recovery_record
+    marker = b"preexisting canonical metadata must remain unchanged\n"
+
+    def publish_with_existing_record(*args, **kwargs):
+        journal_fd = args[0]
+        name = sync_mod._custody_recovery_name("AGENTS.md")
+        descriptor = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=journal_fd)
+        try:
+            os.write(descriptor, marker)
+        finally:
+            os.close(descriptor)
+        return real_publish(*args, **kwargs)
+
+    monkeypatch.setattr(sync_mod, "_write_custody_recovery_record", publish_with_existing_record)
+    with pytest.raises(RuntimeError, match="already exists; refusing to replace"):
+        sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert target.read_text() == original
+    journal = workspace / ".organvm-context-cas"
+    assert next(journal.glob("recovery-*.json")).read_bytes() == marker
+    assert not list(journal.glob("transaction-*"))
+
+
+@pytest.mark.parametrize("boundary", ["before-rename", "after-rename", "after-link", "before-retire"])
+@pytest.mark.parametrize("entrypoint", ["direct", "preflight", "standard"])
+def test_custody_restart_restores_exact_target_before_rendering(
+    tmp_path, monkeypatch, boundary, entrypoint,
+) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+    from organvm_engine.contextmd import AUTO_END, AUTO_START
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    original = f"MANUAL PREFIX\n{AUTO_START}\nold\n{AUTO_END}\nMANUAL SUFFIX\n"
+    target.write_text(original)
+    target.chmod(0o640)
+    _interrupt_custody_writer(workspace, boundary)
+    journal = workspace / ".organvm-context-cas"
+    assert len(list(journal.glob("recovery-*.json"))) == 1
+    if boundary == "after-rename":
+        assert not target.exists()
+        assert len(list(journal.glob("transaction-*.preimage"))) == 1
+
+    if entrypoint == "direct":
+        result = sync_mod._inject_section_result(
+            target, f"{AUTO_START}\nsecond generated\n{AUTO_END}", custody_root=workspace,
+        )
+        assert result["action"] == "updated"
+    else:
+        _isolate_emitters(monkeypatch)
+        result = sync_all(
+            workspace=workspace,
+            registry_path=str(FIXTURES / "registry-minimal.json"),
+            additional_workspace_roots=[],
+            receipt_path=workspace / "receipt.json" if entrypoint == "preflight" else None,
+        )
+        assert result["errors"] == []
+        if entrypoint == "preflight":
+            receipt = json.loads((workspace / "receipt.json").read_text())
+            preimage = next(
+                binding for binding in receipt["inputs"]["target_preimages"]
+                if binding["path"] == "AGENTS.md"
+            )
+            assert preimage["state"] == "present"
+            if boundary in ("before-rename", "after-rename"):
+                assert preimage["sha256"] == "sha256:" + hashlib.sha256(original.encode()).hexdigest()
+    assert target.read_text().startswith("MANUAL PREFIX\n")
+    assert target.read_text().endswith("MANUAL SUFFIX")
+    assert target.stat().st_mode & 0o777 == 0o640
+    assert not list(journal.glob("recovery-*.json"))
+    assert not list(journal.glob("transaction-*"))
+
+
+@pytest.mark.parametrize("entrypoint", ["direct", "standard"])
+def test_custody_dry_run_preserves_pending_recovery_without_creating_outputs(
+    tmp_path, entrypoint,
+) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+    from organvm_engine.contextmd import AUTO_END, AUTO_START
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    target.write_text("manual context\n")
+    _interrupt_custody_writer(workspace)
+    journal = workspace / ".organvm-context-cas"
+    before = {path.name: path.read_bytes() for path in journal.iterdir()}
+    with pytest.raises(RuntimeError, match="requires a non-dry-run"):
+        if entrypoint == "direct":
+            sync_mod._inject_section_result(
+                target, f"{AUTO_START}\nnew\n{AUTO_END}",
+                custody_root=workspace, dry_run=True,
+            )
+        else:
+            sync_all(
+                workspace=workspace,
+                registry_path=str(FIXTURES / "registry-minimal.json"),
+                additional_workspace_roots=[], dry_run=True,
+            )
+    assert not target.exists()
+    assert {path.name: path.read_bytes() for path in journal.iterdir()} == before
+
+
+def test_standard_sync_without_a_journal_preserves_ordinary_symlink_behavior(
+    tmp_path, monkeypatch,
+) -> None:
+    _isolate_emitters(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / ".git").mkdir()
+    foreign = tmp_path / "ordinary-context.md"
+    foreign.write_text("manual external context\n")
+    (workspace / "AGENTS.md").symlink_to(foreign)
+    result = sync_all(
+        workspace=workspace,
+        registry_path=str(FIXTURES / "registry-minimal.json"),
+        additional_workspace_roots=[],
+    )
+    assert result["errors"] == []
+    assert (workspace / "AGENTS.md").is_symlink()
+    assert foreign.read_text().startswith("manual external context\n")
+    assert not (workspace / ".git" / "organvm-context-cas").exists()
+    assert not (workspace / ".organvm-context-cas").exists()
+
+
+def test_standard_recovery_probe_does_not_create_an_absent_workspace(tmp_path) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "absent"
+    sync_mod._recover_standard_context_outputs(
+        workspace=workspace, registry={}, target_organs=[], extra_roots=[],
+        organ_directory_map={}, dry_run=False,
+    )
+    assert not workspace.exists()
+
+
+def test_custody_restart_does_not_overwrite_a_new_concurrent_target(tmp_path) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    original = b"original manual content\n"
+    target.write_bytes(original)
+    _interrupt_custody_writer(workspace)
+    concurrent = b"independent user replacement\n"
+    target.write_bytes(concurrent)
+    with pytest.raises(RuntimeError, match="conflicts with capture"):
+        sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert target.read_bytes() == concurrent
+    journal = workspace / ".organvm-context-cas"
+    assert next(journal.glob("transaction-*.preimage")).read_bytes() == original
+    assert len(list(journal.glob("recovery-*.json"))) == 1
+
+
+@pytest.mark.parametrize("replacement", ["symlink", "parent", "capture"])
+def test_custody_restart_rejects_changed_recovery_custody(tmp_path, replacement) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    target.write_text("original manual content\n")
+    _interrupt_custody_writer(workspace)
+    journal = workspace / ".organvm-context-cas"
+    if replacement == "symlink":
+        foreign = tmp_path / "foreign.txt"
+        foreign.write_text("foreign content\n")
+        target.symlink_to(foreign)
+    elif replacement == "parent":
+        moved = tmp_path / "moved-workspace"
+        workspace.rename(moved)
+        workspace.mkdir()
+        (moved / ".organvm-context-cas").rename(journal)
+    else:
+        next(journal.glob("transaction-*.preimage")).write_text("changed capture\n")
+    with pytest.raises((RuntimeError, OSError)):
+        sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert len(list(journal.glob("transaction-*.preimage"))) == 1
+    assert len(list(journal.glob("recovery-*.json"))) == 1
+    if replacement == "symlink":
+        assert target.is_symlink()
+        assert foreign.read_text() == "foreign content\n"
+    else:
+        assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ["oversize", "traversal", "boolean", "digest", "symlink", "duplicate", "nested-duplicate"],
+)
+def test_custody_restart_rejects_unsafe_write_ahead_metadata(tmp_path, corruption) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    target.write_text("manual content\n")
+    _interrupt_custody_writer(workspace)
+    journal = workspace / ".organvm-context-cas"
+    record_path = next(journal.glob("recovery-*.json"))
+    record = json.loads(record_path.read_text())
+    if corruption == "oversize":
+        record_path.write_bytes(b" " * (sync_mod.MAX_CUSTODY_RECOVERY_BYTES + 1))
+    elif corruption == "symlink":
+        foreign = tmp_path / "foreign.json"
+        record_path.rename(foreign)
+        record_path.symlink_to(foreign)
+    elif corruption == "duplicate":
+        record_path.write_text('{"version":2,' + json.dumps(record)[1:])
+    elif corruption == "nested-duplicate":
+        encoded = json.dumps(record)
+        record_path.write_text(encoded.replace('"root_identity": {', '"root_identity": {"inode":0,'))
+    else:
+        if corruption == "traversal":
+            record["output_label"] = "../AGENTS.md"
+        elif corruption == "boolean":
+            record["source_identity"]["inode"] = True
+        else:
+            record["preimage_sha256"] = "not-a-digest"
+        record_path.write_text(json.dumps(record))
+    with pytest.raises((RuntimeError, OSError)):
+        sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert not target.exists()
+    assert next(journal.glob("transaction-*.preimage")).read_text() == "manual content\n"
+
+
+def test_custody_recovery_fsync_failure_keeps_capture_until_restart(tmp_path, monkeypatch) -> None:
+    import stat
+
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    original = "manual content\n"
+    target.write_text(original)
+    _interrupt_custody_writer(workspace)
+    real_fsync = sync_mod.os.fsync
+    failed = False
+    root_identity = (workspace.stat().st_dev, workspace.stat().st_ino)
+
+    def fail_restored_parent(descriptor):
+        nonlocal failed
+        status = sync_mod.os.fstat(descriptor)
+        if (
+            not failed and stat.S_ISDIR(status.st_mode)
+            and (status.st_dev, status.st_ino) == root_identity
+            and target.exists()
+        ):
+            failed = True
+            raise OSError("interrupted recovered-parent fsync")
+        return real_fsync(descriptor)
+
+    monkeypatch.setattr(sync_mod.os, "fsync", fail_restored_parent)
+    with pytest.raises(OSError, match="recovered-parent fsync"):
+        sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    journal = workspace / ".organvm-context-cas"
+    assert target.read_text() == original
+    assert len(list(journal.glob("transaction-*.preimage"))) == 1
+    assert len(list(journal.glob("recovery-*.json"))) == 1
+    result = sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert result["action"] == "updated"
+    assert target.read_text().startswith(original)
+    assert not list(journal.glob("transaction-*"))
+    assert not list(journal.glob("recovery-*.json"))
+
+
+@pytest.mark.parametrize("replacement", ["unlink", "replace"])
+def test_custody_recovery_rebinds_after_successful_parent_fsync(
+    tmp_path, monkeypatch, replacement,
+) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    original = "manual content must remain recoverable\n"
+    target.write_text(original)
+    _interrupt_custody_writer(workspace)
+    real_fsync = sync_mod.os.fsync
+    changed = False
+    root_identity = (workspace.stat().st_dev, workspace.stat().st_ino)
+
+    def change_during_parent_fsync(descriptor):
+        nonlocal changed
+        status = sync_mod.os.fstat(descriptor)
+        if not changed and (status.st_dev, status.st_ino) == root_identity and target.exists():
+            changed = True
+            target.unlink()
+            if replacement == "replace":
+                target.write_text("concurrent replacement\n")
+        return real_fsync(descriptor)
+
+    monkeypatch.setattr(sync_mod.os, "fsync", change_during_parent_fsync)
+    with pytest.raises(RuntimeError, match="changed during durability check"):
+        sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+    assert changed
+    journal = workspace / ".organvm-context-cas"
+    assert next(journal.glob("transaction-*.preimage")).read_text() == original
+    assert len(list(journal.glob("recovery-*.json"))) == 1
+    if replacement == "unlink":
+        assert not target.exists()
+        result = sync_mod._inject_section_result(target, "new section", custody_root=workspace)
+        assert result["action"] == "updated"
+        assert target.read_text().startswith(original)
+    else:
+        assert target.read_text() == "concurrent replacement\n"
+
+
+def test_custody_unrelated_write_preserves_an_interrupted_target_capture(tmp_path) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    target = workspace / "AGENTS.md"
+    target.write_text("manual content\n")
+    _interrupt_custody_writer(workspace)
+    result = sync_mod._inject_section_result(
+        workspace / "CLAUDE.md", "unrelated section", custody_root=workspace,
+    )
+    assert result["action"] == "created"
+    assert not target.exists()
+    journal = workspace / ".organvm-context-cas"
+    assert next(journal.glob("transaction-*.preimage")).read_text() == "manual content\n"
+    assert len(list(journal.glob("recovery-*.json"))) == 1
+    sync_mod._inject_section_result(target, "recovered section", custody_root=workspace)
+    assert target.read_text().startswith("manual content\n")
+
+
+def test_custody_unassociated_legacy_preimage_is_preserved_and_blocks_creation(tmp_path) -> None:
+    import organvm_engine.contextmd.sync as sync_mod
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    journal = workspace / ".organvm-context-cas"
+    journal.mkdir(mode=0o700)
+    capture = journal / ("transaction-" + "a" * 48 + ".preimage")
+    capture.write_text("unassociated manual content\n")
+    with pytest.raises(RuntimeError, match="unassociated legacy context preimage"):
+        sync_mod._inject_section_result(
+            workspace / "AGENTS.md", "new section", custody_root=workspace,
+        )
+    assert capture.read_text() == "unassociated manual content\n"
+    assert not (workspace / "AGENTS.md").exists()
+    assert list(journal.iterdir()) == [capture]
 
 
 def test_custody_fails_closed_when_the_private_journal_cannot_be_locked(

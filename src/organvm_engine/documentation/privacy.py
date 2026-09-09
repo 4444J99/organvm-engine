@@ -70,10 +70,14 @@ def repository_reference_pattern(
         value.casefold() for value in public_full_identifiers
     }:
         raise RuntimeError("A repository identifier is both public and private")
+    public_slugs = {value.split("/", 1)[-1] for value in public_full_identifiers}
+    # Consume a complete public bare slug, including interior dot components,
+    # before searching inside it for a private suffix. Longer private slugs
+    # still take precedence over a shorter public bare slug.
     return re.compile(
         rf"(?P<private_full>{bounded_identifier_pattern(private_full_identifiers, longer_public_identifiers=public_full_identifiers)})"
-        rf"|(?P<public_full>{bounded_identifier_pattern(public_full_identifiers)})"
-        rf"|(?P<private_slug>{bounded_identifier_pattern(private_only_slugs)})",
+        rf"|(?P<public_full>{bounded_identifier_pattern(public_full_identifiers)}|{bounded_identifier_pattern(public_slugs, longer_public_identifiers=private_only_slugs)})"
+        rf"|(?P<private_slug>{bounded_identifier_pattern(private_only_slugs, longer_public_identifiers=public_slugs)})",
         flags=re.IGNORECASE,
     )
 

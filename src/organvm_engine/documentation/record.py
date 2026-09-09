@@ -883,7 +883,8 @@ def _industry_evidence_errors(
                         "to a verified assertion",
                     )
                 if (
-                    isinstance(claim_scope, str)
+                    assertion is not None
+                    and isinstance(claim_scope, str)
                     and claim_scope in evidence_scopes
                     and _verified_status_fact_matches(
                         assertion, "industry_status", status, industry.get("name"),
