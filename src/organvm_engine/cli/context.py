@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 
 
 def cmd_context_surfaces(args: argparse.Namespace) -> int:
@@ -26,6 +27,9 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
 
     # --write overrides the default dry_run=True
     dry_run = not getattr(args, "write", False)
+    if dry_run and getattr(args, "receipt", None) is not None:
+        print("Error: --receipt requires --write", file=sys.stderr)
+        return 1
 
     organs = [args.organ] if args.organ else None
     result = sync_all(

@@ -67,7 +67,18 @@ def cmd_docs_validate(args) -> int:
 
 def cmd_docs_audit(args) -> int:
     """Audit one or more repository documentation surfaces."""
-    paths = [Path(path).resolve() for path in args.paths]
+    paths = []
+    for raw_path in args.paths:
+        try:
+            if not raw_path:
+                raise ValueError("path is empty")
+            path = Path(raw_path).resolve(strict=True)
+            if not path.is_dir():
+                raise ValueError("path is not a directory")
+        except (OSError, RuntimeError, ValueError) as exc:
+            print(f"Error: invalid explicit audit path {raw_path!r}: {exc}", file=sys.stderr)
+            return 1
+        paths.append(path)
     workspace = getattr(args, "workspace", None)
     if workspace is not None:
         repositories = (

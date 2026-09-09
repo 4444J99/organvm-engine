@@ -54,6 +54,8 @@ def sync_all(
     receipt_path: Path | str | None = None,
 ) -> dict[str, Any]:
     """Sync auto-generated sections across all context files."""
+    if receipt_path is not None and dry_run:
+        raise ValueError("receipt publication is incompatible with dry-run context sync")
     from organvm_engine.paths import additional_workspace_roots as resolve_additional_roots
     from organvm_engine.paths import registry_path as resolve_registry_path
     from organvm_engine.paths import workspace_root
@@ -74,7 +76,7 @@ def sync_all(
         if additional_workspace_roots is not None
         else resolve_additional_roots(workspace=ws)
     )
-    receipt_enabled = receipt_path is not None and not dry_run
+    receipt_enabled = receipt_path is not None
     if receipt_enabled:
         # Caller spelling is not a registry-derived output component. Resolve it
         # once before composing targets; output component traversal stays invalid.

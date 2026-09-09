@@ -320,7 +320,8 @@ def validate_project_record(
                 "links.repository must be a canonical GitHub repository URL",
             )
         elif (
-            isinstance(repository, str)
+            (repository_role == "canonical" or doc_class == "D")
+            and isinstance(repository, str)
             and repository.count("/") == 1
             and linked_repository.casefold() != repository.casefold()
         ):

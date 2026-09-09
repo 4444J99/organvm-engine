@@ -15,17 +15,31 @@ PUBLIC_PROSE_REWRITES = (
 PUBLIC_EXACT_REWRITES = {"contrib": "contribution"}
 
 
-def bounded_identifier_pattern(identifiers: set[str]) -> str:
+def bounded_identifier_pattern(
+    identifiers: set[str],
+    *,
+    longer_public_identifiers: set[str] | None = None,
+) -> str:
     """Build a longest-first, repository-token-bounded identifier pattern."""
     if not identifiers:
         return r"(?!)"
-    alternatives = "|".join(
-        re.escape(value) for value in sorted(identifiers, key=len, reverse=True)
-    )
+    alternatives = []
+    for value in sorted(identifiers, key=lambda item: (-len(item), item)):
+        # A known public name such as owner/project.md must win over the
+        # private prefix owner/project; a longer private name still wins.
+        longer_public = {
+            public for public in (longer_public_identifiers or set())
+            if len(public) > len(value) and public.casefold().startswith(value.casefold())
+        }
+        guard = (
+            rf"(?!{bounded_identifier_pattern(longer_public)})"
+            if longer_public else ""
+        )
+        alternatives.append(guard + re.escape(value))
+    alternatives_pattern = "|".join(alternatives)
     return (
-        rf"(?<![{REPOSITORY_CHARACTER}])(?:{alternatives})"
-        rf"(?:(?=\.git(?:$|[^{REPOSITORY_CHARACTER}]))|"
-        rf"(?![{REPOSITORY_CHARACTER}]))"
+        rf"(?<![A-Za-z0-9_-])(?:{alternatives_pattern})"
+        rf"(?=\.|$|[^{REPOSITORY_CHARACTER}])"
     )
 
 
@@ -57,7 +71,7 @@ def repository_reference_pattern(
     }:
         raise RuntimeError("A repository identifier is both public and private")
     return re.compile(
-        rf"(?P<private_full>{bounded_identifier_pattern(private_full_identifiers)})"
+        rf"(?P<private_full>{bounded_identifier_pattern(private_full_identifiers, longer_public_identifiers=public_full_identifiers)})"
         rf"|(?P<public_full>{bounded_identifier_pattern(public_full_identifiers)})"
         rf"|(?P<private_slug>{bounded_identifier_pattern(private_only_slugs)})",
         flags=re.IGNORECASE,
