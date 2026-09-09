@@ -165,27 +165,50 @@ def sync_all(
     if receipt_enabled:
         target_organs = organs or [str(key) for key in reg.get("organs", {})]
         organ_directory_map = _registry_organ_directory_map(reg, target_organs)
-        _recover_standard_context_outputs(
-            workspace=ws, registry=reg, target_organs=target_organs,
-            extra_roots=extra_roots, organ_directory_map=organ_directory_map,
-            dry_run=dry_run,
-        )
     else:
         from organvm_engine.git.superproject import REGISTRY_KEY_MAP
 
         organ_directory_map = REGISTRY_KEY_MAP
         target_organs = organs or list(organ_directory_map)
-        _recover_standard_context_outputs(
+
+    # Registry-bound directories may differ from the topology defaults. Discover
+    # them only after parsing the captured registry, then bind every added input
+    # without allowing the registry or earlier seed bindings to change.
+    registry_seed_paths = []
+    for root in (ws, *extra_roots):
+        registry_seed_paths.extend(_discover_registry_seeds(root, reg))
+    expanded_seed_paths = sorted(set((*seed_paths, *registry_seed_paths)), key=_lexical_absolute)
+    if receipt_enabled and expanded_seed_paths != seed_paths:
+        assert receipt_expected_inputs is not None
+        assert receipt_validation_policy is not None
+        expanded_inputs, _, expanded_payloads = capture_context_sync_inputs(
             workspace=ws,
-            registry=reg,
-            target_organs=target_organs,
-            extra_roots=extra_roots,
-            organ_directory_map=organ_directory_map,
-            dry_run=dry_run,
+            registry_path=registry_source,
+            seed_paths=expanded_seed_paths,
+            workspace_identity=receipt_workspace_identity,
+            registry_validation_policy=receipt_validation_policy.evidence(),
         )
+        if expanded_inputs["registry"] != receipt_expected_inputs["registry"] or any(
+            binding not in expanded_inputs["seeds"]
+            for binding in receipt_expected_inputs["seeds"]
+        ):
+            raise RuntimeError("seed discovery inputs changed while binding registry directories")
+        receipt_expected_inputs = expanded_inputs
+        captured_seed_payloads = expanded_payloads
+    seed_paths = expanded_seed_paths
+
+    _recover_standard_context_outputs(
+        workspace=ws,
+        registry=reg,
+        target_organs=target_organs,
+        extra_roots=extra_roots,
+        organ_directory_map=organ_directory_map,
+        dry_run=dry_run,
+    )
 
     all_seeds = []
     repo_to_seed = {}
+    seed_aliases, organ_aliases = _registry_seed_aliases(reg)
     for p in seed_paths:
         try:
             if receipt_enabled:
@@ -194,7 +217,7 @@ def sync_all(
                     raise ValueError(f"seed.yaml at {p} is not a YAML mapping")
             else:
                 s = read_seed(p)
-            repo_identity = (s.get("org"), s.get("repo"))
+            repo_identity = _canonical_seed_identity(s, seed_aliases, organ_aliases)
             if receipt_enabled and repo_identity in repo_to_seed:
                 raise RuntimeError(
                     "receipted context sync rejects duplicate seed repository identity: "
@@ -340,6 +363,7 @@ def sync_all(
                     _sync_repo_context_files(
                         repo_path=repo_path,
                         repo_entry=repo_entry,
+                        organ_key=organ_key,
                         organ_dir_name=organ_dir_name,
                         registry=reg,
                         repo_to_seed=repo_to_seed,
@@ -377,6 +401,7 @@ def sync_all(
                     _sync_repo_context_files(
                         repo_path=repo_path,
                         repo_entry=repo_entry,
+                        organ_key=organ_key,
                         organ_dir_name=organ_dir_name,
                         registry=reg,
                         repo_to_seed=repo_to_seed,
@@ -473,6 +498,8 @@ def sync_all(
             for root in extra_roots:
                 rediscovered_seed_paths.extend(discover_seeds(root))
                 rediscovered_seed_paths.extend(_discover_flat_seeds(root))
+            for root in (ws, *extra_roots):
+                rediscovered_seed_paths.extend(_discover_registry_seeds(root, reg))
             rediscovered_seed_paths = sorted(
                 set(rediscovered_seed_paths),
                 key=_lexical_absolute,
@@ -660,6 +687,82 @@ def _discover_flat_seeds(root: Path) -> list[Path]:
     return seeds
 
 
+def _discover_registry_seeds(root: Path, registry: dict[str, Any]) -> list[Path]:
+    """Include safe explicit directories omitted by topology/manifest discovery."""
+    directories = {
+        organ[field]
+        for organ in registry.get("organs", {}).values()
+        for field in ("directory", "dir")
+        if _safe_path_component(organ.get(field))
+    }
+    return [path for directory in sorted(directories) for path in _discover_flat_seeds(root / directory)]
+
+
+def _registry_seed_aliases(
+    registry: dict[str, Any],
+) -> tuple[dict[tuple[str, str], set[tuple[str, str]]], dict[str, set[str]]]:
+    """Resolve owner and local-directory aliases to organ-qualified identities.
+
+    A GitHub owner can host multiple organs. Keep all candidates rather than
+    silently letting the last registry entry claim an alias.
+    """
+    from organvm_engine.organ_config import registry_key_to_dir
+
+    topology_directories = registry_key_to_dir()
+    aliases: dict[tuple[str, str], set[tuple[str, str]]] = {}
+    organ_aliases: dict[str, set[str]] = {}
+    for raw_key, organ in registry.get("organs", {}).items():
+        key = str(raw_key)
+        names = {
+            name.casefold()
+            for name in (
+                key, key.removeprefix("ORGAN-").removesuffix("-ORGANVM"),
+                organ.get("directory"), organ.get("dir"), topology_directories.get(key),
+            )
+            if isinstance(name, str) and name
+        }
+        for name in names:
+            organ_aliases.setdefault(name, set()).add(key)
+        for entry in organ.get("repositories", []):
+            repo_name = entry.get("name")
+            if not isinstance(repo_name, str) or not repo_name:
+                continue
+            identity = (key, repo_name.casefold())
+            owner = entry.get("org")
+            owners = names | ({owner.casefold()} if isinstance(owner, str) and owner else set())
+            for owner_alias in owners:
+                aliases.setdefault((owner_alias, repo_name.casefold()), set()).add(identity)
+    return aliases, organ_aliases
+
+
+def _canonical_seed_identity(
+    seed: dict[str, Any],
+    aliases: dict[tuple[str, str], set[tuple[str, str]]],
+    organ_aliases: dict[str, set[str]],
+) -> tuple[str, str]:
+    """Select a unique registry organ/repo, rejecting conflicting declarations."""
+    owner, repo = seed.get("org", ""), seed.get("repo", "")
+    if not isinstance(owner, str) or not isinstance(repo, str):
+        raise ValueError("seed org and repo must be strings")
+    raw_identity = (owner.casefold(), repo.casefold())
+    candidates = aliases.get(raw_identity, set())
+    declared_organ = seed.get("organ")
+    if declared_organ is not None:
+        if not isinstance(declared_organ, str):
+            raise ValueError("seed organ must be a string")
+        declared_keys = organ_aliases.get(declared_organ.casefold(), set())
+        if candidates and declared_keys:
+            candidates = {candidate for candidate in candidates if candidate[0] in declared_keys}
+            if not candidates:
+                raise ValueError(f"conflicting seed repository identity: {owner}/{repo}")
+    if len(candidates) > 1:
+        raise ValueError(f"ambiguous seed repository identity: {owner}/{repo}")
+    if candidates:
+        return next(iter(candidates))
+    # Preserve unregistered graph inputs without giving them a registered key.
+    return (f"unregistered:{raw_identity[0]}", raw_identity[1])
+
+
 def _discover_flat_sops(root: Path) -> list:
     """Find SOPs in a flat root shaped as <root>/<repo>/..."""
     if not root.is_dir():
@@ -680,6 +783,7 @@ def _sync_repo_context_files(
     *,
     repo_path: Path,
     repo_entry: dict[str, Any],
+    organ_key: str,
     organ_dir_name: str,
     registry: dict,
     repo_to_seed: dict,
@@ -707,6 +811,7 @@ def _sync_repo_context_files(
         return
 
     org_name = repo_entry.get("org") or organ_dir_name
+    repo_seed = repo_to_seed.get((organ_key, str(repo_name).casefold()))
     promo_status = repo_entry.get("promotion_status", "LOCAL")
     repo_phase = promotion_to_phase(promo_status)
     repo_sops = resolve_all_sops(
@@ -720,7 +825,7 @@ def _sync_repo_context_files(
                 repo_name,
                 org_name,
                 registry,
-                repo_to_seed.get((org_name, repo_name)),
+                repo_seed,
                 dry_run,
                 filename=filename,
                 sop_entries=repo_sops,
@@ -756,12 +861,12 @@ def _sync_repo_context_files(
             repo_name,
             org_name,
             registry,
-            repo_to_seed.get((org_name, repo_name)),
+            repo_seed,
             timestamp=render_timestamp,
         )
         if receipt_workspace is not None:
             agents_references = resolve_agents_remote_references(
-                repo_to_seed.get((org_name, repo_name)),
+                repo_seed,
                 registry,
                 default_owner=str(org_name),
             )

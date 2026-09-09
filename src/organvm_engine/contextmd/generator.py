@@ -191,6 +191,35 @@ def resolve_agents_remote_references(
     return references
 
 
+def _context_repository(registry: dict, repo_name: str, owner: str) -> tuple[str, dict] | None:
+    """Disambiguate repeated repository names using the supplied identity."""
+    matches = [
+        (key, entry)
+        for key, organ in registry.get("organs", {}).items()
+        for entry in organ.get("repositories", [])
+        if entry.get("name") == repo_name
+    ]
+    if len(matches) < 2:
+        return matches[0] if matches else None
+    exact = [(key, entry) for key, entry in matches if entry.get("org") == owner]
+    if len(exact) == 1:
+        return exact[0]
+    from organvm_engine.organ_config import registry_key_to_dir
+
+    topology = registry_key_to_dir()
+    aliases = [
+        (key, entry) for key, entry in matches
+        if owner in {
+            key, topology.get(key),
+            registry["organs"][key].get("directory"),
+            registry["organs"][key].get("dir"),
+        }
+    ]
+    if not exact and len(aliases) == 1:
+        return aliases[0]
+    raise ValueError(f"ambiguous context repository identity: {owner}/{repo_name}")
+
+
 def generate_repo_section(
     repo_name: str,
     org: str,
@@ -205,11 +234,13 @@ def generate_repo_section(
 ) -> str:
     """Generate the auto-generated section for a repo-level CLAUDE.md / GEMINI.md."""
 
+    result = _context_repository(registry, repo_name, org)
     resolved = resolve_entity(repo_name, registry=registry) if include_live_context else None
-    if resolved and resolved.get("registry_entry"):
+    if resolved and resolved.get("registry_entry") and (
+        result is None or resolved.get("organ_key") == result[0]
+    ):
         organ_key, repo_data = resolved["organ_key"], resolved["registry_entry"]
     else:
-        result = find_repo(registry, repo_name)
         if not result:
             return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
         organ_key, repo_data = result
@@ -344,7 +375,7 @@ def generate_agents_section(
 ) -> str:
     """Generate the auto-generated section for AGENTS.md."""
 
-    result = find_repo(registry, repo_name)
+    result = _context_repository(registry, repo_name, org)
     if not result:
         return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
 

@@ -219,8 +219,8 @@ def test_receipt_publication_only_unlinks_private_transaction_aliases(
     assert custody_object.read_bytes() == target.read_bytes()
     assert custody_object.stat().st_ino != target.stat().st_ino
     custody = custody_object.parent.stat()
-    assert len(unlinks) == 2
-    assert {name.rsplit(".", 1)[1] for name, *_ in unlinks} == {"rollback", "generated"}
+    assert len(unlinks) == 1
+    assert {name.rsplit(".", 1)[1] for name, *_ in unlinks} == {"generated"}
     assert all(item[1:] == (custody.st_dev, custody.st_ino) for item in unlinks)
     assert not list(custody_object.parent.glob("transaction-*"))
     assert not list(tmp_path.glob(".organvm-receipt-transaction.*"))
@@ -491,8 +491,8 @@ def test_receipt_failure_only_unlinks_private_cas_transactions(
     custody = cas.stat()
     assert failed is True
     assert target.exists()
-    assert len(unlinks) == 2
-    assert {name.rsplit(".", 1)[1] for name, *_ in unlinks} == {"rollback", "generated"}
+    assert len(unlinks) == 1
+    assert {name.rsplit(".", 1)[1] for name, *_ in unlinks} == {"generated"}
     assert all(
         (device, inode) == (custody.st_dev, custody.st_ino)
         for _name, device, inode in unlinks
@@ -513,6 +513,7 @@ def test_receipt_failure_never_moves_a_concurrent_symlink(
     ).encode("utf-8")
     generated_digest = hashlib.sha256(generated_bytes).hexdigest()
     real_fsync = receipt_mod.os.fsync
+    real_rename = receipt_mod.os.rename
     outside = tmp_path / "outside-receipt"
     outside.write_text("FOREIGN\n", encoding="utf-8")
     failed = False
@@ -531,8 +532,14 @@ def test_receipt_failure_never_moves_a_concurrent_symlink(
             raise OSError("simulated receipt directory fsync failure")
         return real_fsync(descriptor)
 
-    def forbid_public_rename(*_args, **_kwargs):
-        raise AssertionError("receipt cleanup must never rename a public path")
+    def forbid_public_rename(src, dst, *, src_dir_fd=None, dst_dir_fd=None):
+        assert src_dir_fd is not None and src_dir_fd == dst_dir_fd
+        assert receipt_mod.RECEIPT_TRANSACTION_ALIAS.fullmatch(src)
+        assert dst == generated_digest
+        cas = tmp_path / ".organvm-receipt-cas" / "sha256"
+        opened = receipt_mod.os.fstat(src_dir_fd)
+        assert (opened.st_dev, opened.st_ino) == (cas.stat().st_dev, cas.stat().st_ino)
+        return real_rename(src, dst, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
 
     monkeypatch.setattr(receipt_mod.os, "fsync", fail_parent_fsync)
     monkeypatch.setattr(receipt_mod.os, "rename", forbid_public_rename)

@@ -834,36 +834,44 @@ def _ensure_receipt_cas_object(
             ) from None
         return existing
     descriptor = os.open(staging_name, flags, 0o600, dir_fd=cas_fd)
+    staging_status = os.fstat(descriptor)
+    published = False
     try:
-        offset = 0
-        while offset < len(payload):
-            offset += os.write(descriptor, payload[offset:])
-        os.fchmod(descriptor, 0o400)
-        os.fsync(descriptor)
-        status = os.fstat(descriptor)
-    finally:
-        os.close(descriptor)
-    try:
-        os.link(
-            staging_name, digest, src_dir_fd=cas_fd, dst_dir_fd=cas_fd,
-            follow_symlinks=False,
-        )
-    except FileExistsError:
-        installed = os.stat(digest, dir_fd=cas_fd, follow_symlinks=False)
-        if not _cas_object_matches(cas_fd, digest, installed, payload):
+        try:
+            offset = 0
+            while offset < len(payload):
+                written = os.write(descriptor, payload[offset:])
+                if written <= 0:
+                    raise ContextSyncReceiptError("cannot write receipt custody object")
+                offset += written
+            os.fchmod(descriptor, 0o400)
+            os.fsync(descriptor)
+            status = os.fstat(descriptor)
+        finally:
+            os.close(descriptor)
+        # Cooperating writers hold the private CAS lock. Refuse an observed
+        # winner, then publish complete bytes without a two-hardlink crash state.
+        # Mutation by an uncooperative owner of this namespace is outside custody.
+        try:
+            os.stat(digest, dir_fd=cas_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
             raise ContextSyncReceiptError(
-                f"receipt custody CAS object is corrupt: sha256:{digest}",
-            ) from None
-        status = installed
+                f"receipt custody CAS object appeared before publication: sha256:{digest}",
+            )
+        os.rename(staging_name, digest, src_dir_fd=cas_fd, dst_dir_fd=cas_fd)
+        published = True
+        os.fsync(cas_fd)
+        if not _cas_object_matches(cas_fd, digest, status, payload):
+            raise ContextSyncReceiptError(
+                f"receipt custody CAS object failed verification: sha256:{digest}",
+            )
+        return status
     finally:
-        with suppress(FileNotFoundError):
-            os.unlink(staging_name, dir_fd=cas_fd)
-    os.fsync(cas_fd)
-    if not _cas_object_matches(cas_fd, digest, status, payload):
-        raise ContextSyncReceiptError(
-            f"receipt custody CAS object failed verification: sha256:{digest}",
-        )
-    return status
+        if not published:
+            _remove_private_receipt_alias(cas_fd, staging_name, staging_status, None)
+            os.fsync(cas_fd)
 
 
 def _create_receipt_staging(
@@ -877,7 +885,10 @@ def _create_receipt_staging(
     try:
         offset = 0
         while offset < len(payload):
-            offset += os.write(descriptor, payload[offset:])
+            written = os.write(descriptor, payload[offset:])
+            if written <= 0:
+                raise ContextSyncReceiptError("cannot write receipt publication staging")
+            offset += written
         os.fsync(descriptor)
         return name, os.fstat(descriptor)
     finally:
@@ -918,6 +929,26 @@ def _preserve_and_remove_private_receipt_alias(cas_fd: int, name: str) -> None:
     """CAS-bind the exact private bytes before removing their transaction alias."""
     status, payload = _read_receipt_cas_candidate(cas_fd, name)
     digest = hashlib.sha256(payload).hexdigest()
+    # Older writers published CAS objects with link(), then removed their
+    # rollback alias. Recover only that exact interrupted two-link pair; an
+    # unknown hardlink or a third link must still fail closed.
+    if name.endswith(".rollback") and stat.S_IMODE(status.st_mode) == 0o400:
+        try:
+            canonical = os.stat(digest, dir_fd=cas_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            canonical = None
+        if (
+            canonical is not None
+            and stat.S_ISREG(canonical.st_mode)
+            and stat.S_IMODE(canonical.st_mode) == 0o400
+            and status.st_nlink == canonical.st_nlink == 2
+            and (status.st_dev, status.st_ino) == (canonical.st_dev, canonical.st_ino)
+            and _installed_receipt_matches(cas_fd, digest, canonical, payload)
+        ):
+            _remove_private_receipt_alias(cas_fd, name, status, payload)
+            os.fsync(cas_fd)
+            _ensure_receipt_cas_object(cas_fd, digest, payload)
+            return
     _ensure_receipt_cas_object(cas_fd, digest, payload)
     _remove_private_receipt_alias(cas_fd, name, status, payload)
     os.fsync(cas_fd)
