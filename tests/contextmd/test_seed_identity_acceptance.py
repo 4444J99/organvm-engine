@@ -129,6 +129,25 @@ def test_explicit_seed_organ_disambiguates_shared_owner(tmp_path):
         )
 
 
+@pytest.mark.parametrize(
+    ("owner", "organ", "message"),
+    [
+        ("owner-one", "TYPO", "unresolved explicit seed organ"),
+        ("owner-typo", "I", "unresolved explicit seed repository identity"),
+    ],
+)
+def test_explicit_seed_organ_never_hides_unresolved_identity(
+    tmp_path, owner, organ, message,
+):
+    from organvm_engine.contextmd.sync import _canonical_seed_identity, _registry_seed_aliases
+
+    registry_path = make_registry(tmp_path, shared_owner=True)
+    aliases, organ_aliases = _registry_seed_aliases(json.loads(registry_path.read_text()))
+    seed = {"org": owner, "repo": "shared-name", "organ": organ}
+    with pytest.raises(ValueError, match=message):
+        _canonical_seed_identity(seed, aliases, organ_aliases)
+
+
 def test_registry_change_during_custom_directory_discovery_is_rejected(tmp_path, monkeypatch):
     import organvm_engine.contextmd.receipt as receipt_mod
 

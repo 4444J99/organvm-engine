@@ -751,10 +751,13 @@ def _canonical_seed_identity(
         if not isinstance(declared_organ, str):
             raise ValueError("seed organ must be a string")
         declared_keys = organ_aliases.get(declared_organ.casefold(), set())
-        if candidates and declared_keys:
-            candidates = {candidate for candidate in candidates if candidate[0] in declared_keys}
-            if not candidates:
-                raise ValueError(f"conflicting seed repository identity: {owner}/{repo}")
+        if not declared_keys:
+            raise ValueError(f"unresolved explicit seed organ: {declared_organ}")
+        if not candidates:
+            raise ValueError(f"unresolved explicit seed repository identity: {owner}/{repo}")
+        candidates = {candidate for candidate in candidates if candidate[0] in declared_keys}
+        if not candidates:
+            raise ValueError(f"conflicting seed repository identity: {owner}/{repo}")
     if len(candidates) > 1:
         raise ValueError(f"ambiguous seed repository identity: {owner}/{repo}")
     if candidates:

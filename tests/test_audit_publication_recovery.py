@@ -239,6 +239,32 @@ def test_commit_marker_fsync_failure_never_starts_rollback(tmp_path, monkeypatch
     assert set(path.name for path in tmp_path.iterdir()) == set(NAMES)
 
 
+def test_full_candidate_set_is_revalidated_before_commit(tmp_path, monkeypatch):
+    originals = _originals(tmp_path)
+    module = _builder(tmp_path)
+    first = tmp_path / NAMES[0]
+    real_link = module.os.link
+
+    def replace_first_after_later_install(source, target, **kwargs):
+        result = real_link(source, target, **kwargs)
+        if source.suffix == ".tmp" and target.name == NAMES[1]:
+            replacement = tmp_path / "concurrent-replacement"
+            replacement.write_bytes(b"concurrent private winner\n")
+            replacement.replace(first)
+        return result
+
+    monkeypatch.setattr(module.os, "link", replace_first_after_later_install)
+    with pytest.raises(RuntimeError, match="changed before rollback"):
+        module.publish_exact_candidate_bytes({
+            tmp_path / name: f"candidate:{name}\n".encode() for name in NAMES
+        })
+
+    assert first.read_bytes() == b"concurrent private winner\n"
+    recovery = json.loads((tmp_path / module.ARTIFACT_RECOVERY_NAME).read_bytes())
+    assert recovery["state"] == "pending"
+    assert originals[NAMES[0]] in [path.read_bytes() for path in tmp_path.glob(".*.rollback")]
+
+
 def test_empty_publication_does_not_create_a_recovery_record(tmp_path):
     _builder(tmp_path).publish_exact_candidate_bytes({})
     assert not list(tmp_path.iterdir())

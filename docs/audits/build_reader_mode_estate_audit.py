@@ -1824,6 +1824,11 @@ def _publish_exact_candidate_bytes_locked(candidate_bytes: dict[Path, bytes]) ->
                 os.fsync(directory_descriptor)
             finally:
                 os.close(directory_descriptor)
+            for target in published:
+                if not _artifact_matches(target, recovery_entries[target]["candidate_binding"]):
+                    raise RuntimeError(
+                        f"Published artifact {target.name!r} changed before commit",
+                    )
             recovery["state"] = "committed"
             committing = True
             _write_artifact_recovery(recovery)
