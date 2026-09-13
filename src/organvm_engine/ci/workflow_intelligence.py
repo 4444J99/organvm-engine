@@ -206,13 +206,16 @@ def analyze_workflow(text: str) -> dict:
 
 
 def inventory(repository_id: int, revision: str, files: dict[str, str], *,
-              expected_paths: list[str], observed_at: str) -> dict:
+              expected_paths: list[str], observed_at: str,
+              enumeration_complete: bool = False) -> dict:
     """Diagnose provided files, preserving failed/partial retrieval coverage."""
     if type(repository_id) is not int or repository_id <= 0:
         raise ValueError("inventory: stable repository ID required")
     if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", revision):
         raise ValueError("inventory: immutable revision required")
     _time(observed_at)
+    if type(enumeration_complete) is not bool:
+        raise ValueError("inventory: enumeration completeness must be boolean")
     if len(set(expected_paths)) != len(expected_paths):
         raise ValueError("inventory: duplicate expected paths")
     for path in [*expected_paths, *files]:
@@ -234,11 +237,50 @@ def inventory(repository_id: int, revision: str, files: dict[str, str], *,
     return {"schema_version": VERSION, "evidence_class": "static_source_analysis",
             "repository_id": repository_id, "revision": revision, "observed_at": observed_at,
             "expected_paths": sorted(expected_paths), "enumerated_count": len(expected_paths),
+            "enumeration_complete": enumeration_complete,
             "analyzed_count": analyzed, "coverage": "complete" if analyzed == len(records) else "partial",
             "workflows": records, "authorizes_mutation": False, "authorizes_release": False}
 
 
+def _validate_snapshot(snapshot: dict) -> None:
+    """Validate record consistency, not collection authenticity or permissions."""
+    try:
+        if (snapshot.get("schema_version") != VERSION
+                or type(snapshot["repository_id"]) is not int
+                or snapshot["repository_id"] <= 0
+                or not isinstance(snapshot["revision"], str)
+                or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", snapshot["revision"])):
+            raise ValueError("snapshot: invalid identity")
+        _time(snapshot["observed_at"])
+        paths = snapshot["expected_paths"]
+        records = snapshot["workflows"]
+        if (not isinstance(paths, list) or not isinstance(records, dict)
+                or len(paths) != len(set(paths)) or set(paths) != set(records)):
+            raise ValueError("snapshot: inconsistent enumeration")
+        for path, record in records.items():
+            _path(path)
+            if record["status"] not in {"analyzed", "unavailable", "invalid_or_unsupported"}:
+                raise ValueError("snapshot: invalid analysis status")
+            if record["status"] == "analyzed":
+                for field in ("source_digest", "normalized_digest"):
+                    if not re.fullmatch(r"[0-9a-f]{64}", record[field]):
+                        raise ValueError("snapshot: invalid digest")
+        analyzed = sum(record["status"] == "analyzed" for record in records.values())
+        coverage = "complete" if analyzed == len(records) else "partial"
+        if (type(snapshot["analyzed_count"]) is not int
+                or type(snapshot["enumerated_count"]) is not int
+                or snapshot["analyzed_count"] != analyzed
+                or snapshot["enumerated_count"] != len(records)
+                or snapshot["coverage"] != coverage
+                or type(snapshot.get("enumeration_complete", False)) is not bool):
+            raise ValueError("snapshot: inconsistent coverage")
+    except (KeyError, TypeError, AttributeError):
+        raise ValueError("snapshot: invalid shape") from None
+
+
 def drift(previous: dict, current: dict) -> dict:
+    _validate_snapshot(previous)
+    _validate_snapshot(current)
     if (previous.get("schema_version") != VERSION or current.get("schema_version") != VERSION
             or previous.get("repository_id") != current.get("repository_id")):
         raise ValueError("drift: incompatible snapshots")
@@ -252,9 +294,10 @@ def drift(previous: dict, current: dict) -> dict:
                 or (after and after["status"] != "analyzed")):
             kind = "unavailable_comparison"
         elif before is None:
-            kind = "added"
+            kind = "added" if previous.get("enumeration_complete") is True else "unavailable_comparison"
         elif after is None:
-            kind = "removed_from_enumeration"
+            kind = ("removed_from_enumeration" if current.get("enumeration_complete") is True
+                    else "unavailable_comparison")
         elif before["source_digest"] == after["source_digest"]:
             continue
         elif before["normalized_digest"] == after["normalized_digest"]:

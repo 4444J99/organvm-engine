@@ -29,7 +29,7 @@ jobs:
 
 def snapshot(text=SAFE, **kwargs):
     data = {"repository_id": 1160447354, "revision": HEAD, "files": {PATH: text},
-            "expected_paths": [PATH], "observed_at": WHEN, **kwargs}
+            "expected_paths": [PATH], "observed_at": WHEN, "enumeration_complete": True, **kwargs}
     return inventory(**data)
 
 

@@ -139,6 +139,12 @@ def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
     if len({check["id"] for check in checks}) != len(checks):
         raise ValueError("rubric: duplicate check identity")
     outcome = trace["outcome"]
+    # v1 has no recovery/compensation contract. A successful-looking output
+    # cannot erase an unsuccessful recorded step or invent tool execution.
+    if outcome == "completed" and (
+        not trace["steps"] or any(step["status"] != "succeeded" for step in trace["steps"])
+    ):
+        raise ValueError("trace: completed workflow lacks successful step evidence")
     results = []
     for check in checks:
         exists, value = _pointer(trace, check["pointer"])
@@ -235,7 +241,7 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
     All cases/dimensions must be comparable; refusal/abstention is not scored as
     failure. No per-case dimension regression may hide inside an average gain.
     """
-    if (isinstance(minimum_gain, bool) or not math.isfinite(minimum_gain)
+    if (type(minimum_gain) not in (int, float) or not math.isfinite(minimum_gain)
             or not 0 < minimum_gain <= 1):
         raise ValueError("gate: minimum_gain must be finite and in (0, 1]")
     if not case_ids or len(set(case_ids)) != len(case_ids):
@@ -260,6 +266,17 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
     reasons = set()
     for report in candidate:
         old = before[report["case_id"]]
+        # A digest claim alone does not make two result sets comparable.
+        # Ignore order, but require identical observable check definitions.
+        def signature(result: dict) -> list:
+            return sorted(
+                [(r["id"], r["dimension"], r["required"], r["weight"],
+                  r["status"] != "not_applicable") for r in result["checks"]],
+                key=lambda row: row[0],
+            )
+
+        if digest(signature(old)) != digest(signature(report)):
+            raise ValueError("gate: paired check contract mismatch")
         if report.get("repository_id") != old.get("repository_id"):
             raise ValueError("gate: repository identity mismatch")
         if report.get("decision") != "pass" or report.get("failed_required") != []:
