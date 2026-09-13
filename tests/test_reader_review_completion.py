@@ -281,3 +281,16 @@ def test_organ_edges_resolve_canonical_workspace_directory(monkeypatch) -> None:
 
     rendered = _build_organ_edges("ORGAN-I", seeds, registry)
     assert "ORGAN-I" in rendered and "ORGAN-II" in rendered
+
+
+def test_organ_edges_preserve_shared_owner_repository_identity() -> None:
+    from organvm_engine.contextmd.generator import _build_organ_edges
+
+    registry = {"organs": {
+        "ORGAN-I": {"repositories": [{"org": "shared", "name": "source"}]},
+        "ORGAN-II": {"repositories": [{"org": "shared", "name": "target"}]},
+    }}
+    seeds = [{"org": "shared", "repo": "source", "organ": "I",
+              "produces": [{"target": "shared/target", "type": "artifact"}]}]
+    assert _build_organ_edges("ORGAN-I", seeds, registry) == "- source → ORGAN-II (artifact)"
+    assert _build_organ_edges("ORGAN-II", seeds, registry) == "- ORGAN-I → target (artifact)"

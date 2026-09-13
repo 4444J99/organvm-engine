@@ -477,9 +477,15 @@ def _build_organ_edges(
         return "- *No seed data available*"
 
     try:
+        from organvm_engine.contextmd.sync import _canonical_seed_identity, _registry_seed_aliases
         from organvm_engine.organ_config import registry_key_to_dir
         from organvm_engine.seed.graph import SeedGraph
         from organvm_engine.seed.reader import seed_identity
+
+        aliases, organ_aliases = _registry_seed_aliases(registry or {})
+        endpoint_organs: dict[str, set[str]] = {}
+        for (owner, repo), candidates in aliases.items():
+            endpoint_organs[f"{owner}/{repo}"] = {key for key, _ in candidates}
 
         topology_directories = registry_key_to_dir()
         d2k: dict[str, str] = {}
@@ -500,6 +506,9 @@ def _build_organ_edges(
         graph = SeedGraph()
         for seed in seeds:
             identity = seed_identity(seed)
+            canonical_organ, canonical_repo = _canonical_seed_identity(seed, aliases, organ_aliases)
+            if not canonical_organ.startswith("unregistered:"):
+                identity = f"{canonical_organ}/{canonical_repo}"
             graph.nodes.append(identity)
             for entry in seed.get("consumes", []) or []:
                 source = entry.get("source", "") if isinstance(entry, dict) else str(entry)
@@ -527,7 +536,18 @@ def _build_organ_edges(
         # Resolve org part of identity → registry key
         # Handles: "organvm-i-theoria/repo", "meta-organvm", "ORGAN-IV", "META-ORGANVM"
         def _organ_of(identity: str) -> str:
+            candidates = endpoint_organs.get(identity.casefold())
+            if candidates is not None:
+                if len(candidates) != 1:
+                    raise ValueError(f"ambiguous organ endpoint: {identity}")
+                return next(iter(candidates))
             org_part = identity.split("/", maxsplit=1)[0] if "/" in identity else identity
+            owner_organs = {
+                key for (owner, _), matches in aliases.items()
+                if owner == org_part.casefold() for key, _ in matches
+            }
+            if len(owner_organs) > 1:
+                raise ValueError(f"ambiguous organ owner: {org_part}")
             # Direct dir→key lookup
             if org_part in d2k:
                 return d2k[org_part]
