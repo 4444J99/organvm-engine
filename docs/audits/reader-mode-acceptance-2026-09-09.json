@@ -1,0 +1,49 @@
+{
+  "receipt_type": "reader-mode-source-acceptance",
+  "observed_at": "2026-09-09T12:36:04.909120+00:00",
+  "repository": "organvm/organvm-engine",
+  "owner_pr": 175,
+  "parent_commit": "5cf2949e7597b85c285b2d39976a16a14f9d5fc7",
+  "purpose": "Repair six current review findings before reader-mode integration.",
+  "repairs": [
+    "Preserve generated outputs after receipt install even if subsequent fsync, identity observation or descriptor close fails; signal a publication-specific error and retain both-close cleanup.",
+    "Normalize caller workspace spelling before composing output paths while rejecting registry-derived parent traversal.",
+    "Require implemented/partial status posture and verified implementation_status fact bound to canonical_repository and declared value.",
+    "Require fresh, nonexpired current_state facts bound to canonical_repository for pilot/public deployment.",
+    "Require exact fresh current_state industry_status facts for deployment/adoption industry claims.",
+    "Resolve Markdown reference definitions within each document before scoring cross links."
+  ],
+  "source_and_test_sha256": {
+    "src/organvm_engine/contextmd/receipt.py": "sha256:9924c15d42e6af04b9085b3a6fcdf9bdaca9acbd44208c5df51f88f5a1b28e4a",
+    "src/organvm_engine/contextmd/sync.py": "sha256:8432fd14c3652f72d236406a4bffb0822243f2ecac37e41aade16d832757818a",
+    "src/organvm_engine/documentation/audit.py": "sha256:bcd9baf36007bde4db8b82e87a7be727a0389e6dc26116390c2775c23bba5c0a",
+    "src/organvm_engine/documentation/record.py": "sha256:53196c77670f76282e9bce4d165ec50d76449ec46a65300b2e0cf7a5ebbd1251",
+    "tests/test_contextmd_receipt.py": "sha256:46d30eeb09cf1fbb10f2a409037c95bf76ade7f1d45db8ce863a422418b91899",
+    "tests/test_documentation.py": "sha256:eb7b35cdc64bbf3e812aa6669b87ee94af04d64bee0ceecd5deb874505dee00c",
+    "tests/test_documentation_record_hardening.py": "sha256:4d31b3e3762addddd2481b91454bf69d180d01ed359d1f904f9715d6239901f3",
+    "tests/test_reader_acceptance_boundaries.py": "sha256:2f6ce0258677d4ac37c40e84408dc9b957773f0e889a735a2fbc9169d5b26d62"
+  },
+  "verification": {
+    "command": "pytest -q tests/test_documentation.py tests/test_documentation_record_hardening.py tests/test_contextmd_receipt.py tests/contextmd/test_sync_receipt.py tests/test_reader_acceptance_boundaries.py",
+    "passed": 505,
+    "failed": 0,
+    "duration_seconds": 22.08,
+    "new_counterexamples": 21,
+    "initial_19_counterexamples_failed_at_parent": 19,
+    "independent_review": {
+      "reviewer": "Codex peer /root/product_backlog",
+      "finding_repaired": "Descriptor-close failures after installed publication must not be misclassified as prepublication rollback.",
+      "independent_probe": "Final CAS-descriptor close failure through sync_all retained receipt and zero output/hash mismatches.",
+      "remaining_source_blockers": []
+    }
+  },
+  "hosted_baseline": {
+    "commit": "5cf2949e7597b85c285b2d39976a16a14f9d5fc7",
+    "run_id": 34291814783,
+    "matrix_3_11_executed_steps": 0,
+    "matrix_3_12_executed_steps": 0,
+    "classification": "runner admission/execution unestablished; not a code-test failure"
+  },
+  "remaining_gate": "Admitted integration and exact published-head review, then actual Engine merge before Editorial context regeneration.",
+  "boundary": "Source verification only. No private audit corpus regenerated, no installed activation or deployment attested."
+}

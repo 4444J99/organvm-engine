@@ -1,5 +1,6 @@
 """Shared test fixtures for organvm-engine."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,22 @@ import pytest
 from organvm_engine.registry.loader import load_registry
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def replace_with_nonregular(path: Path, kind: str, outside: Path) -> None:
+    """Replace a regular fixture with a requested non-regular filesystem object."""
+    path.unlink()
+    if kind == "fifo":
+        if not hasattr(os, "mkfifo"):
+            pytest.skip("FIFO creation is unavailable")
+        os.mkfifo(path)
+    elif kind == "symlink":
+        path.symlink_to(outside)
+    elif kind == "directory":
+        path.mkdir()
+    else:  # pragma: no cover - callers use closed parametrizations
+        raise AssertionError(f"unknown replacement kind: {kind}")
+
 
 # Sentinel path that should never exist — any test accidentally resolving
 # the production path will fail fast instead of silently corrupting data.

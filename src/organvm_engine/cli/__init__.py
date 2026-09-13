@@ -34,6 +34,8 @@ Usage:
     organvm pitch sync [--organ X] [--dry-run] [--tier X]
     organvm context sync [--dry-run] [--organ X]
     organvm context surfaces [--workspace <path>] [--repo <name>] [--json]
+    organvm docs validate [project-record.yml] [--schema PATH] [--root PATH]
+    organvm docs audit [PATH ...] [--workspace PATH] [--format table|json|markdown]
     organvm sop audit [--stale] [--json]
     organvm handoff list [--workspace <path>] [--json]
     organvm handoff clean [--workspace <path>] [--older-than 7d] [--write]
@@ -115,6 +117,7 @@ from organvm_engine.cli.corpus import (
 from organvm_engine.cli.deadlines import cmd_deadlines
 from organvm_engine.cli.debt import cmd_debt_scan, cmd_debt_stats
 from organvm_engine.cli.dispatch import cmd_dispatch_validate
+from organvm_engine.cli.docs import cmd_docs_audit, cmd_docs_validate
 from organvm_engine.cli.ecosystem import (
     cmd_ecosystem_actions,
     cmd_ecosystem_audit,
@@ -1177,6 +1180,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Filter to specific organ",
     )
+    c_sync.add_argument(
+        "--receipt",
+        default=None,
+        help="Atomically create a machine-readable sync custody receipt at this new path",
+    )
     c_diff = ctx_sub.add_parser(
         "diff",
         help="Review recent context sync changes",
@@ -2025,6 +2033,74 @@ def build_parser() -> argparse.ArgumentParser:
 
     content_status = content_sub.add_parser("status", help="Weekly cadence health check")
     content_status.add_argument("--json", action="store_true", help="JSON output")
+
+    # docs — reader-mode repository documentation
+    docs = sub.add_parser(
+        "docs",
+        help="Reader-mode documentation validation and auditing",
+    )
+    docs_sub = docs.add_subparsers(dest="subcommand")
+
+    docs_validate = docs_sub.add_parser(
+        "validate",
+        help="Validate a canonical project-record.yml and declared audience routes",
+    )
+    docs_validate.add_argument(
+        "record",
+        nargs="?",
+        default="project-record.yml",
+        help="Project record path (default: project-record.yml)",
+    )
+    docs_validate.add_argument(
+        "--root",
+        default=None,
+        help="Repository root (default: record parent)",
+    )
+    docs_validate.add_argument(
+        "--schema",
+        default=None,
+        help="Optional project-record JSON Schema in YAML or JSON",
+    )
+    docs_validate.add_argument(
+        "--assertion-schema",
+        default=None,
+        help="Optional assertion-evidence JSON Schema (inferred beside --schema when present)",
+    )
+    docs_validate.add_argument(
+        "--require-git-tracked-evidence",
+        action="store_true",
+        help="Require local evidence bytes to be clean, tracked files outside submodules",
+    )
+    docs_validate.add_argument(
+        "--actual-repository",
+        default=None,
+        help="Checked-out GitHub owner/name used to bind canonical and delivery roles",
+    )
+    docs_validate.add_argument("--json", action="store_true", help="Output JSON")
+
+    docs_audit = docs_sub.add_parser(
+        "audit",
+        help="Report structural documentation signals across seven dimensions",
+    )
+    docs_audit.add_argument("paths", nargs="*", help="Repository root paths")
+    docs_audit.add_argument(
+        "--workspace",
+        default=None,
+        help="Discover git repositories below this workspace",
+    )
+    docs_audit.add_argument(
+        "--format",
+        choices=["table", "json", "markdown"],
+        default="table",
+        help="Output format",
+    )
+    docs_audit.add_argument("--json", action="store_true", help="Alias for --format json")
+    docs_audit.add_argument("--output", default=None, help="Write output to this path")
+    docs_audit.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit non-zero when structural errors are present",
+    )
 
     # testament
     testament = sub.add_parser(
@@ -3695,6 +3771,16 @@ def main() -> int:
         if handler:
             return handler(args)
         parser.parse_args(["content", "--help"])
+        return 0
+    if args.command == "docs":
+        docs_dispatch = {
+            "validate": cmd_docs_validate,
+            "audit": cmd_docs_audit,
+        }
+        handler = docs_dispatch.get(getattr(args, "subcommand", "") or "")
+        if handler:
+            return handler(args)
+        parser.parse_args(["docs", "--help"])
         return 0
     if args.command == "testament":
         testament_dispatch = {

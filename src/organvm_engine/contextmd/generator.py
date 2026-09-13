@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 if TYPE_CHECKING:
     from organvm_engine.plans.index import PlanIndex
@@ -41,6 +42,195 @@ from organvm_engine.contextmd.templates import (
 )
 from organvm_engine.registry.query import find_repo, resolve_entity
 
+CONTEXT_DOCUMENT_PATH = "CLAUDE.md"
+DEFAULT_CONTEXT_REF = "main"
+
+
+def _github_blob_url(owner: str, repo: str, ref: str, path: str) -> str:
+    """Build an unambiguous GitHub blob URL from separately encoded segments."""
+    encoded_path = "/".join(quote(part, safe="") for part in path.split("/"))
+    return (
+        f"https://github.com/{quote(owner, safe='')}/{quote(repo, safe='')}"
+        f"/blob/{quote(ref, safe='')}/{encoded_path}"
+    )
+
+
+def _context_ref(
+    registry: dict,
+    owner: str,
+    repo: str,
+    declaration: dict,
+) -> tuple[str, str]:
+    """Resolve the declared or registry-backed ref without claiming it exists."""
+    for key in ("ref", "revision", "branch"):
+        value = declaration.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip(), f"seed.{key}"
+    entry = _registered_context_repository(registry, owner, repo)
+    for key in ("default_branch", "defaultBranch"):
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip(), f"registry.{key}"
+    return DEFAULT_CONTEXT_REF, "fallback.main"
+
+
+def _registered_context_repository(registry: dict, owner: str, repo: str) -> dict:
+    """Bind a context ref to the declared owner/name, never name alone."""
+    matches = [
+        entry
+        for organ in registry.get("organs", {}).values()
+        for entry in organ.get("repositories", [])
+        if isinstance(entry.get("name"), str)
+        and entry["name"].casefold() == repo.casefold()
+        and isinstance(entry.get("org"), str)
+        and entry["org"].strip().casefold() == owner.casefold()
+    ]
+    if len(matches) > 1:
+        raise ValueError(f"Ambiguous context repository identity: {owner}/{repo}")
+    return matches[0] if matches else {}
+
+
+def _remote_context_reference(
+    *,
+    owner: str,
+    repo: str,
+    registry: dict,
+    declaration: dict,
+    direction: str,
+) -> dict[str, str]:
+    """Return a renderable remote reference plus provenance of its chosen ref."""
+    ref, ref_source = _context_ref(registry, owner, repo, declaration)
+    return {
+        "direction": direction,
+        "repository": f"{owner}/{repo}",
+        "ref": ref,
+        "ref_source": ref_source,
+        "path": CONTEXT_DOCUMENT_PATH,
+        "url": _github_blob_url(owner, repo, ref, CONTEXT_DOCUMENT_PATH),
+    }
+
+
+def _produced_consumer_reference(
+    consumer: dict,
+    registry: dict,
+    *,
+    default_owner: str,
+) -> dict[str, str] | None:
+    """Normalize and resolve one produced edge's consumer repository."""
+    raw_repo = consumer.get("repo")
+    if not isinstance(raw_repo, str) or not raw_repo.strip():
+        return None
+    repo = raw_repo.strip()
+    result = find_repo(registry, repo)
+    entry = result[1] if result else {}
+    if "github_org" in consumer:
+        raw_owner = consumer["github_org"]
+    else:
+        preferred = _registered_context_repository(registry, default_owner, repo)
+        if preferred:
+            raw_owner = default_owner
+        else:
+            matches = [
+                candidate
+                for organ in registry.get("organs", {}).values()
+                for candidate in organ.get("repositories", [])
+                if isinstance(candidate.get("name"), str)
+                and candidate["name"].casefold() == repo.casefold()
+            ]
+            if len(matches) > 1:
+                raise ValueError(f"Ambiguous consumer repository identity: {repo}")
+            raw_owner = matches[0].get("org") if matches else entry.get("org") or default_owner
+    if not isinstance(raw_owner, str) or not raw_owner.strip():
+        return None
+    return _remote_context_reference(
+        owner=raw_owner.strip(),
+        repo=repo,
+        registry=registry,
+        declaration=consumer,
+        direction="produces",
+    )
+
+
+def _consumed_reference(consumed: dict, registry: dict) -> dict[str, str] | None:
+    """Normalize and resolve one consumed edge's exact owner/repository identity."""
+    raw_source = consumed.get("source")
+    if not isinstance(raw_source, str):
+        return None
+    source = raw_source.strip()
+    if source.count("/") != 1:
+        return None
+    owner, repo = (part.strip() for part in source.split("/", 1))
+    if not owner or not repo:
+        return None
+    return _remote_context_reference(
+        owner=owner,
+        repo=repo,
+        registry=registry,
+        declaration=consumed,
+        direction="consumes",
+    )
+
+
+def resolve_agents_remote_references(
+    seed: dict | None,
+    registry: dict,
+    *,
+    default_owner: str,
+) -> list[dict[str, str]]:
+    """Resolve every AGENTS dependency link for rendering and broker receipts."""
+    if not seed:
+        return []
+    references: list[dict[str, str]] = []
+    for produced in seed.get("produces", []) or []:
+        if not isinstance(produced, dict) or produced.get("target"):
+            continue
+        for consumer in produced.get("consumers", []) or []:
+            if not isinstance(consumer, dict):
+                continue
+            reference = _produced_consumer_reference(
+                consumer,
+                registry,
+                default_owner=default_owner,
+            )
+            if reference is not None:
+                references.append(reference)
+    for consumed in seed.get("consumes", []) or []:
+        if not isinstance(consumed, dict):
+            continue
+        reference = _consumed_reference(consumed, registry)
+        if reference is not None:
+            references.append(reference)
+    return references
+
+
+def _context_repository(registry: dict, repo_name: str, owner: str) -> tuple[str, dict] | None:
+    """Disambiguate repeated repository names using the supplied identity."""
+    matches = [
+        (key, entry)
+        for key, organ in registry.get("organs", {}).items()
+        for entry in organ.get("repositories", [])
+        if entry.get("name") == repo_name
+    ]
+    if len(matches) < 2:
+        return matches[0] if matches else None
+    exact = [(key, entry) for key, entry in matches if entry.get("org") == owner]
+    if len(exact) == 1:
+        return exact[0]
+    from organvm_engine.organ_config import registry_key_to_dir
+
+    topology = registry_key_to_dir()
+    aliases = [
+        (key, entry) for key, entry in matches
+        if owner in {
+            key, topology.get(key),
+            registry["organs"][key].get("directory"),
+            registry["organs"][key].get("dir"),
+        }
+    ]
+    if not exact and len(aliases) == 1:
+        return aliases[0]
+    raise ValueError(f"ambiguous context repository identity: {owner}/{repo_name}")
+
 
 def generate_repo_section(
     repo_name: str,
@@ -51,14 +241,18 @@ def generate_repo_section(
     sop_entries: list | None = None,
     agent: str | None = None,
     repo_path: str | None = None,
+    timestamp: str | None = None,
+    include_live_context: bool = True,
 ) -> str:
     """Generate the auto-generated section for a repo-level CLAUDE.md / GEMINI.md."""
 
-    resolved = resolve_entity(repo_name, registry=registry)
-    if resolved and resolved.get("registry_entry"):
+    result = _context_repository(registry, repo_name, org)
+    resolved = resolve_entity(repo_name, registry=registry) if include_live_context else None
+    if resolved and resolved.get("registry_entry") and (
+        result is None or resolved.get("organ_key") == result[0]
+    ):
         organ_key, repo_data = resolved["organ_key"], resolved["registry_entry"]
     else:
-        result = find_repo(registry, repo_name)
         if not result:
             return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
         organ_key, repo_data = result
@@ -112,22 +306,36 @@ def generate_repo_section(
         edges_block=edges_block,
         siblings_block=siblings_block,
         governance_block=governance_block,
-        timestamp=_timestamp(),
+        timestamp=timestamp or _timestamp(),
     )
 
     # Inject session review protocol before the AUTO:END marker
     end_marker = "<!-- ORGANVM:AUTO:END -->"
     if end_marker in section:
         # Build plan context if plan_index is provided
-        system_library_section = _build_system_library_context()
-        plan_section = _build_plan_context(repo_name, organ_key, plan_index)
-        atoms_section = _build_atoms_context(repo_name, organ_key)
+        system_library_section = (
+            _build_system_library_context() if include_live_context else ""
+        )
+        plan_section = (
+            _build_plan_context(repo_name, organ_key, plan_index)
+            if include_live_context
+            else ""
+        )
+        atoms_section = (
+            _build_atoms_context(repo_name, organ_key) if include_live_context else ""
+        )
         sop_section = _build_sop_directives(sop_entries)
-        prompting_hint = _build_prompting_hint(agent)
-        ecosystem_section = _build_ecosystem_context(repo_name, organ_key)
-        network_section = _build_network_context(repo_name, organ_key)
-        ontologia_section = _build_ontologia_context(repo_name)
-        handoff_status_section = _build_handoff_status_context(repo_path)
+        prompting_hint = _build_prompting_hint(agent) if include_live_context else ""
+        ecosystem_section = (
+            _build_ecosystem_context(repo_name, organ_key) if include_live_context else ""
+        )
+        network_section = (
+            _build_network_context(repo_name, organ_key) if include_live_context else ""
+        )
+        ontologia_section = _build_ontologia_context(repo_name) if include_live_context else ""
+        handoff_status_section = (
+            _build_handoff_status_context(repo_path) if include_live_context else ""
+        )
         injected = ""
         if handoff_status_section:
             injected += handoff_status_section
@@ -148,16 +356,18 @@ def generate_repo_section(
             injected += "\n" + atoms_section
         if ontologia_section:
             injected += "\n" + ontologia_section
-        variable_section = _build_variable_context()
+        variable_section = _build_variable_context() if include_live_context else ""
         if variable_section:
             injected += "\n" + variable_section
-        ammoi_section = _build_ammoi_context()
+        ammoi_section = _build_ammoi_context() if include_live_context else ""
         if ammoi_section:
             injected += "\n" + ammoi_section
-        trivium_section = _build_trivium_context(organ_key)
+        trivium_section = _build_trivium_context(organ_key) if include_live_context else ""
         if trivium_section:
             injected += "\n" + trivium_section
-        logos_section = _build_logos_context(repo_name, repo_data)
+        logos_section = (
+            _build_logos_context(repo_name, repo_data) if include_live_context else ""
+        )
         if logos_section:
             injected += "\n" + logos_section
         section = section.replace(
@@ -173,10 +383,11 @@ def generate_agents_section(
     org: str,
     registry: dict,
     seed: dict | None = None,
+    timestamp: str | None = None,
 ) -> str:
     """Generate the auto-generated section for AGENTS.md."""
 
-    result = find_repo(registry, repo_name)
+    result = _context_repository(registry, repo_name, org)
     if not result:
         return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
 
@@ -206,9 +417,14 @@ def generate_agents_section(
                     for consumer in p.get("consumers") or []:
                         if isinstance(consumer, dict):
                             # Link to the consumer repo context if possible
-                            repo_n = consumer.get("repo")
-                            if repo_n:
-                                targets.append(f"[`{repo_n}`](../{repo_n}/CLAUDE.md)")
+                            reference = _produced_consumer_reference(
+                                consumer,
+                                registry,
+                                default_owner=org,
+                            )
+                            if reference is not None:
+                                repo_n = reference["repository"].split("/", 1)[1]
+                                targets.append(f"[`{repo_n}`]({reference['url']})")
                             else:
                                 targets.append(consumer.get("organ") or "unknown")
                         else:
@@ -221,11 +437,13 @@ def generate_agents_section(
         for c in seed.get("consumes", []) or []:
             if isinstance(c, dict):
                 art = c.get("artifact") or c.get("type") or "unknown"
-                source = c.get("source") or "unspecified"
+                declared_source = c.get("source")
+                source = declared_source.strip() if isinstance(declared_source, str) else ""
+                source = source or "unspecified"
                 # If source is org/repo, try to link it
-                if "/" in source:
-                    org_n, repo_n = source.split("/", 1)
-                    source_link = f"[`{source}`](../../{org_n}/{repo_n}/CLAUDE.md)"
+                reference = _consumed_reference(c, registry)
+                if reference is not None:
+                    source_link = f"[`{reference['repository']}`]({reference['url']})"
                 else:
                     source_link = f"`{source}`"
                 cons.append(f"- **Consume** `{art}` from {source_link}")
@@ -245,26 +463,52 @@ def generate_agents_section(
         produces_block=produces_block,
         consumes_block=consumes_block,
         governance_block="\n".join(gov),
-        timestamp=_timestamp(),
+        timestamp=timestamp or _timestamp(),
     )
 
 
-def _build_organ_edges(organ_key: str, seeds: list[dict] | None = None) -> str:
+def _build_organ_edges(
+    organ_key: str,
+    seeds: list[dict] | None = None,
+    registry: dict | None = None,
+) -> str:
     """Build inter-organ edge lines from the seed graph for one organ."""
     if not seeds:
         return "- *No seed data available*"
 
     try:
-        from organvm_engine.organ_config import dir_to_registry_key
+        from organvm_engine.contextmd.sync import _canonical_seed_identity, _registry_seed_aliases
+        from organvm_engine.organ_config import registry_key_to_dir
         from organvm_engine.seed.graph import SeedGraph
         from organvm_engine.seed.reader import seed_identity
 
-        d2k = dir_to_registry_key()
+        aliases, organ_aliases = _registry_seed_aliases(registry or {})
+        endpoint_organs: dict[str, set[str]] = {}
+        for (owner, repo), candidates in aliases.items():
+            endpoint_organs[f"{owner}/{repo}"] = {key for key, _ in candidates}
+
+        topology_directories = registry_key_to_dir()
+        d2k: dict[str, str] = {}
+        for key, organ in (registry or {}).get("organs", {}).items():
+            d2k[str(key)] = str(key)
+            directory = organ.get("directory") or organ.get("dir")
+            if isinstance(directory, str) and directory:
+                d2k[directory] = str(key)
+            topology_directory = topology_directories.get(str(key))
+            if isinstance(topology_directory, str) and topology_directory:
+                d2k[topology_directory] = str(key)
+            for repo in organ.get("repositories", []):
+                registered_org = repo.get("org")
+                if isinstance(registered_org, str) and registered_org:
+                    d2k[registered_org] = str(key)
 
         # Build a lightweight graph from the passed seeds
         graph = SeedGraph()
         for seed in seeds:
             identity = seed_identity(seed)
+            canonical_organ, canonical_repo = _canonical_seed_identity(seed, aliases, organ_aliases)
+            if not canonical_organ.startswith("unregistered:"):
+                identity = f"{canonical_organ}/{canonical_repo}"
             graph.nodes.append(identity)
             for entry in seed.get("consumes", []) or []:
                 source = entry.get("source", "") if isinstance(entry, dict) else str(entry)
@@ -292,7 +536,18 @@ def _build_organ_edges(organ_key: str, seeds: list[dict] | None = None) -> str:
         # Resolve org part of identity → registry key
         # Handles: "organvm-i-theoria/repo", "meta-organvm", "ORGAN-IV", "META-ORGANVM"
         def _organ_of(identity: str) -> str:
+            candidates = endpoint_organs.get(identity.casefold())
+            if candidates is not None:
+                if len(candidates) != 1:
+                    raise ValueError(f"ambiguous organ endpoint: {identity}")
+                return next(iter(candidates))
             org_part = identity.split("/", maxsplit=1)[0] if "/" in identity else identity
+            owner_organs = {
+                key for (owner, _), matches in aliases.items()
+                if owner == org_part.casefold() for key, _ in matches
+            }
+            if len(owner_organs) > 1:
+                raise ValueError(f"ambiguous organ owner: {org_part}")
             # Direct dir→key lookup
             if org_part in d2k:
                 return d2k[org_part]
@@ -335,6 +590,8 @@ def generate_organ_section(
     organ_key: str,
     registry: dict,
     seeds: list[dict] | None = None,
+    timestamp: str | None = None,
+    include_live_context: bool = True,
 ) -> str:
     """Generate the auto-generated section for an organ-level CLAUDE.md."""
 
@@ -360,7 +617,7 @@ def generate_organ_section(
     promotion_block = ", ".join(f"{k}: {v}" for k, v in sorted(dist.items()))
 
     # Compute inter-organ edges from seed graph
-    organ_edges_block = _build_organ_edges(organ_key, seeds)
+    organ_edges_block = _build_organ_edges(organ_key, seeds, registry)
 
     section = ORGAN_SECTION.format(
         organ_key=organ_key,
@@ -372,10 +629,10 @@ def generate_organ_section(
         organ_edges_block=organ_edges_block,
         repo_list_block=repo_list_block,
         promotion_block=promotion_block,
-        timestamp=_timestamp(),
+        timestamp=timestamp or _timestamp(),
     )
     end_marker = "<!-- ORGANVM:AUTO:END -->"
-    system_library_section = _build_system_library_context()
+    system_library_section = _build_system_library_context() if include_live_context else ""
     if system_library_section and end_marker in section:
         section = section.replace(end_marker, system_library_section + "\n" + end_marker)
     return section
@@ -384,6 +641,8 @@ def generate_organ_section(
 def generate_workspace_section(
     registry: dict,
     seeds: list[dict] | None = None,
+    timestamp: str | None = None,
+    include_live_context: bool = True,
 ) -> str:
     """Generate the auto-generated section for the workspace-level CLAUDE.md."""
 
@@ -404,7 +663,7 @@ def generate_workspace_section(
 
         rows.append(f"| {key} | {len(repos)} | {flagship} | {status_str} |")
 
-    omega_met, omega_total = _read_omega_counts()
+    omega_met, omega_total = _read_omega_counts() if include_live_context else (0, 17)
 
     section = WORKSPACE_SECTION.format(
         total_repos=total_repos,
@@ -414,10 +673,10 @@ def generate_workspace_section(
         ci_count="TBD",
         omega_met=omega_met,
         omega_total=omega_total,
-        timestamp=_timestamp(),
+        timestamp=timestamp or _timestamp(),
     )
     end_marker = "<!-- ORGANVM:AUTO:END -->"
-    system_library_section = _build_system_library_context()
+    system_library_section = _build_system_library_context() if include_live_context else ""
     if system_library_section and end_marker in section:
         section = section.replace(end_marker, system_library_section + "\n" + end_marker)
     return section

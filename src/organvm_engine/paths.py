@@ -19,6 +19,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from organvm_engine._stable_io import read_stable_regular_bytes
+
 _DEFAULT_WORKSPACE = Path.home() / "Workspace"
 _DEFAULT_CORPUS_SUBPATH = "meta-organvm/organvm-corpvs-testamentvm"
 # Corpus relocated to the Code root (2026-06 consolidation). Bare launchd
@@ -129,7 +131,7 @@ def _load_governance_config_paths(workspace: Path) -> list[Path]:
     try:
         import yaml
 
-        data = yaml.safe_load(config_path.read_text()) or {}
+        data = yaml.safe_load(read_stable_regular_bytes(config_path)) or {}
     except Exception:
         return []
 
