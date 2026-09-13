@@ -98,12 +98,16 @@ def discover_repositories(workspace: str | Path) -> list[Path]:
 def audit_repository(root: str | Path) -> dict[str, Any]:
     """Audit a repository's reader-mode documentation without mutating it."""
     root_path = Path(root).resolve()
-    readme_path = _readme_path(root_path)
-    readme = _read_bounded_markdown(readme_path) if readme_path else None
-    if readme is None:
-        readme_path = None
-        readme = ""
     markdown_inputs, markdown_limit_exceeded = _markdown_inputs(root_path)
+    readme_candidates = [
+        (path, text) for path, text in markdown_inputs
+        if path.parent == root_path and path.name.casefold() == "readme.md"
+    ]
+    readme_path, readme = min(
+        readme_candidates,
+        key=lambda item: (item[0].name != "README.md", item[0].name),
+        default=(None, ""),
+    )
     markdown_files = [path for path, _text in markdown_inputs]
     corpus = "\n".join(text for _path, text in markdown_inputs)
     lowered = corpus.lower()

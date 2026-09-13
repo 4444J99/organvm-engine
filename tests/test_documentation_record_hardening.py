@@ -2935,6 +2935,46 @@ def test_assertion_read_rejects_an_unstable_path_binding(
     assert any("cannot load assertion" in error for error in errors)
 
 
+def test_repeated_assertion_reference_rejects_snapshot_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record = _write_git_fixture(tmp_path)
+    assertion_ref = record["claim_references"][0]["assertion_ref"]
+    assertion_id = record["claim_references"][0]["assertion_id"]
+    record["limitations"] = [{
+        "id": "same-assertion", "description": "bounded",
+        "assertion_ref": assertion_ref, "assertion_id": assertion_id,
+    }]
+    real_load = documentation_record._load_mapping_with_payload
+    reads = 0
+
+    def drifting_load(path: Path):
+        nonlocal reads
+        assertion, payload = real_load(path)
+        if path.name == Path(assertion_ref).name:
+            reads += 1
+            if reads == 2:
+                return assertion, payload + b" "
+        return assertion, payload
+
+    monkeypatch.setattr(documentation_record, "_load_mapping_with_payload", drifting_load)
+    errors = validate_project_record(record, root=tmp_path)
+    assert any("assertion changed during validation" in error for error in errors)
+
+
+def test_future_fresh_verifier_observation_is_rejected(tmp_path: Path) -> None:
+    record = _write_git_fixture(tmp_path)
+    assertion_path = tmp_path / record["claim_references"][0]["assertion_ref"]
+    assertion = json.loads(assertion_path.read_text())
+    verifier = assertion["evidence_references"][0]
+    verifier["evidence_type"] = "fresh_verifier_receipt"
+    verifier["observed_at"] = "2099-01-01T00:00:00Z"
+    assertion_path.write_text(json.dumps(assertion))
+    errors = validate_project_record(record, root=tmp_path)
+    assert any("observed_at cannot be in the future" in error for error in errors)
+
+
 def test_local_evidence_uses_the_documented_evidence_byte_limit(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

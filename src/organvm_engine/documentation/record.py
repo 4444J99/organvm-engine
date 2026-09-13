@@ -647,6 +647,7 @@ def validate_project_record(
             errors.extend(head_errors)
         evidence_digest_cache: dict[str, tuple[str | None, str | None]] = {}
         evidence_identity_cache: dict[tuple[Path, str], str | None] = {}
+        assertion_payload_cache: dict[str, bytes] = {}
         for relative in route_paths:
             _validate_local_file(root_path, relative, "audience path", errors)
 
@@ -674,6 +675,7 @@ def validate_project_record(
                 pinned_head=pinned_head,
                 evidence_digest_cache=evidence_digest_cache,
                 evidence_identity_cache=evidence_identity_cache,
+                assertion_payload_cache=assertion_payload_cache,
             )
             errors.extend(assertion_errors)
             if assertion is not None:
@@ -691,6 +693,7 @@ def validate_project_record(
                 pinned_head=pinned_head,
                 evidence_digest_cache=evidence_digest_cache,
                 evidence_identity_cache=evidence_identity_cache,
+                assertion_payload_cache=assertion_payload_cache,
             )
             errors.extend(assertion_errors)
 
@@ -763,6 +766,7 @@ def _validate_assertion_target(
     pinned_head: str | None,
     evidence_digest_cache: dict[str, tuple[str | None, str | None]],
     evidence_identity_cache: dict[tuple[Path, str], str | None],
+    assertion_payload_cache: dict[str, bytes],
 ) -> tuple[Mapping[str, Any] | None, list[str]]:
     errors: list[str] = []
     if _references_git_metadata(reference):
@@ -788,6 +792,9 @@ def _validate_assertion_target(
         assertion, assertion_payload = _load_mapping_with_payload(candidate)
     except (OSError, ValueError) as exc:
         return None, [f"{label} cannot load assertion: {exc}"]
+    cached_assertion_payload = assertion_payload_cache.setdefault(reference, assertion_payload)
+    if cached_assertion_payload != assertion_payload:
+        return None, [f"{label} assertion changed during validation: {reference}"]
     if require_git_tracked_evidence and not assertion_binding_errors:
         errors.extend(
             _git_head_payload_errors(
@@ -1129,6 +1136,21 @@ def _assertion_semantic_errors(
                     f"evidence_references[{index}].evidence_type must be one of: "
                     + ", ".join(sorted(EVIDENCE_TYPES)),
                 )
+            if evidence_type == "fresh_verifier_receipt":
+                observed_at = item.get("observed_at")
+                parsed_observed_at = (
+                    _parse_datetime(observed_at)
+                    if isinstance(observed_at, str)
+                    else None
+                )
+                if parsed_observed_at is None:
+                    errors.append(
+                        f"evidence_references[{index}].observed_at must be an ISO 8601 date-time with a timezone",
+                    )
+                elif parsed_observed_at > now.astimezone(timezone.utc):
+                    errors.append(
+                        f"evidence_references[{index}].observed_at cannot be in the future",
+                    )
             body_hash = item.get("body_hash")
             if (
                 not isinstance(body_hash, str)

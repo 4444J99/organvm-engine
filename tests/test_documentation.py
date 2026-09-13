@@ -9,6 +9,7 @@ from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
 import yaml
 
 from organvm_engine.cli import build_parser
@@ -1252,3 +1253,18 @@ def test_docs_audit_cli_reports_output_write_errors(tmp_path, capsys):
 
     assert cmd_docs_audit(args) == 1
     assert "cannot write documentation audit" in capsys.readouterr().err
+
+
+def test_audit_reuses_readme_from_markdown_snapshot(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "README.md").write_text("# Purpose\nArchitecture and usage.\n")
+    import organvm_engine.documentation.audit as audit_module
+    monkeypatch.setattr(
+        audit_module,
+        "_read_bounded_markdown",
+        lambda _path: (_ for _ in ()).throw(AssertionError("second README read")),
+    )
+    report = audit_repository(tmp_path)
+    assert report["has_readme"] is True

@@ -100,6 +100,36 @@ def test_produced_consumer_links_use_the_consumers_registered_owner() -> None:
     assert "../schema-definitions/CLAUDE.md" not in section
 
 
+def test_same_name_consumer_prefers_default_owner() -> None:
+    registry = _registry()
+    registry["organs"]["META-ORGANVM"]["repositories"].extend([
+        {"name": "shared", "org": "organvm", "default_branch": "owner-main"},
+        {"name": "shared", "org": "other", "default_branch": "other-main"},
+    ])
+    references = resolve_agents_remote_references(
+        {"produces": [{"type": "x", "consumers": [{"repo": "shared"}]}]},
+        registry,
+        default_owner="organvm",
+    )
+    assert references[0]["repository"] == "organvm/shared"
+    assert references[0]["ref"] == "owner-main"
+
+
+def test_same_name_consumer_without_owner_match_is_rejected() -> None:
+    import pytest
+    registry = _registry()
+    registry["organs"]["META-ORGANVM"]["repositories"].extend([
+        {"name": "shared", "org": "first"},
+        {"name": "shared", "org": "second"},
+    ])
+    with pytest.raises(ValueError, match="Ambiguous consumer"):
+        resolve_agents_remote_references(
+            {"produces": [{"type": "x", "consumers": [{"repo": "shared"}]}]},
+            registry,
+            default_owner="unregistered",
+        )
+
+
 def test_unknown_repository_ref_falls_back_explicitly_to_main() -> None:
     seed = {
         "consumes": [

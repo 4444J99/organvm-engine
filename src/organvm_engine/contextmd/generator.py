@@ -123,11 +123,23 @@ def _produced_consumer_reference(
     repo = raw_repo.strip()
     result = find_repo(registry, repo)
     entry = result[1] if result else {}
-    raw_owner = (
-        consumer["github_org"]
-        if "github_org" in consumer
-        else entry.get("org") or default_owner
-    )
+    if "github_org" in consumer:
+        raw_owner = consumer["github_org"]
+    else:
+        preferred = _registered_context_repository(registry, default_owner, repo)
+        if preferred:
+            raw_owner = default_owner
+        else:
+            matches = [
+                candidate
+                for organ in registry.get("organs", {}).values()
+                for candidate in organ.get("repositories", [])
+                if isinstance(candidate.get("name"), str)
+                and candidate["name"].casefold() == repo.casefold()
+            ]
+            if len(matches) > 1:
+                raise ValueError(f"Ambiguous consumer repository identity: {repo}")
+            raw_owner = matches[0].get("org") if matches else entry.get("org") or default_owner
     if not isinstance(raw_owner, str) or not raw_owner.strip():
         return None
     return _remote_context_reference(
