@@ -6,7 +6,13 @@ import pytest
 import yaml
 
 from organvm_engine.ci.workflow_intelligence import (
-    MAX_BYTES, analyze_workflow, drift, inventory, main, proposals, review_metrics,
+    MAX_BYTES,
+    analyze_workflow,
+    drift,
+    inventory,
+    main,
+    proposals,
+    review_metrics,
 )
 
 PATH = ".github/workflows/ci.yml"

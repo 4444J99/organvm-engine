@@ -4,7 +4,14 @@ import json
 
 import pytest
 
-from organvm_engine.ci.agent_eval import DIMENSIONS, VERSION, digest, evaluate_trace, main, promotion_gate
+from organvm_engine.ci.agent_eval import (
+    DIMENSIONS,
+    VERSION,
+    digest,
+    evaluate_trace,
+    main,
+    promotion_gate,
+)
 
 HEAD = "a" * 40
 REPO = 1160447354

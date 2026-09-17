@@ -214,6 +214,10 @@ def _validate_report(report: dict) -> None:
     }
     _validate(results, {"type": "array", "items": result_schema,
                         "minItems": 1, "maxItems": 1024}, "gate checks")
+    # jsonschema validates this at runtime; retain an explicit guard so static
+    # analysis and future validator substitutions preserve the same boundary.
+    if not isinstance(results, list):
+        raise ValueError("gate: invalid check results")
     if len({r["id"] for r in results}) != len(results):
         raise ValueError("gate: duplicate check results")
     failures = [r["id"] for r in results if r["required"] and r["status"] == "fail"]
