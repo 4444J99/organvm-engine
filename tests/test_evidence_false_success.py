@@ -117,6 +117,19 @@ def test_scope_counts_cannot_be_tampered_for_promotion():
                        rubric_digest=digest(rubric))
 
 
+@pytest.mark.parametrize("field,value", [
+    ("repository_id", None), ("repository_id", 0), ("repository_id", True),
+    ("revision", None), ("revision", "main"),
+])
+def test_unbound_report_identity_cannot_be_paired(field, value):
+    before, after, rubric = paired_reports()
+    before[field] = value
+    after[field] = value
+    with pytest.raises(ValueError, match="identity"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric))
+
+
 def test_same_revision_cannot_claim_changed_workflow_content():
     previous = snapshot()
     current = snapshot(SAFE.replace("contents: read", "contents: write"))
