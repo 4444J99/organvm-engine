@@ -391,6 +391,19 @@ def test_same_source_rejects_conflicting_analysis_status():
         drift(previous, current)
 
 
+@pytest.mark.parametrize(("field", "value"), [
+    ("job_count", "1"),
+    ("triggers", "push"),
+    ("transitive_coverage", "complete"),
+    ("reusable_references", "owner/repo/.github/workflows/ci.yml@main"),
+])
+def test_drift_rejects_malformed_analyzed_metadata(field, value):
+    current = snapshot(revision="b" * 40)
+    current["workflows"][PATH][field] = value
+    with pytest.raises(ValueError, match="invalid analysis metadata"):
+        drift(snapshot(), current)
+
+
 def test_same_revision_rejects_conflicting_complete_enumeration():
     previous = snapshot()
     current = snapshot(

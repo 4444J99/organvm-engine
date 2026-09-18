@@ -431,6 +431,21 @@ def _validate_snapshot(snapshot: dict) -> None:
                 for field in ("source_digest", "normalized_digest"):
                     if not re.fullmatch(r"[0-9a-f]{64}", record[field]):
                         raise ValueError("snapshot: invalid digest")
+                job_count = record["job_count"]
+                triggers = record["triggers"]
+                transitive_coverage = record["transitive_coverage"]
+                reusable_references = record["reusable_references"]
+                if (type(job_count) is not int or not 0 <= job_count <= MAX_NODES
+                        or not isinstance(triggers, list) or len(triggers) > MAX_NODES
+                        or any(not isinstance(trigger, str) or not trigger for trigger in triggers)
+                        or triggers != sorted(set(triggers))
+                        or transitive_coverage not in {"not_requested", "unresolved"}
+                        or not isinstance(reusable_references, list)
+                        or len(reusable_references) > MAX_NODES
+                        or any(not isinstance(reference, str) or not reference
+                               for reference in reusable_references)
+                        or (transitive_coverage == "unresolved") != bool(reusable_references)):
+                    raise ValueError("snapshot: invalid analysis metadata")
                 findings = record.get("findings")
                 expected_fields = {
                     "code", "severity", "location", "basis", "requires_review", "proposed_action",
