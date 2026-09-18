@@ -113,6 +113,34 @@ def test_observation_cannot_predate_execution_timestamp(target, field):
         evaluate_run(**data)
 
 
+def test_job_cannot_predate_parent_run():
+    data = payload()
+    data["run"].update(
+        created_at="2026-09-13T13:00:00Z",
+        run_started_at="2026-09-13T13:01:00Z",
+        updated_at="2026-09-13T13:30:00Z",
+    )
+    data["jobs_pages"][0]["jobs"][0].update(
+        created_at="2026-09-13T12:00:00Z",
+        started_at="2026-09-13T12:01:00Z",
+        completed_at="2026-09-13T12:10:00Z",
+        updated_at="2026-09-13T12:10:00Z",
+    )
+    with pytest.raises(ValueError, match="parent run"):
+        evaluate_run(**data)
+
+
+def test_step_cannot_escape_parent_job_timestamps():
+    data = payload()
+    job = data["jobs_pages"][0]["jobs"][0]
+    job.update(started_at="2026-09-13T13:00:00Z", completed_at="2026-09-13T13:10:00Z")
+    job["steps"][0].update(
+        started_at="2026-09-13T12:59:00Z", completed_at="2026-09-13T13:01:00Z",
+    )
+    with pytest.raises(ValueError, match="parent job"):
+        evaluate_run(**data)
+
+
 @pytest.mark.parametrize("value,state", [("skipped", "incomplete"), ("cancelled", "incomplete"),
                                          (None, "incomplete"), ("failure", "executed_failure")])
 def test_required_step_status_not_job_badge_controls_evidence(value, state):
