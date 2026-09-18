@@ -29,8 +29,13 @@ MAX_NODES = 20000
 MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
-UNTRUSTED = re.compile(r"\$\{\{[^}]*github\.event\.(?:issue|pull_request|comment|review)\b[^}]*\}\}")
+UNTRUSTED = re.compile(
+    r"\$\{\{[^}]*(?:github\.event\.(?:issue|pull_request|comment|review)\b|github\.head_ref\b)[^}]*\}\}",
+)
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
+PR_NUMBER_HEAD_REF = re.compile(
+    r"refs/pull/\$\{\{[^}]*github\.event\.pull_request\.number\b[^}]*\}\}/head",
+)
 BRACKET_SEGMENT = re.compile(r"\[\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1\s*\]")
 SEVERITIES = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 REPAIRS = {
@@ -52,7 +57,8 @@ def _normalize_event_paths(value: str) -> str:
 
 def _contains_pr_head(value: Any) -> bool:
     if isinstance(value, str):
-        return PR_HEAD.search(_normalize_event_paths(value)) is not None
+        normalized = _normalize_event_paths(value)
+        return PR_HEAD.search(normalized) is not None or PR_NUMBER_HEAD_REF.search(normalized) is not None
     if isinstance(value, dict):
         return any(_contains_pr_head(item) for item in value.values())
     if isinstance(value, list):
@@ -283,6 +289,22 @@ def _validate_snapshot(snapshot: dict) -> None:
                 for field in ("source_digest", "normalized_digest"):
                     if not re.fullmatch(r"[0-9a-f]{64}", record[field]):
                         raise ValueError("snapshot: invalid digest")
+                findings = record.get("findings")
+                expected_fields = {
+                    "code", "severity", "location", "basis", "requires_review", "proposed_action",
+                }
+                if not isinstance(findings, list) or len(findings) > MAX_NODES:
+                    raise ValueError("snapshot: invalid findings")
+                for finding in findings:
+                    if (not isinstance(finding, dict) or set(finding) != expected_fields
+                            or finding.get("code") not in REPAIRS
+                            or finding.get("severity") not in SEVERITIES
+                            or not isinstance(finding.get("location"), str)
+                            or not 0 < len(finding["location"]) <= 1024
+                            or finding.get("basis") != "static_source"
+                            or finding.get("requires_review") is not True
+                            or finding.get("proposed_action") != REPAIRS[finding["code"]]):
+                        raise ValueError("snapshot: invalid finding")
             elif record.get("findings"):
                 raise ValueError("snapshot: findings require analyzed source")
         analyzed = sum(record["status"] == "analyzed" for record in records.values())
@@ -309,6 +331,9 @@ def drift(previous: dict, current: dict) -> dict:
     if _time(current["observed_at"]) < _time(previous["observed_at"]):
         raise ValueError("drift: reversed observation chronology")
     if previous["revision"] == current["revision"]:
+        if (previous["enumeration_complete"] and current["enumeration_complete"]
+                and set(previous["expected_paths"]) != set(current["expected_paths"])):
+            raise ValueError("drift: conflicting complete enumeration")
         for path in set(previous["workflows"]) & set(current["workflows"]):
             before, after = previous["workflows"][path], current["workflows"][path]
             if (before["status"] == after["status"] == "analyzed"
@@ -318,6 +343,10 @@ def drift(previous: dict, current: dict) -> dict:
     old, new = previous["workflows"], current["workflows"]
     for path in sorted(set(old) | set(new)):
         before, after = old.get(path), new.get(path)
+        if (before and after and before["status"] == after["status"] == "analyzed"
+                and before["source_digest"] == after["source_digest"]
+                and before["normalized_digest"] != after["normalized_digest"]):
+            raise ValueError("drift: inconsistent normalization")
         if ((before and before["status"] != "analyzed")
                 or (after and after["status"] != "analyzed")):
             kind = "unavailable_comparison"
@@ -347,13 +376,23 @@ def proposals(snapshot: dict, *, owner_refs: list[str], criticality: int = 1,
         raise ValueError("review: invalid criticality")
     if type(downstream_count) is not int or downstream_count < 0:
         raise ValueError("review: invalid downstream count")
+    if (not isinstance(owner_refs, list) or len(owner_refs) > 1024
+            or any(not isinstance(value, str)
+                   or not re.fullmatch(r"[A-Za-z0-9_.:/-]{1,256}", value)
+                   for value in owner_refs)):
+        raise ValueError("review: invalid owner references")
+    owners = sorted(set(owner_refs))
     result = []
     for path, record in snapshot["workflows"].items():
         for finding in record.get("findings", []):
             proposal = {"repository_id": snapshot["repository_id"], "revision": snapshot["revision"],
-                        "path": path, "source_digest": record["source_digest"], **finding,
-                        "owner_refs": sorted(set(owner_refs)),
-                        "owner_status": "resolved_by_caller" if owner_refs else "unresolved",
+                        "path": path, "source_digest": record["source_digest"],
+                        "code": finding["code"], "severity": finding["severity"],
+                        "location": finding["location"], "basis": finding["basis"],
+                        "requires_review": finding["requires_review"],
+                        "proposed_action": finding["proposed_action"],
+                        "owner_refs": owners,
+                        "owner_status": "resolved_by_caller" if owners else "unresolved",
                         "risk_vector": [SEVERITIES[finding["severity"]], criticality, downstream_count],
                         "requires_human_approval": True, "authorizes_mutation": False}
             proposal["proposal_digest"] = digest(proposal)
@@ -375,7 +414,8 @@ def review_metrics(records: list[dict], *, observed_at: str) -> dict:
             raise ValueError("reviews: duplicate identity")
         seen.add(identity)
         requested = _time(record["requested_at"])
-        reviewed = _time(record["first_review_at"]) if record.get("first_review_at") else None
+        reviewed_value = record.get("first_review_at")
+        reviewed = None if reviewed_value is None else _time(reviewed_value)
         if requested > now or (reviewed and not requested <= reviewed <= now):
             raise ValueError("reviews: invalid chronology")
         target = latencies if reviewed else pending_ages
