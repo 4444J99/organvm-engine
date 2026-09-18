@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 from typing import Any
 
@@ -217,6 +218,10 @@ def _validate_report(report: dict) -> None:
     """Check internal score consistency, not producer authenticity."""
     if report.get("schema_version") != VERSION:
         raise ValueError("gate: unsupported report version")
+    if (type(report.get("repository_id")) is not int or report["repository_id"] <= 0
+            or not isinstance(report.get("revision"), str)
+            or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", report["revision"])):
+        raise ValueError("gate: immutable report identity required")
     results = report.get("checks")
     result_schema = {
         "type": "object", "additionalProperties": False,
