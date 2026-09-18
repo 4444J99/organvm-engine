@@ -241,6 +241,23 @@ def test_invalid_reward_threshold(gain):
                        minimum_gain=gain)
 
 
+@pytest.mark.parametrize("rubric_digest", [None, "", "a" * 63, "A" * 64])
+def test_promotion_requires_valid_pinned_rubric_digest(rubric_digest):
+    before, after, _ = paired_reports()
+    with pytest.raises(ValueError, match="rubric digest"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=rubric_digest)
+
+
+def test_promotion_rejects_missing_report_rubric_digest():
+    before, after, rubric = paired_reports()
+    before.pop("rubric_digest")
+    after.pop("rubric_digest")
+    with pytest.raises(ValueError):
+        promotion_gate(
+            [before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
+        )
+
+
 @pytest.mark.parametrize("ids", [[], ["missing"], ["read-only-1", "read-only-1"]])
 def test_case_manifest_failures(ids):
     before, after, rubric = paired_reports()
