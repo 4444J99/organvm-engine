@@ -78,6 +78,28 @@ def test_executed_failure_wins_over_unexecuted_sibling():
     assert evaluate_run(**data)["decision"] == "executed_failure"
 
 
+def test_executed_failure_wins_despite_incomplete_pagination():
+    data = payload()
+    data["run"]["conclusion"] = "failure"
+    data["jobs_pages"][0]["total_count"] = 2
+    data["jobs_pages"][0]["jobs"][0]["conclusion"] = "failure"
+    data["jobs_pages"][0]["jobs"][0]["steps"][0]["conclusion"] = "failure"
+    assert evaluate_run(**data)["decision"] == "executed_failure"
+
+
+@pytest.mark.parametrize("target,field", [
+    ("run", "created_at"), ("run", "run_started_at"), ("run", "updated_at"),
+    ("job", "created_at"), ("job", "started_at"), ("job", "completed_at"),
+    ("job", "updated_at"),
+])
+def test_observation_cannot_predate_execution_timestamp(target, field):
+    data = payload()
+    record = data["run"] if target == "run" else data["jobs_pages"][0]["jobs"][0]
+    record[field] = "2026-09-13T15:00:00Z"
+    with pytest.raises(ValueError, match="chronology"):
+        evaluate_run(**data)
+
+
 @pytest.mark.parametrize("value,state", [("skipped", "incomplete"), ("cancelled", "incomplete"),
                                          (None, "incomplete"), ("failure", "executed_failure")])
 def test_required_step_status_not_job_badge_controls_evidence(value, state):
