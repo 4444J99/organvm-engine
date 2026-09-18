@@ -76,6 +76,11 @@ def test_push_commit_identity_metadata_is_untrusted_shell_source(field):
     assert "untrusted_run_expression" in codes(text)
 
 
+def test_push_commit_array_message_is_untrusted_shell_source():
+    text = SAFE.replace("pytest tests/", "echo ${{ github.event.commits[0].message }}")
+    assert "untrusted_run_expression" in codes(text)
+
+
 def test_snapshot_rejects_noncanonical_finding_severity():
     current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
     current["workflows"][PATH]["findings"][0]["severity"] = "info"
@@ -125,6 +130,28 @@ def test_privileged_target_format_built_synthetic_ref_is_detected():
         "      - run:",
     )
     assert "privileged_head_checkout" in codes(text)
+
+
+def test_privileged_target_multi_placeholder_format_ref_is_detected():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n"
+        "          ref: ${{ format('refs/pull/{0}/{1}', github.event.number, 'head') }}\n"
+        "      - run:",
+    )
+    assert "privileged_head_checkout" in codes(text)
+
+
+def test_privileged_target_ignores_head_context_in_non_selector_input():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n"
+        "          path: ${{ github.event.pull_request.head.ref }}\n"
+        "      - run:",
+    )
+    assert "privileged_head_checkout" not in codes(text)
 
 
 @pytest.mark.parametrize("expression", [
@@ -192,6 +219,16 @@ def test_local_actions_and_digest_containers_do_not_require_commit_pin():
     assert "mutable_action" not in codes(SAFE.replace(f"actions/checkout@{PIN}", "./.github/actions/check"))
     container = "docker://example/image@sha256:" + "b" * 64
     assert "mutable_action" not in codes(SAFE.replace(f"actions/checkout@{PIN}", container))
+
+
+@pytest.mark.parametrize("reference", ["$/actions/check", "$/nested/action"])
+def test_same_repository_dollar_actions_do_not_require_commit_pin(reference):
+    assert "mutable_action" not in codes(SAFE.replace(f"actions/checkout@{PIN}", reference))
+
+
+@pytest.mark.parametrize("reference", ["$/", "$/actions/check@main"])
+def test_malformed_or_suffixed_dollar_actions_still_require_pin(reference):
+    assert "mutable_action" in codes(SAFE.replace(f"actions/checkout@{PIN}", reference))
 
 
 def test_reusable_jobs_remain_unresolved_even_with_pin():
@@ -333,7 +370,17 @@ def test_identical_source_rejects_conflicting_normalization():
     previous = snapshot(revision="b" * 40)
     current = snapshot()
     current["workflows"][PATH]["normalized_digest"] = "b" * 64
-    with pytest.raises(ValueError, match="inconsistent normalization"):
+    with pytest.raises(ValueError, match="inconsistent analysis"):
+        drift(previous, current)
+
+
+def test_identical_source_rejects_conflicting_findings():
+    previous = snapshot(revision="b" * 40)
+    current = snapshot()
+    current["workflows"][PATH]["findings"] = [
+        analyze_workflow(SAFE.replace(f"@{PIN}", "@main"))["findings"][0],
+    ]
+    with pytest.raises(ValueError, match="inconsistent analysis"):
         drift(previous, current)
 
 
@@ -384,6 +431,15 @@ def test_review_metrics_no_quality_claim_and_pending_not_zero_latency():
     assert result["changes_requested"] == 2
     assert result["quality_inference"] == "not_measured"
     assert review_metrics([], observed_at=WHEN)["median_first_review_seconds"] is None
+
+
+def test_pending_reviewers_are_not_observed_participants():
+    result = review_metrics(
+        [{"id": 1, "requested_at": "2026-09-13T12:00:00Z", "reviewer_ids": ["alice"]}],
+        observed_at=WHEN,
+    )
+    assert result["reviewer_participations"] == 0
+    assert result["largest_reviewer_share"] is None
 
 
 def test_review_metrics_reject_duplicate_and_bad_chronology():

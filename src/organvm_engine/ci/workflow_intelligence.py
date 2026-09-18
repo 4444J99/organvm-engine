@@ -31,7 +31,9 @@ PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED_CONTEXT = re.compile(
     r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|"
-    r"github\.event\.head_commit\.(?:message|author|committer)\b|github\.head_ref\b)",
+    r"github\.event\.head_commit\.(?:message|author|committer)\b|"
+    r"github\.event\.commits\s*\[[^\]]+\]\.(?:message|author|committer)\b|"
+    r"github\.head_ref\b)",
 )
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
 PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
@@ -42,6 +44,12 @@ PR_SYNTHETIC_REF = re.compile(
 PR_SYNTHETIC_FORMAT_REF = re.compile(
     r"format\(\s*(['\"])refs/pull/\{[0-9]+\}/(?:head|merge)\1\s*,"
     r"[^)]*github\.event\.(?:pull_request\.)?number\b",
+    re.DOTALL,
+)
+PR_SYNTHETIC_FORMAT_COMPONENT_REF = re.compile(
+    r"format\(\s*(['\"])refs/pull/\{[0-9]+\}/\{[0-9]+\}\1\s*,"
+    r"(?=[^)]*github\.event\.(?:pull_request\.)?number\b)"
+    r"(?=[^)]*['\"](?:head|merge)['\"])[^)]*\)",
     re.DOTALL,
 )
 BRACKET_SEGMENT = re.compile(r"\[\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1\s*\]")
@@ -78,7 +86,8 @@ def _contains_pr_head(value: Any) -> bool:
         normalized = _normalize_event_paths(value)
         return any(pattern.search(normalized) is not None
                    for pattern in (PR_HEAD, PR_MERGE_SHA, PR_SYNTHETIC_REF,
-                                   PR_SYNTHETIC_FORMAT_REF))
+                                   PR_SYNTHETIC_FORMAT_REF,
+                                   PR_SYNTHETIC_FORMAT_COMPONENT_REF))
     if isinstance(value, dict):
         return any(_contains_pr_head(item) for item in value.values())
     if isinstance(value, list):
@@ -211,7 +220,8 @@ def analyze_workflow(text: str) -> dict:
     def action(value: Any, location: str) -> None:
         if not isinstance(value, str):
             raise ValueError("workflow: invalid action reference")
-        if value.startswith("./"):
+        self_repository = value.startswith("$/") and len(value) > 2 and "@" not in value
+        if value.startswith("./") or self_repository:
             return
         pinned = DIGEST_PIN.search(value) if value.startswith("docker://") else PIN.search(value)
         if not pinned:
@@ -269,8 +279,11 @@ def analyze_workflow(text: str) -> dict:
                 settings = step.get("with", {})
                 if not isinstance(settings, dict):
                     raise ValueError("workflow: invalid action inputs")
+                content_selectors = {
+                    key: settings[key] for key in ("ref", "repository") if key in settings
+                }
                 if (checkout and "pull_request_target" in trigger_names
-                        and _contains_pr_head(settings)):
+                        and _contains_pr_head(content_selectors)):
                     add("privileged_head_checkout", "critical", sloc)
             if "run" in step:
                 if not isinstance(step["run"], str):
@@ -414,9 +427,13 @@ def drift(previous: dict, current: dict) -> dict:
     for path in sorted(set(old) | set(new)):
         before, after = old.get(path), new.get(path)
         if (before and after and before["status"] == after["status"] == "analyzed"
-                and before["source_digest"] == after["source_digest"]
-                and before["normalized_digest"] != after["normalized_digest"]):
-            raise ValueError("drift: inconsistent normalization")
+                and before["source_digest"] == after["source_digest"]):
+            deterministic_fields = (
+                "normalized_digest", "job_count", "triggers", "findings",
+                "transitive_coverage", "reusable_references",
+            )
+            if any(before[field] != after[field] for field in deterministic_fields):
+                raise ValueError("drift: inconsistent analysis")
         if ((before and before["status"] != "analyzed")
                 or (after and after["status"] != "analyzed")):
             kind = "unavailable_comparison"
@@ -503,7 +520,8 @@ def review_metrics(records: list[dict], *, observed_at: str) -> dict:
                 or any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", value)
                        for value in reviewer_ids)):
             raise ValueError("reviews: invalid reviewer identities")
-        reviewers.update(set(reviewer_ids))
+        if reviewed is not None:
+            reviewers.update(set(reviewer_ids))
     total = sum(reviewers.values())
     return {"observed_at": observed_at, "records": len(records), "reviewed": len(latencies),
             "pending": len(pending_ages), "median_first_review_seconds": median(latencies) if latencies else None,
