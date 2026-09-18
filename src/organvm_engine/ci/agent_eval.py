@@ -252,6 +252,7 @@ def _validate_report(report: dict) -> None:
     _validate(scope, scope_schema, "gate scope")
     if (not isinstance(scope, dict)
             or scope["missing_count"] > scope["expected_count"]
+            or scope["observed_count"] < scope["expected_count"] - scope["missing_count"]
             or scope["complete"] != (scope["missing_count"] == 0)):
         raise ValueError("gate: inconsistent scope evidence")
     failures = [r["id"] for r in results if r["required"] and r["status"] == "fail"]
