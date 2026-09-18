@@ -258,6 +258,21 @@ def test_promotion_rejects_missing_report_rubric_digest():
         )
 
 
+@pytest.mark.parametrize("trace_digest", [None, "", "a" * 63, "A" * 64])
+def test_promotion_requires_valid_report_trace_digest(trace_digest):
+    before, after, rubric = paired_reports()
+    if trace_digest is None:
+        before.pop("trace_digest")
+        after.pop("trace_digest")
+    else:
+        before["trace_digest"] = trace_digest
+        after["trace_digest"] = trace_digest
+    with pytest.raises(ValueError, match="immutable report identity"):
+        promotion_gate(
+            [before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
+        )
+
+
 @pytest.mark.parametrize("ids", [[], ["missing"], ["read-only-1", "read-only-1"]])
 def test_case_manifest_failures(ids):
     before, after, rubric = paired_reports()
