@@ -57,13 +57,20 @@ def test_actual_shape_of_zero_step_failure_is_not_executed_test_failure():
 
 
 @pytest.mark.parametrize("change,decision", [
-    ({"runner_id": 0}, "not_executed"), ({"steps": []}, "not_executed"),
+    ({"steps": []}, "not_executed"),
     ({"status": "in_progress"}, "pending"), ({"conclusion": "failure"}, "executed_failure"),
 ])
 def test_job_execution_states(change, decision):
     data = payload()
     data["jobs_pages"][0]["jobs"][0].update(change)
     assert evaluate_run(**data)["decision"] == decision
+
+
+def test_runner_without_execution_cannot_hide_recorded_steps():
+    data = payload()
+    data["jobs_pages"][0]["jobs"][0]["runner_id"] = 0
+    with pytest.raises(ValueError, match="runner and steps contradict"):
+        evaluate_run(**data)
 
 
 def test_executed_failure_wins_over_unexecuted_sibling():
