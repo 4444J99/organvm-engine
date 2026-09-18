@@ -172,6 +172,14 @@ def test_json_null_is_not_absence_and_boolean_is_not_number():
     assert score(trace, rubric)["decision"] == "fail"
 
 
+@pytest.mark.parametrize("value", [("python", "tuple"), {1: "non-string-key"}])
+def test_python_only_values_are_rejected_before_digesting(value):
+    trace, rubric = fixture_pair()
+    trace["input"] = value
+    with pytest.raises(ValueError, match="invalid JSON"):
+        score(trace, rubric)
+
+
 def test_json_pointer_escapes_and_exists():
     trace, rubric = fixture_pair()
     trace["output"]["a/b"] = {"~": None}

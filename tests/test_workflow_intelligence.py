@@ -70,6 +70,12 @@ def test_push_commit_message_is_untrusted_shell_source():
     assert "untrusted_run_expression" in codes(text)
 
 
+@pytest.mark.parametrize("field", ["author.name", "author.email", "committer.name"])
+def test_push_commit_identity_metadata_is_untrusted_shell_source(field):
+    text = SAFE.replace("pytest tests/", f"echo ${{{{ github.event.head_commit.{field} }}}}")
+    assert "untrusted_run_expression" in codes(text)
+
+
 def test_snapshot_rejects_noncanonical_finding_severity():
     current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
     current["workflows"][PATH]["findings"][0]["severity"] = "info"
@@ -107,6 +113,16 @@ def test_privileged_target_top_level_event_number_synthetic_ref_is_detected():
     text = text.replace(
         "      - run:",
         "        with:\n          ref: refs/pull/${{ github.event.number }}/head\n      - run:",
+    )
+    assert "privileged_head_checkout" in codes(text)
+
+
+def test_privileged_target_format_built_synthetic_ref_is_detected():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n          ref: ${{ format('refs/pull/{0}/head', github.event.number) }}\n"
+        "      - run:",
     )
     assert "privileged_head_checkout" in codes(text)
 
@@ -272,6 +288,13 @@ def test_same_revision_allows_retrieval_state_recovery():
     unavailable = snapshot(files={})
     result = drift(unavailable, snapshot())
     assert result["changes"] == [{"path": PATH, "kind": "unavailable_comparison"}]
+
+
+def test_same_revision_rejects_digest_change_across_analysis_status():
+    invalid = snapshot("on: push\njobs: !unsafe anything")
+    assert invalid["workflows"][PATH]["status"] == "invalid_or_unsupported"
+    with pytest.raises(ValueError, match="content changed at unchanged revision"):
+        drift(snapshot(), invalid)
 
 
 def test_same_revision_rejects_conflicting_complete_enumeration():

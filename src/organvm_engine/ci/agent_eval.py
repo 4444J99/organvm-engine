@@ -73,8 +73,26 @@ RUBRIC_SCHEMA = {
 }
 
 
+def _require_json_native(value: Any) -> None:
+    """Reject Python-only values before they can collapse into identical JSON."""
+    if value is None or type(value) in (str, int, float, bool):
+        return
+    if type(value) is list:
+        for item in value:
+            _require_json_native(item)
+        return
+    if type(value) is dict:
+        for key, item in value.items():
+            if type(key) is not str:
+                raise TypeError("non-string JSON object key")
+            _require_json_native(item)
+        return
+    raise TypeError("non-JSON-native value")
+
+
 def digest(value: Any) -> str:
     """Version-local canonical JSON digest; NOT an RFC 8785 signature."""
+    _require_json_native(value)
     data = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
                       allow_nan=False)
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
@@ -324,8 +342,8 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
         # Ignore order, but require identical observable check definitions.
         def signature(result: dict) -> list:
             return sorted(
-                [(r["id"], r["dimension"], r["required"], r["weight"],
-                  r["status"] != "not_applicable") for r in result["checks"]],
+                [[r["id"], r["dimension"], r["required"], r["weight"],
+                  r["status"] != "not_applicable"] for r in result["checks"]],
                 key=lambda row: row[0],
             )
 

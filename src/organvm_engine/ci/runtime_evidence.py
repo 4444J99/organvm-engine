@@ -155,9 +155,11 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 if len(rows) > 1:
                     raise ValueError("execution: ambiguous required step name")
                 selected.append(rows[0] if rows else None)
+            selected_step_times = []
             for step in selected:
                 if step is not None:
                     step_times = _execution_times(step, ("started_at", "completed_at"), timestamp)
+                    selected_step_times.append((step["number"], step_times))
                     if (job_times.get("created_at")
                             and any(moment < job_times["created_at"] for moment in step_times.values())):
                         raise ValueError("execution: step predates parent job")
@@ -179,6 +181,11 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                     if (run_updated
                             and any(moment > run_updated for moment in step_times.values())):
                         raise ValueError("execution: step exceeds parent run observation")
+            ordered_step_times = sorted(selected_step_times, key=lambda item: item[0])
+            for (_, earlier), (_, later) in zip(
+                    ordered_step_times, ordered_step_times[1:], strict=False):
+                if earlier and later and max(earlier.values()) > min(later.values()):
+                    raise ValueError("execution: required step chronology is inconsistent")
             executed = sum(step is not None and step.get("status") == "completed"
                            and step.get("conclusion") in {"success", "failure"} for step in selected)
             runner = job.get("runner_id")

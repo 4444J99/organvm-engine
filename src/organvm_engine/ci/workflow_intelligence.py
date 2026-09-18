@@ -31,12 +31,17 @@ PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED_CONTEXT = re.compile(
     r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|"
-    r"github\.event\.head_commit\.message\b|github\.head_ref\b)",
+    r"github\.event\.head_commit\.(?:message|author|committer)\b|github\.head_ref\b)",
 )
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
 PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
 PR_SYNTHETIC_REF = re.compile(
     r"refs/pull/(?:[0-9]+|\$\{\{.*?github\.event\.(?:pull_request\.)?number\b.*?\}\})/(?:head|merge)\b",
+    re.DOTALL,
+)
+PR_SYNTHETIC_FORMAT_REF = re.compile(
+    r"format\(\s*(['\"])refs/pull/\{[0-9]+\}/(?:head|merge)\1\s*,"
+    r"[^)]*github\.event\.(?:pull_request\.)?number\b",
     re.DOTALL,
 )
 BRACKET_SEGMENT = re.compile(r"\[\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1\s*\]")
@@ -72,7 +77,8 @@ def _contains_pr_head(value: Any) -> bool:
     if isinstance(value, str):
         normalized = _normalize_event_paths(value)
         return any(pattern.search(normalized) is not None
-                   for pattern in (PR_HEAD, PR_MERGE_SHA, PR_SYNTHETIC_REF))
+                   for pattern in (PR_HEAD, PR_MERGE_SHA, PR_SYNTHETIC_REF,
+                                   PR_SYNTHETIC_FORMAT_REF))
     if isinstance(value, dict):
         return any(_contains_pr_head(item) for item in value.values())
     if isinstance(value, list):
@@ -357,8 +363,16 @@ def _validate_snapshot(snapshot: dict) -> None:
                             or finding.get("requires_review") is not True
                             or finding.get("proposed_action") != REPAIRS[code]):
                         raise ValueError("snapshot: invalid finding")
-            elif record.get("findings"):
-                raise ValueError("snapshot: findings require analyzed source")
+            elif record["status"] == "invalid_or_unsupported":
+                if record.get("findings"):
+                    raise ValueError("snapshot: findings require analyzed source")
+                if not re.fullmatch(r"[0-9a-f]{64}", record.get("source_digest", "")):
+                    raise ValueError("snapshot: invalid digest")
+            else:
+                if record.get("findings"):
+                    raise ValueError("snapshot: findings require analyzed source")
+                if "source_digest" in record:
+                    raise ValueError("snapshot: unavailable source has digest")
         analyzed = sum(record["status"] == "analyzed" for record in records.values())
         enumeration_complete = snapshot.get("enumeration_complete", False)
         if type(enumeration_complete) is not bool:
@@ -390,8 +404,10 @@ def drift(previous: dict, current: dict) -> dict:
             raise ValueError("drift: conflicting complete enumeration")
         for path in set(previous["workflows"]) & set(current["workflows"]):
             before, after = previous["workflows"][path], current["workflows"][path]
-            if (before["status"] == after["status"] == "analyzed"
-                    and before["source_digest"] != after["source_digest"]):
+            before_digest = before.get("source_digest")
+            after_digest = after.get("source_digest")
+            if (before_digest is not None and after_digest is not None
+                    and before_digest != after_digest):
                 raise ValueError("drift: content changed at unchanged revision")
     changes = []
     old, new = previous["workflows"], current["workflows"]

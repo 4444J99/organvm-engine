@@ -205,6 +205,23 @@ def test_step_uses_parent_run_bounds_when_job_times_are_absent(bound):
         evaluate_run(**data)
 
 
+def test_required_step_timestamps_follow_step_number_order():
+    data = payload()
+    job = data["jobs_pages"][0]["jobs"][0]
+    job["steps"][0].update(
+        started_at="2026-09-13T13:10:00Z", completed_at="2026-09-13T13:20:00Z",
+    )
+    second = copy.deepcopy(job["steps"][0])
+    second.update(
+        number=2, name="Package", started_at="2026-09-13T13:00:00Z",
+        completed_at="2026-09-13T13:05:00Z",
+    )
+    job["steps"].append(second)
+    data["required_steps"]["test"].append("Package")
+    with pytest.raises(ValueError, match="step chronology"):
+        evaluate_run(**data)
+
+
 def test_completed_required_failure_wins_while_job_is_still_running():
     data = payload()
     job = data["jobs_pages"][0]["jobs"][0]
