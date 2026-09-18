@@ -234,11 +234,12 @@ def inventory(repository_id: int, revision: str, files: dict[str, str], *,
             if isinstance(files[path], str):
                 records[path]["source_digest"] = hashlib.sha256(files[path].encode("utf-8")).hexdigest()
     analyzed = sum(r["status"] == "analyzed" for r in records.values())
+    complete = enumeration_complete and analyzed == len(records)
     return {"schema_version": VERSION, "evidence_class": "static_source_analysis",
             "repository_id": repository_id, "revision": revision, "observed_at": observed_at,
             "expected_paths": sorted(expected_paths), "enumerated_count": len(expected_paths),
             "enumeration_complete": enumeration_complete,
-            "analyzed_count": analyzed, "coverage": "complete" if analyzed == len(records) else "partial",
+            "analyzed_count": analyzed, "coverage": "complete" if complete else "partial",
             "workflows": records, "authorizes_mutation": False, "authorizes_release": False}
 
 
@@ -266,13 +267,15 @@ def _validate_snapshot(snapshot: dict) -> None:
                     if not re.fullmatch(r"[0-9a-f]{64}", record[field]):
                         raise ValueError("snapshot: invalid digest")
         analyzed = sum(record["status"] == "analyzed" for record in records.values())
-        coverage = "complete" if analyzed == len(records) else "partial"
+        enumeration_complete = snapshot.get("enumeration_complete", False)
+        if type(enumeration_complete) is not bool:
+            raise ValueError("snapshot: inconsistent coverage")
+        coverage = "complete" if enumeration_complete and analyzed == len(records) else "partial"
         if (type(snapshot["analyzed_count"]) is not int
                 or type(snapshot["enumerated_count"]) is not int
                 or snapshot["analyzed_count"] != analyzed
                 or snapshot["enumerated_count"] != len(records)
-                or snapshot["coverage"] != coverage
-                or type(snapshot.get("enumeration_complete", False)) is not bool):
+                or snapshot["coverage"] != coverage):
             raise ValueError("snapshot: inconsistent coverage")
     except (KeyError, TypeError, AttributeError):
         raise ValueError("snapshot: invalid shape") from None
