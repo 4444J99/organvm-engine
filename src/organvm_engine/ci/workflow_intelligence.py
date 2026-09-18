@@ -29,12 +29,15 @@ MAX_NODES = 20000
 MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
-UNTRUSTED = re.compile(
-    r"\$\{\{[^}]*(?:github\.event\.(?:issue|pull_request|comment|review)\b|github\.head_ref\b)[^}]*\}\}",
+EXPRESSION = re.compile(r"\$\{\{.*?\}\}", re.DOTALL)
+UNTRUSTED_CONTEXT = re.compile(
+    r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|github\.head_ref\b)",
 )
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
-PR_NUMBER_HEAD_REF = re.compile(
-    r"refs/pull/\$\{\{[^}]*github\.event\.pull_request\.number\b[^}]*\}\}/head",
+PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
+PR_SYNTHETIC_REF = re.compile(
+    r"refs/pull/(?:[0-9]+|\$\{\{.*?github\.event\.pull_request\.number\b.*?\}\})/(?:head|merge)\b",
+    re.DOTALL,
 )
 BRACKET_SEGMENT = re.compile(r"\[\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1\s*\]")
 SEVERITIES = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
@@ -58,12 +61,20 @@ def _normalize_event_paths(value: str) -> str:
 def _contains_pr_head(value: Any) -> bool:
     if isinstance(value, str):
         normalized = _normalize_event_paths(value)
-        return PR_HEAD.search(normalized) is not None or PR_NUMBER_HEAD_REF.search(normalized) is not None
+        return any(pattern.search(normalized) is not None
+                   for pattern in (PR_HEAD, PR_MERGE_SHA, PR_SYNTHETIC_REF))
     if isinstance(value, dict):
         return any(_contains_pr_head(item) for item in value.values())
     if isinstance(value, list):
         return any(_contains_pr_head(item) for item in value)
     return False
+
+
+def _contains_untrusted_run_expression(value: str) -> bool:
+    """Scan complete GitHub expressions; braces inside quoted format strings are data."""
+    normalized = _normalize_event_paths(value)
+    return any(UNTRUSTED_CONTEXT.search(match.group(0))
+               for match in EXPRESSION.finditer(normalized))
 
 
 class _WorkflowLoader(yaml.SafeLoader):
@@ -219,7 +230,7 @@ def analyze_workflow(text: str) -> dict:
             if "run" in step:
                 if not isinstance(step["run"], str):
                     raise ValueError("workflow: invalid run script")
-                if UNTRUSTED.search(_normalize_event_paths(step["run"])):
+                if _contains_untrusted_run_expression(step["run"]):
                     add("untrusted_run_expression", "high", sloc)
     return {"source_digest": hashlib.sha256(text.encode("utf-8")).hexdigest(),
             "normalized_digest": digest(doc), "job_count": len(doc["jobs"]),
@@ -423,6 +434,8 @@ def review_metrics(records: list[dict], *, observed_at: str) -> dict:
         count = record.get("changes_requested", 0)
         if type(count) is not int or count < 0:
             raise ValueError("reviews: invalid rework count")
+        if count and reviewed is None:
+            raise ValueError("reviews: rework requires a completed review")
         rework += count
         reviewer_ids = record.get("reviewer_ids", [])
         if (not isinstance(reviewer_ids, list) or len(reviewer_ids) > 1024
