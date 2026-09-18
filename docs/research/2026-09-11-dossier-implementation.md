@@ -54,13 +54,16 @@ Primary references:
 
 ## Implemented contracts
 
-`src/organvm_engine/ci/agent_eval.py` contains version `organvm.agent-eval.v1`.
+`src/organvm_engine/ci/agent_eval.py` contains version `organvm.agent-eval.v2`.
 A trace includes case ID, stable repository ID, immutable revision, input/output and
 ordered steps: tool, arguments, observation, before/after state, dependency IDs and
 status. Hidden model reasoning is not part of the schema. A rubric is a bounded list
 of JSON-pointer `exists`/type-sensitive `equals` checks with dimension, applicability,
-positive finite weight and required status. Callers must obtain expected identity and
-rubric digest independently of the untrusted trace. Failed/unknown predecessors,
+positive finite weight and required status. Callers must obtain expected identity,
+rubric digest and an artifact-scope manifest independently of the untrusted trace.
+The trace records which artifacts were observed. A completed trace missing any
+caller-requested artifact is `incomplete`; reports expose counts and digests, not
+artifact names. Failed/unknown predecessors,
 duplicate IDs, stale revisions and changed rubrics are rejected. A completed trace
 needs applicable required coverage in all five dimensions. Refusal/abstention needs
 policy coverage and stays separate from capability scores.
@@ -111,7 +114,7 @@ From an existing admitted Engine environment with its declared dependencies inst
 
 ```sh
 PYTHONPATH=src python -m pytest tests/test_agent_eval.py tests/test_workflow_intelligence.py -q
-python -m organvm_engine.ci.agent_eval trace.json rubric.json --repository-id 1160447354 --revision FULL_SHA --rubric-digest FROZEN_RUBRIC_SHA256
+python -m organvm_engine.ci.agent_eval trace.json rubric.json --repository-id 1160447354 --revision FULL_SHA --rubric-digest FROZEN_RUBRIC_SHA256 --scope-manifest scope.json --scope-digest FROZEN_SCOPE_SHA256
 python -m organvm_engine.ci.workflow_intelligence inventory-input.json
 ```
 

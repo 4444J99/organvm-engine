@@ -25,7 +25,8 @@ def fixture_pair():
             "status": "succeeded"}
     trace = {"schema_version": VERSION, "case_id": "read-only-1", "repository_id": REPO,
              "revision": HEAD, "outcome": "completed", "input": "SYNTHETIC-PRIVATE-PROMPT",
-             "output": {"done": True, "quality": True}, "steps": [step]}
+             "output": {"done": True, "quality": True}, "steps": [step],
+             "observed_artifacts": ["README.md"]}
     targets = [("/steps/0/tool", "read_file"), ("/steps/0/arguments/path", "README.md"),
                ("/steps/0/state_after/phase", "observed"), ("/output/done", True),
                ("/steps/0/arguments/mutate", False)]
@@ -40,7 +41,9 @@ def score(trace=None, rubric=None, **overrides):
     trace = original_trace if trace is None else trace
     rubric = original_rubric if rubric is None else rubric
     kwargs = {"expected_revision": HEAD, "expected_repository_id": REPO,
-              "expected_rubric_digest": digest(rubric), **overrides}
+              "expected_rubric_digest": digest(rubric),
+              "expected_artifacts": ["README.md"],
+              "expected_scope_digest": digest(["README.md"]), **overrides}
     return evaluate_trace(trace, rubric, **kwargs)
 
 
@@ -48,6 +51,9 @@ def test_full_trace_scores_separately_and_does_not_authorize():
     result = score()
     assert result["decision"] == "pass"
     assert result["scores"] == dict.fromkeys(DIMENSIONS, 1.0)
+    assert result["scope"] == {"manifest_digest": digest(["README.md"]),
+                                "expected_count": 1, "observed_count": 1,
+                                "missing_count": 0, "complete": True}
     assert not result["authorizes_release"] and not result["authorizes_execution"]
     serialized = json.dumps(result)
     assert "SYNTHETIC-PRIVATE" not in serialized
@@ -57,7 +63,8 @@ def test_full_trace_scores_separately_and_does_not_authorize():
 @pytest.mark.parametrize("key,value", [("expected_revision", "b" * 40),
                                        ("expected_repository_id", 12),
                                        ("expected_repository_id", True),
-                                       ("expected_rubric_digest", "0" * 64)])
+                                       ("expected_rubric_digest", "0" * 64),
+                                       ("expected_scope_digest", "0" * 64)])
 def test_pinned_identity_is_required(key, value):
     with pytest.raises(ValueError):
         score(**{key: value})
@@ -103,6 +110,25 @@ def test_optional_checks_cannot_replace_required_coverage():
     trace, rubric = fixture_pair()
     rubric["checks"][0]["required"] = False
     assert score(trace, rubric)["decision"] == "incomplete"
+
+
+def test_completed_claim_requires_caller_pinned_artifact_coverage():
+    trace, rubric = fixture_pair()
+    trace["observed_artifacts"] = []
+    result = score(trace, rubric)
+    assert result["decision"] == "incomplete"
+    assert result["scope"]["missing_count"] == 1
+    assert not result["scope"]["complete"]
+
+
+def test_agent_cannot_shrink_or_duplicate_caller_scope():
+    trace, rubric = fixture_pair()
+    with pytest.raises(ValueError, match="digest mismatch"):
+        score(trace, rubric, expected_artifacts=[],
+              expected_scope_digest=digest(["README.md"]))
+    trace["observed_artifacts"] = ["README.md", "README.md"]
+    with pytest.raises(ValueError):
+        score(trace, rubric)
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -1, 0, True, "1"])
@@ -229,6 +255,14 @@ def test_tampered_scores_do_not_enter_reward_gate():
         promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
 
 
+def test_scope_report_cannot_be_tampered_for_promotion():
+    before, after, rubric = paired_reports()
+    after["scope"]["missing_count"] = 1
+    with pytest.raises(ValueError, match="scope"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric))
+
+
 def test_candidate_required_failures_and_regression_cannot_hide():
     trace, rubric = fixture_pair()
     before = score(trace, rubric)
@@ -263,9 +297,12 @@ def test_cli_generic_error_does_not_expose_source(tmp_path, capsys):
     trace, rubric = fixture_pair()
     trace["input"] = float("nan")
     tpath, rpath = tmp_path / "trace.json", tmp_path / "rubric.json"
+    spath = tmp_path / "scope.json"
     tpath.write_text(json.dumps(trace))
     rpath.write_text(json.dumps(rubric))
+    spath.write_text(json.dumps(["README.md"]))
     result = main([str(tpath), str(rpath), "--repository-id", str(REPO), "--revision", HEAD,
-                   "--rubric-digest", digest(rubric)])
+                   "--rubric-digest", digest(rubric), "--scope-manifest", str(spath),
+                   "--scope-digest", digest(["README.md"])])
     assert result == 2
     assert "SYNTHETIC-PRIVATE" not in capsys.readouterr().out

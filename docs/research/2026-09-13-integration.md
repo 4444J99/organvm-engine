@@ -6,9 +6,12 @@ This is a source and observed-data integration tranche, not a release or operati
 
 ## What changed
 
-Completed tool workflows now require nonempty, successful step evidence. The v1
+Completed tool workflows now require nonempty, successful step evidence. The v2
 contract does not encode compensation/retry recovery, so a successful output cannot
 implicitly erase a failed/denied attempt. Refusal and abstention remain separate.
+Completed claims are also bound to a caller-pinned artifact manifest: missing requested
+artifacts produce `incomplete`, agent output cannot shrink the manifest, and reports
+retain only counts and digests rather than artifact names.
 Paired improvement eligibility compares observable check identity, dimension, weight,
 required status and applicability; a shared claimed rubric hash cannot hide mismatches.
 Equivalent check ordering is accepted. Digests still do not authenticate a producer.

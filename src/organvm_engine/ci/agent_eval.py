@@ -14,11 +14,13 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-VERSION = "organvm.agent-eval.v1"
+VERSION = "organvm.agent-eval.v2"
 MAX_JSON_BYTES = 2_097_152
 DIMENSIONS = ("tool_choice", "parameters", "state", "outcome", "policy")
 OUTCOMES = ("completed", "refused", "abstained", "error")
 TOKEN = {"type": "string", "pattern": r"^[A-Za-z0-9_.:-]{1,128}$"}
+ARTIFACT = {"type": "string", "minLength": 1, "maxLength": 1024,
+            "pattern": r"^[^\x00-\x1f\x7f]+$"}
 SHA = {"type": "string", "pattern": r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$"}
 STEP_SCHEMA = {
     "type": "object", "additionalProperties": False,
@@ -35,12 +37,14 @@ STEP_SCHEMA = {
 TRACE_SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["schema_version", "case_id", "repository_id", "revision", "outcome",
-                 "input", "output", "steps"],
+                 "input", "output", "steps", "observed_artifacts"],
     "properties": {
         "schema_version": {"const": VERSION}, "case_id": TOKEN,
         "repository_id": {"type": "integer", "minimum": 1}, "revision": SHA,
         "outcome": {"enum": list(OUTCOMES)}, "input": {}, "output": {},
         "steps": {"type": "array", "items": STEP_SCHEMA, "maxItems": 256},
+        "observed_artifacts": {"type": "array", "items": ARTIFACT,
+                               "uniqueItems": True, "maxItems": 4096},
     },
 }
 CHECK_SCHEMA = {
@@ -112,7 +116,8 @@ def _pointer(document: Any, pointer: str) -> tuple[bool, Any]:
 
 
 def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
-                   expected_repository_id: int, expected_rubric_digest: str) -> dict:
+                   expected_repository_id: int, expected_rubric_digest: str,
+                   expected_artifacts: list[str], expected_scope_digest: str) -> dict:
     """Check a recorded trace against a caller-pinned rubric and source identity.
 
     Every dimension needs an applicable required check before a completed trace
@@ -121,6 +126,9 @@ def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
     """
     _validate(trace, TRACE_SCHEMA, "trace")
     _validate(rubric, RUBRIC_SCHEMA, "rubric")
+    _validate(expected_artifacts, {"type": "array", "items": ARTIFACT,
+                                   "uniqueItems": True, "maxItems": 4096},
+              "scope manifest")
     if (type(expected_repository_id) is not int or type(trace["repository_id"]) is not int
             or trace["repository_id"] != expected_repository_id):
         raise ValueError("trace: repository identity mismatch")
@@ -128,6 +136,8 @@ def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
         raise ValueError("trace: stale revision")
     if digest(rubric) != expected_rubric_digest:
         raise ValueError("rubric: digest mismatch")
+    if digest(expected_artifacts) != expected_scope_digest:
+        raise ValueError("scope manifest: digest mismatch")
     seen: dict[str, str] = {}
     for step in trace["steps"]:
         if step["id"] in seen:
@@ -139,7 +149,7 @@ def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
     if len({check["id"] for check in checks}) != len(checks):
         raise ValueError("rubric: duplicate check identity")
     outcome = trace["outcome"]
-    # v1 has no recovery/compensation contract. A successful-looking output
+    # v2 has no recovery/compensation contract. A successful-looking output
     # cannot erase an unsuccessful recorded step or invent tool execution.
     if outcome == "completed" and (
         not trace["steps"] or any(step["status"] != "succeeded" for step in trace["steps"])
@@ -164,7 +174,13 @@ def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
         coverage[dimension] = any(r["required"] for r in measured)
     failures = [r["id"] for r in results if r["required"] and r["status"] == "fail"]
     needed = DIMENSIONS if outcome == "completed" else ("policy",)
-    complete = all(coverage[d] for d in needed)
+    missing_artifacts = set(expected_artifacts) - set(trace["observed_artifacts"])
+    scope = {"manifest_digest": expected_scope_digest,
+             "expected_count": len(expected_artifacts),
+             "observed_count": len(trace["observed_artifacts"]),
+             "missing_count": len(missing_artifacts),
+             "complete": not missing_artifacts}
+    complete = all(coverage[d] for d in needed) and (outcome != "completed" or scope["complete"])
     if failures:
         decision = "fail"
     elif not complete:
@@ -176,7 +192,7 @@ def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
             "revision": trace["revision"], "trace_digest": digest(trace),
             "rubric_digest": expected_rubric_digest, "outcome": outcome,
             "decision": decision, "scores": scores, "coverage": coverage,
-            "failed_required": failures, "checks": results,
+            "scope": scope, "failed_required": failures, "checks": results,
             "authorizes_execution": False, "authorizes_release": False}
 
 
@@ -220,6 +236,24 @@ def _validate_report(report: dict) -> None:
         raise ValueError("gate: invalid check results")
     if len({r["id"] for r in results}) != len(results):
         raise ValueError("gate: duplicate check results")
+    scope_schema = {
+        "type": "object", "additionalProperties": False,
+        "required": ["manifest_digest", "expected_count", "observed_count",
+                     "missing_count", "complete"],
+        "properties": {
+            "manifest_digest": {"type": "string", "pattern": r"^[0-9a-f]{64}$"},
+            "expected_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+            "observed_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+            "missing_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+            "complete": {"type": "boolean"},
+        },
+    }
+    scope = report.get("scope")
+    _validate(scope, scope_schema, "gate scope")
+    if (not isinstance(scope, dict)
+            or scope["missing_count"] > scope["expected_count"]
+            or scope["complete"] != (scope["missing_count"] == 0)):
+        raise ValueError("gate: inconsistent scope evidence")
     failures = [r["id"] for r in results if r["required"] and r["status"] == "fail"]
     scores, coverage = {}, {}
     for dimension in DIMENSIONS:
@@ -229,7 +263,8 @@ def _validate_report(report: dict) -> None:
         scores[dimension] = (sum(r["weight"] for r in measured if r["status"] == "pass") / weight
                              if weight else None)
         coverage[dimension] = any(r["required"] for r in measured)
-    decision = "fail" if failures else ("pass" if all(coverage.values()) else "incomplete")
+    decision = ("fail" if failures else
+                ("pass" if all(coverage.values()) and scope["complete"] else "incomplete"))
     expected = [scores, coverage, failures, decision]
     actual = [report.get("scores"), report.get("coverage"), report.get("failed_required"),
               report.get("decision")]
@@ -258,7 +293,8 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
             _validate_report(report)
             if (report.get("rubric_digest") != rubric_digest
                     or report.get("evidence_class") != "recorded_trace_consistency"
-                    or report.get("outcome") != "completed"):
+                    or report.get("outcome") != "completed"
+                    or not report.get("scope", {}).get("complete")):
                 raise ValueError("gate: incomparable evidence")
             for dimension in DIMENSIONS:
                 value = report.get("scores", {}).get(dimension)
@@ -283,6 +319,9 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
             raise ValueError("gate: paired check contract mismatch")
         if report.get("repository_id") != old.get("repository_id"):
             raise ValueError("gate: repository identity mismatch")
+        if (report["scope"]["manifest_digest"] != old["scope"]["manifest_digest"]
+                or report["scope"]["expected_count"] != old["scope"]["expected_count"]):
+            raise ValueError("gate: paired scope manifest mismatch")
         if report.get("decision") != "pass" or report.get("failed_required") != []:
             reasons.add("candidate_required_check_failure")
         for dimension in DIMENSIONS:
@@ -308,12 +347,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repository-id", type=int, required=True)
     parser.add_argument("--revision", required=True)
     parser.add_argument("--rubric-digest", required=True)
+    parser.add_argument("--scope-manifest", type=Path, required=True)
+    parser.add_argument("--scope-digest", required=True)
     args = parser.parse_args(argv)
     try:
         result = evaluate_trace(load_json(args.trace), load_json(args.rubric),
                                 expected_revision=args.revision,
                                 expected_repository_id=args.repository_id,
-                                expected_rubric_digest=args.rubric_digest)
+                                expected_rubric_digest=args.rubric_digest,
+                                expected_artifacts=load_json(args.scope_manifest),
+                                expected_scope_digest=args.scope_digest)
     except (OSError, ValueError, RecursionError):
         print(json.dumps({"decision": "invalid", "authorizes_release": False}))
         return 2
