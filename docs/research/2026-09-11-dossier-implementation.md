@@ -143,10 +143,11 @@ The example intentionally leaves owner resolution unresolved rather than fabrica
 
 See `evidence/verification-2026-09-13.json` for source hashes, exact commands, local
 runtime and scope. The scoped synthetic tests exercise both valid controls and failing
-counterexamples. This workspace is not a full Engine checkout: existing `conftest.py`,
-full suite, optional dependency integration, Python 3.11/3.12 CI, Ruff and Pyright are
-not certified by the local result. No model inference, training, deployment, broker
-reservation, estate policy mutation or release was performed.
+counterexamples. The initial isolated-workspace limitation was superseded by exact-head
+verification in a complete Engine checkout on Python 3.12.14: the scoped suite passed,
+Ruff was clean, and Pyright reported zero errors. Independent exact-head review and
+required hosted integration remain outstanding. No model inference, training,
+deployment, broker reservation, estate policy mutation or release was performed.
 
 | Obligation | Owning surface | Acceptance before claiming completion |
 | --- | --- | --- |
