@@ -220,6 +220,13 @@ def test_proposals_reject_invalid_snapshot_before_binding_source():
     with pytest.raises(ValueError, match="snapshot"):
         proposals(current, owner_refs=[])
 
+    current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
+    current["workflows"][PATH]["status"] = "unavailable"
+    current["analyzed_count"] = 0
+    current["coverage"] = "partial"
+    with pytest.raises(ValueError, match="findings require analyzed source"):
+        proposals(current, owner_refs=[])
+
 
 def test_review_metrics_no_quality_claim_and_pending_not_zero_latency():
     data = [{"id": 1, "requested_at": "2026-09-13T12:00:00Z", "first_review_at": "2026-09-13T13:00:00Z",
