@@ -283,6 +283,8 @@ def _validate_snapshot(snapshot: dict) -> None:
                 for field in ("source_digest", "normalized_digest"):
                     if not re.fullmatch(r"[0-9a-f]{64}", record[field]):
                         raise ValueError("snapshot: invalid digest")
+            elif record.get("findings"):
+                raise ValueError("snapshot: findings require analyzed source")
         analyzed = sum(record["status"] == "analyzed" for record in records.values())
         enumeration_complete = snapshot.get("enumeration_complete", False)
         if type(enumeration_complete) is not bool:
