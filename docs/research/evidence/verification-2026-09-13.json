@@ -16,7 +16,7 @@
     "remote deployment",
     "broker task or lease transitions"
   ],
-  "observed_at": "2026-09-18T12:33:17Z",
+  "observed_at": "2026-09-18T12:49:35Z",
   "publication_state": "prepared_for_draft_PR; published head and hosted observation belong in PR receipt",
   "record_id": "ORGANVM-RESEARCH-20260911-VERIFICATION",
   "repository_id": 1160447354,
@@ -28,14 +28,14 @@
       "sha256": "f5ab2742170fdc2721e9b392a9eebce73304930554cff4638c864a8ed5cd6010"
     },
     "src/organvm_engine/ci/runtime_evidence.py": {
-      "bytes": 10532,
-      "git_blob_sha1": "afb8d71ffbe78c76b48f542ed41162b73187d5c5",
-      "sha256": "9465a90d2078df193c91883744fa6f2ed362e2ba7df793d4cf7139f91de8929c"
+      "bytes": 10689,
+      "git_blob_sha1": "c98152d2eed36215240ac1aebea3ea6feb227bdf",
+      "sha256": "ee7484cb1fa170b1f0505f87988409534baef7ec6ba4b5ebe2856b4d6cd58955"
     },
     "src/organvm_engine/ci/workflow_intelligence.py": {
-      "bytes": 21193,
-      "git_blob_sha1": "da6b05640b323d56fdd05b24ea6a9d77caf507f9",
-      "sha256": "06d6e0082c1573a248c0d9ebc55f1c75a450203906c4dbb60b60a8a9cbd45719"
+      "bytes": 21313,
+      "git_blob_sha1": "5a88edce2d78ba62e7d7fcdcd88eda8aabae17d7",
+      "sha256": "c1cfda62f338b85755fef857ff0dd8f36eab5d6d48162b38886ec808a1e24bdf"
     },
     "tests/test_agent_eval.py": {
       "bytes": 11041,
@@ -48,14 +48,14 @@
       "sha256": "cbb6d4df2db90c4d51c283703ca871c2d84529005e45cf91a843c9e11a1fbdfa"
     },
     "tests/test_runtime_evidence.py": {
-      "bytes": 7609,
-      "git_blob_sha1": "d811b7f1d1f6296b4157a18cf39db25f0ee17353",
-      "sha256": "0490aa5254511b73567587d7b65e5d697b3c1f36e24b5f83ef02cbcb58e415a2"
+      "bytes": 7782,
+      "git_blob_sha1": "5b39609a891b88206c17f62e28fedb54840ac492",
+      "sha256": "cc3ce0ff2e7228efd76eb2807416a8f07ff92df2c8780dcf8342638cad5bb008"
     },
     "tests/test_workflow_intelligence.py": {
-      "bytes": 11633,
-      "git_blob_sha1": "1ac8c02a3adce2e223d5beb17d16c20c16113e79",
-      "sha256": "01af13baae2fcf000260e3bb2bcc17dd3f48578461b1b1a3ebd6709262c28794"
+      "bytes": 11936,
+      "git_blob_sha1": "538c27c6d8cb7fad40e740225dcbfa30053164ba",
+      "sha256": "07c810aff6217dfb40bd7708c43dfb982ded6c9f57dbfbb9d4d75954dc5ed363"
     }
   },
   "verification": {
@@ -63,9 +63,9 @@
     "errors": 0,
     "exit_code": 0,
     "failures": 0,
-    "log_sha256": "3b7d4d356d8c01f046049b5d701c95847730ae280180a4109657eb9ae77c3e34",
+    "log_sha256": "528636bb50b4d24c7458895a40a6bf51546b2efb8146e223c7c53de3da796bf7",
     "skipped": 0,
     "syntax": "Ruff passed; Pyright returned 0 errors with environment-only missing-source/import warnings",
-    "tests": 204
+    "tests": 206
   }
 }
