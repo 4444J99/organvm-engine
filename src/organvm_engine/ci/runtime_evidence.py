@@ -147,7 +147,9 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
             runner = job.get("runner_id")
             if type(runner) is not int or runner < 0:
                 raise ValueError("execution: invalid runner identity")
-            if runner == 0 or not steps:
+            if runner == 0 and steps:
+                raise ValueError("execution: runner and steps contradict")
+            if not steps:
                 state = "not_executed"
             elif job.get("status") != "completed":
                 state = "pending"
