@@ -91,10 +91,16 @@ def test_executed_failure_wins_despite_incomplete_pagination():
     ("run", "created_at"), ("run", "run_started_at"), ("run", "updated_at"),
     ("job", "created_at"), ("job", "started_at"), ("job", "completed_at"),
     ("job", "updated_at"),
+    ("step", "started_at"), ("step", "completed_at"),
 ])
 def test_observation_cannot_predate_execution_timestamp(target, field):
     data = payload()
-    record = data["run"] if target == "run" else data["jobs_pages"][0]["jobs"][0]
+    if target == "run":
+        record = data["run"]
+    elif target == "job":
+        record = data["jobs_pages"][0]["jobs"][0]
+    else:
+        record = data["jobs_pages"][0]["jobs"][0]["steps"][0]
     record[field] = "2026-09-13T15:00:00Z"
     with pytest.raises(ValueError, match="chronology"):
         evaluate_run(**data)
