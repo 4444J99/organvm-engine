@@ -29,7 +29,6 @@ MAX_NODES = 20000
 MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
-EXPRESSION = re.compile(r"\$\{\{.*?\}\}", re.DOTALL)
 UNTRUSTED_CONTEXT = re.compile(
     r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|github\.head_ref\b)",
 )
@@ -73,8 +72,38 @@ def _contains_pr_head(value: Any) -> bool:
 def _contains_untrusted_run_expression(value: str) -> bool:
     """Scan complete GitHub expressions; braces inside quoted format strings are data."""
     normalized = _normalize_event_paths(value)
-    return any(UNTRUSTED_CONTEXT.search(match.group(0))
-               for match in EXPRESSION.finditer(normalized))
+    return any(UNTRUSTED_CONTEXT.search(expression)
+               for expression in _github_expressions(normalized))
+
+
+def _github_expressions(value: str) -> list[str]:
+    """Return delimiter-complete expressions while ignoring delimiters inside quotes."""
+    expressions = []
+    cursor = 0
+    while (start := value.find("${{", cursor)) >= 0:
+        quote = None
+        index = start + 3
+        while index < len(value) - 1:
+            char = value[index]
+            if quote is not None:
+                if char == "\\" and index + 1 < len(value):
+                    index += 2
+                    continue
+                if char == quote:
+                    if index + 1 < len(value) and value[index + 1] == quote:
+                        index += 2
+                        continue
+                    quote = None
+            elif char in {"'", '"'}:
+                quote = char
+            elif char == "}" and value[index + 1] == "}":
+                expressions.append(value[start:index + 2])
+                cursor = index + 2
+                break
+            index += 1
+        else:
+            break
+    return expressions
 
 
 class _WorkflowLoader(yaml.SafeLoader):
@@ -342,8 +371,10 @@ def drift(previous: dict, current: dict) -> dict:
     if _time(current["observed_at"]) < _time(previous["observed_at"]):
         raise ValueError("drift: reversed observation chronology")
     if previous["revision"] == current["revision"]:
-        if (previous["enumeration_complete"] and current["enumeration_complete"]
-                and set(previous["expected_paths"]) != set(current["expected_paths"])):
+        previous_paths = set(previous["expected_paths"])
+        current_paths = set(current["expected_paths"])
+        if ((previous["enumeration_complete"] and not current_paths <= previous_paths)
+                or (current["enumeration_complete"] and not previous_paths <= current_paths)):
             raise ValueError("drift: conflicting complete enumeration")
         for path in set(previous["workflows"]) & set(current["workflows"]):
             before, after = previous["workflows"][path], current["workflows"][path]
