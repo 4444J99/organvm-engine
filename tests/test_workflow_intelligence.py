@@ -81,6 +81,15 @@ def test_privileged_target_bracket_notation_head_checkout(expression):
     assert "privileged_head_checkout" in codes(text)
 
 
+def test_privileged_target_synthetic_pull_ref_is_detected():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n          ref: refs/pull/${{ github.event.pull_request.number }}/head\n      - run:",
+    )
+    assert "privileged_head_checkout" in codes(text)
+
+
 def test_untrusted_expression_in_env_is_not_shell_source():
     text = SAFE.replace("      - run: pytest tests/", "      - run: printf '%s' \"$TITLE\"\n        env:\n          TITLE: ${{ github.event.issue.title }}")
     assert "untrusted_run_expression" not in codes(text)
@@ -99,6 +108,12 @@ def test_privileged_checkout_normalizes_every_bracket_segment(expression):
 def test_untrusted_run_normalizes_every_bracket_segment():
     text = SAFE.replace("pytest tests/", "printf '%s' ${{ github.event['issue']['title'] }}")
     assert "untrusted_run_expression" in codes(text)
+
+
+def test_head_ref_is_untrusted_generated_shell_source():
+    assert "untrusted_run_expression" in codes(
+        SAFE.replace("pytest tests/", "printf '%s' ${{ github.head_ref }}"),
+    )
 
 
 def test_local_actions_and_digest_containers_do_not_require_commit_pin():
@@ -203,6 +218,24 @@ def test_same_revision_allows_retrieval_state_recovery():
     assert result["changes"] == [{"path": PATH, "kind": "unavailable_comparison"}]
 
 
+def test_same_revision_rejects_conflicting_complete_enumeration():
+    previous = snapshot()
+    current = snapshot(
+        files={".github/workflows/other.yml": SAFE},
+        expected_paths=[".github/workflows/other.yml"],
+    )
+    with pytest.raises(ValueError, match="conflicting complete enumeration"):
+        drift(previous, current)
+
+
+def test_identical_source_rejects_conflicting_normalization():
+    previous = snapshot(revision="b" * 40)
+    current = snapshot()
+    current["workflows"][PATH]["normalized_digest"] = "b" * 64
+    with pytest.raises(ValueError, match="inconsistent normalization"):
+        drift(previous, current)
+
+
 def test_remediations_bound_to_source_and_human_gate():
     current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
     result = proposals(current, owner_refs=[], criticality=5, downstream_count=20)
@@ -227,6 +260,17 @@ def test_proposals_reject_invalid_snapshot_before_binding_source():
     with pytest.raises(ValueError, match="findings require analyzed source"):
         proposals(current, owner_refs=[])
 
+    current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
+    current["workflows"][PATH]["findings"][0]["repository_id"] = 99
+    with pytest.raises(ValueError, match="invalid finding"):
+        proposals(current, owner_refs=[])
+
+
+@pytest.mark.parametrize("owners", ["team-a", 7, [""], ["team a"], [1]])
+def test_proposals_reject_invalid_owner_reference_collections(owners):
+    with pytest.raises(ValueError, match="owner references"):
+        proposals(snapshot(SAFE.replace(f"@{PIN}", "@v7")), owner_refs=owners)
+
 
 def test_review_metrics_no_quality_claim_and_pending_not_zero_latency():
     data = [{"id": 1, "requested_at": "2026-09-13T12:00:00Z", "first_review_at": "2026-09-13T13:00:00Z",
@@ -247,6 +291,15 @@ def test_review_metrics_reject_duplicate_and_bad_chronology():
         review_metrics([record, copy.deepcopy(record)], observed_at=WHEN)
     with pytest.raises(ValueError):
         review_metrics([{**record, "first_review_at": "2026-09-13T11:00:00Z"}], observed_at=WHEN)
+
+
+@pytest.mark.parametrize("value", [0, ""])
+def test_review_metrics_reject_present_invalid_review_timestamp(value):
+    with pytest.raises(ValueError):
+        review_metrics(
+            [{"id": 1, "requested_at": "2026-09-13T12:00:00Z", "first_review_at": value}],
+            observed_at=WHEN,
+        )
 
 
 @pytest.mark.parametrize("reviewer_ids", ["alice", 7, [""], ["alice/ops"], [1]])
