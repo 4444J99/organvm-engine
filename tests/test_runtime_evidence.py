@@ -66,6 +66,18 @@ def test_job_execution_states(change, decision):
     assert evaluate_run(**data)["decision"] == decision
 
 
+def test_executed_failure_wins_over_unexecuted_sibling():
+    data = payload()
+    failed = data["jobs_pages"][0]["jobs"][0]
+    failed.update(conclusion="failure")
+    failed["steps"][0]["conclusion"] = "failure"
+    unexecuted = copy.deepcopy(failed)
+    unexecuted.update(id=6, name="lint", runner_id=0, steps=[])
+    data["jobs_pages"][0].update(total_count=2, jobs=[failed, unexecuted])
+    data["required_steps"]["lint"] = ["Run lint"]
+    assert evaluate_run(**data)["decision"] == "executed_failure"
+
+
 @pytest.mark.parametrize("value,state", [("skipped", "incomplete"), ("cancelled", "incomplete"),
                                          (None, "incomplete"), ("failure", "executed_failure")])
 def test_required_step_status_not_job_badge_controls_evidence(value, state):
