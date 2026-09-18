@@ -86,6 +86,21 @@ def test_untrusted_expression_in_env_is_not_shell_source():
     assert "untrusted_run_expression" not in codes(text)
 
 
+@pytest.mark.parametrize("expression", [
+    "${{ github.event.pull_request['head']['sha'] }}",
+    '${{ github.event["pull_request"]["head"]["repo"]["full_name"] }}',
+])
+def test_privileged_checkout_normalizes_every_bracket_segment(expression):
+    text = SAFE.replace("on: [push, pull_request]", "on: pull_request_target")
+    text = text.replace("      - run:", f"        with:\n          ref: {expression}\n      - run:")
+    assert "privileged_head_checkout" in codes(text)
+
+
+def test_untrusted_run_normalizes_every_bracket_segment():
+    text = SAFE.replace("pytest tests/", "printf '%s' ${{ github.event['issue']['title'] }}")
+    assert "untrusted_run_expression" in codes(text)
+
+
 def test_local_actions_and_digest_containers_do_not_require_commit_pin():
     assert "mutable_action" not in codes(SAFE.replace(f"actions/checkout@{PIN}", "./.github/actions/check"))
     container = "docker://example/image@sha256:" + "b" * 64
@@ -182,6 +197,12 @@ def test_drift_rejects_identity_and_time_mismatch():
         snapshot(observed_at="2026-09-13T14:00:00")
 
 
+def test_same_revision_allows_retrieval_state_recovery():
+    unavailable = snapshot(files={})
+    result = drift(unavailable, snapshot())
+    assert result["changes"] == [{"path": PATH, "kind": "unavailable_comparison"}]
+
+
 def test_remediations_bound_to_source_and_human_gate():
     current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
     result = proposals(current, owner_refs=[], criticality=5, downstream_count=20)
@@ -191,6 +212,13 @@ def test_remediations_bound_to_source_and_human_gate():
     assert result[0]["requires_human_approval"] is True
     assert result[0]["authorizes_mutation"] is False
     assert result[0]["risk_vector"] == [2, 5, 20]
+
+
+def test_proposals_reject_invalid_snapshot_before_binding_source():
+    current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
+    current["revision"] = "main"
+    with pytest.raises(ValueError, match="snapshot"):
+        proposals(current, owner_refs=[])
 
 
 def test_review_metrics_no_quality_claim_and_pending_not_zero_latency():
@@ -212,6 +240,14 @@ def test_review_metrics_reject_duplicate_and_bad_chronology():
         review_metrics([record, copy.deepcopy(record)], observed_at=WHEN)
     with pytest.raises(ValueError):
         review_metrics([{**record, "first_review_at": "2026-09-13T11:00:00Z"}], observed_at=WHEN)
+
+
+@pytest.mark.parametrize("reviewer_ids", ["alice", 7, [""], ["alice/ops"], [1]])
+def test_review_metrics_reject_invalid_reviewer_identity_collections(reviewer_ids):
+    record = {"id": 1, "requested_at": "2026-09-13T12:00:00Z",
+              "reviewer_ids": reviewer_ids}
+    with pytest.raises(ValueError, match="reviewer identities"):
+        review_metrics([record], observed_at=WHEN)
 
 
 def test_cli_retrieval_coverage_exit_codes(tmp_path, capsys):
