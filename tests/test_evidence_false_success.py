@@ -66,14 +66,14 @@ def test_mutated_partial_coverage_is_not_removal_evidence():
 
 def test_undeclared_enumeration_completeness_is_unknown():
     previous = snapshot()
-    current = inventory(1160447354, HEAD, {}, expected_paths=[], observed_at=WHEN)
+    current = inventory(1160447354, "b" * 40, {}, expected_paths=[], observed_at=WHEN)
     assert current["enumeration_complete"] is False
     assert drift(previous, current)["changes"] == [{"path": PATH, "kind": "unavailable_comparison"}]
 
 
 def test_explicitly_incomplete_enumeration_cannot_prove_addition_or_removal():
     complete = snapshot()
-    partial = inventory(1160447354, HEAD, {}, expected_paths=[], observed_at=WHEN,
+    partial = inventory(1160447354, "b" * 40, {}, expected_paths=[], observed_at=WHEN,
                         enumeration_complete=False)
     assert drift(complete, partial)["changes"][0]["kind"] == "unavailable_comparison"
     assert drift(partial, complete)["changes"][0]["kind"] == "unavailable_comparison"
@@ -81,7 +81,7 @@ def test_explicitly_incomplete_enumeration_cannot_prove_addition_or_removal():
 
 def test_complete_enumeration_can_prove_change():
     complete = snapshot()
-    empty = inventory(1160447354, HEAD, {}, expected_paths=[], observed_at=WHEN,
+    empty = inventory(1160447354, "b" * 40, {}, expected_paths=[], observed_at=WHEN,
                       enumeration_complete=True)
     assert drift(complete, empty)["changes"][0]["kind"] == "removed_from_enumeration"
 
@@ -108,6 +108,21 @@ def test_controls_still_score_each_dimension():
     assert result["decision"] == "pass"
     assert set(result["scores"]) == set(DIMENSIONS)
 
+
+def test_scope_counts_cannot_be_tampered_for_promotion():
+    before, after, rubric = paired_reports()
+    after["scope"].update(observed_count=0, missing_count=0, complete=True)
+    with pytest.raises(ValueError, match="scope"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric))
+
+
+def test_same_revision_cannot_claim_changed_workflow_content():
+    previous = snapshot()
+    current = snapshot(SAFE.replace("contents: read", "contents: write"))
+    with pytest.raises(ValueError, match="unchanged revision"):
+        drift(previous, current)
+
 def test_promotion_rejects_cross_revision_comparison():
     before, after, rubric = paired_reports()
     after["revision"] = "b" * 40
@@ -129,4 +144,3 @@ def test_incomplete_enumeration_never_reports_complete_coverage():
     partial["coverage"] = "complete"
     with pytest.raises(ValueError, match="inconsistent coverage"):
         drift(snapshot(), partial)
-
