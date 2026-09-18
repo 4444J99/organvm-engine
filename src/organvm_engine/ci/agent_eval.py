@@ -316,12 +316,12 @@ def _validate_report(report: dict) -> None:
     expected = [scores, coverage, failures, decision]
     actual = [report.get("scores"), report.get("coverage"), report.get("failed_required"),
               report.get("decision")]
-    if digest(expected) != digest(actual):
+    if not _json_equal(expected, actual):
         raise ValueError("gate: inconsistent score evidence")
 
 
 def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: list[str],
-                   rubric_digest: str, scope_manifest_digest: str,
+                   rubric_digest: str, scope_manifest_digest: str, expected_scope_count: int,
                    minimum_gain: float = 0.01) -> dict:
     """Paired held-out eligibility, never automatic learning or promotion.
 
@@ -337,6 +337,8 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
     if (not isinstance(scope_manifest_digest, str)
             or not re.fullmatch(r"[0-9a-f]{64}", scope_manifest_digest)):
         raise ValueError("gate: valid pinned scope manifest digest required")
+    if type(expected_scope_count) is not int or not 0 <= expected_scope_count <= 4096:
+        raise ValueError("gate: valid pinned scope manifest count required")
     if (not Draft202012Validator({"type": "array", "items": TOKEN, "minItems": 1,
                                   "maxItems": 4096, "uniqueItems": True}).is_valid(case_ids)):
         raise ValueError("gate: empty or duplicate held-out cases")
@@ -355,6 +357,7 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
                     or not re.fullmatch(r"[0-9a-f]{64}", report["rubric_digest"])
                     or report["rubric_digest"] != rubric_digest
                     or report.get("scope", {}).get("manifest_digest") != scope_manifest_digest
+                    or report.get("scope", {}).get("expected_count") != expected_scope_count
                     or report.get("evidence_class") != "recorded_trace_consistency"
                     or report.get("outcome") != "completed"
                     or not report.get("scope", {}).get("complete")):
@@ -405,6 +408,7 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
     return {"schema_version": VERSION, "decision": "blocked" if reasons else "eligible_for_review",
             "case_manifest_digest": digest(sorted(case_ids)), "rubric_digest": rubric_digest,
             "scope_manifest_digest": scope_manifest_digest,
+            "expected_scope_count": expected_scope_count,
             "baseline_digest": digest(baseline), "candidate_digest": digest(candidate),
             "paired_cases": len(case_ids), "mean_dimension_gain": gain,
             "minimum_gain": minimum_gain, "reasons": sorted(reasons),

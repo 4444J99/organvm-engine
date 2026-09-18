@@ -16,16 +16,16 @@
     "remote deployment",
     "broker task or lease transitions"
   ],
-  "observed_at": "2026-09-18T19:57:50.616948Z",
+  "observed_at": "2026-09-18T20:14:24.050369Z",
   "publication_state": "prepared_for_draft_PR; published head and hosted observation belong in PR receipt",
   "record_id": "ORGANVM-RESEARCH-20260911-VERIFICATION",
   "repository_id": 1160447354,
   "scope": "seven_changed_source_test_files_in_complete_checkout",
   "source_manifest": {
     "src/organvm_engine/ci/agent_eval.py": {
-      "bytes": 22045,
-      "git_blob_sha1": "0b429f434c0c47abde1987d59dec193ba39ea6aa",
-      "sha256": "f2a16dea8ae8733331ca8eb44df7854ac4ba474a25f4a3259caffe3ced4a9746"
+      "bytes": 22386,
+      "git_blob_sha1": "8c2fce58ddb3131c5539f5f9931c450c6544a1da",
+      "sha256": "67f9d1067c773d8618237c18747b4858d81815b723fef53e283c94e67c9c033c"
     },
     "src/organvm_engine/ci/runtime_evidence.py": {
       "bytes": 14283,
@@ -33,19 +33,19 @@
       "sha256": "80968cc5926c85cd10309d70f6d5708991c47ddbda20326a66d28652a38d9329"
     },
     "src/organvm_engine/ci/workflow_intelligence.py": {
-      "bytes": 33680,
-      "git_blob_sha1": "53d66a595ea8151506180964edb6276ba0579096",
-      "sha256": "a2b0ef340b5d65c19de2898532f9afa0516fb311eab042f5789b55945dea15eb"
+      "bytes": 35137,
+      "git_blob_sha1": "9e4ee67ccfc5ab12e3105f023e188ad5f72379bc",
+      "sha256": "0f821cf493ccd22e48d3a1c7f08d502249aa076b79f2f2259033cb0b7ed06626"
     },
     "tests/test_agent_eval.py": {
-      "bytes": 18080,
-      "git_blob_sha1": "b8cb743bd8bfa4c2e74c3193d929522af99aceaf",
-      "sha256": "e0f97aae9eb21fed9bebe196e240b14712e37914b61241035588584a6a87612d"
+      "bytes": 19830,
+      "git_blob_sha1": "8df9ec548e9a9649ba00b33bb48d3a4aabf6793a",
+      "sha256": "013cf5af8169354224d0355eed2ee12953d9fb04c02de438c7f3f1266e4005cd"
     },
     "tests/test_evidence_false_success.py": {
       "bytes": 6651,
-      "git_blob_sha1": "b03aeb3e9678d771e642d934c86f742e02d69565",
-      "sha256": "d060866f4647b44239835470f1d9ba4207dd5954b97e8d4c9b8af7a3ef0a4379"
+      "git_blob_sha1": "a9d713632007527f00e6ee9c85719b65fc6b0f00",
+      "sha256": "461e3a2d13ce1e93bd284211250cb8d16bf26722a1129ef5b6fd4ef017c635bf"
     },
     "tests/test_runtime_evidence.py": {
       "bytes": 12346,
@@ -53,9 +53,9 @@
       "sha256": "d87ea13e6261acd2636e882c8edb1b000b2e96c1276f6097b078315434c2f483"
     },
     "tests/test_workflow_intelligence.py": {
-      "bytes": 25598,
-      "git_blob_sha1": "4e0a77aac6535abac42a3aea0224dbe7e006423e",
-      "sha256": "06a0847613e3e65dd13b7c914f774d0d7907a60526715b486dfe695cb7291c95"
+      "bytes": 27146,
+      "git_blob_sha1": "cbef4d8cfed69991d57438803a96344fb9854531",
+      "sha256": "48b428572afcfe8a8f4bda2002875cdb3397769a13e88975179b5e06531e3567"
     }
   },
   "verification": {
@@ -64,9 +64,9 @@
     "exit_code": 0,
     "failures": 0,
     "junit_artifact": "docs/research/evidence/integration-2026-09-18.xml",
-    "junit_sha256": "56494814a22f7497307c0f82866eff3345886a7c094904e7f39c14fe21dee9a0",
+    "junit_sha256": "168ce9732e56dd8e8794abd78bfcf375f603761eec0a9972f803d4605799875c",
     "skipped": 0,
     "syntax": "Ruff passed; Pyright returned 0 errors with environment-only missing-source/import warnings",
-    "tests": 315
+    "tests": 326
   }
 }

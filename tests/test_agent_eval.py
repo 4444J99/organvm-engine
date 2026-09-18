@@ -10,12 +10,19 @@ from organvm_engine.ci.agent_eval import (
     digest,
     evaluate_trace,
     main,
-    promotion_gate,
 )
+from organvm_engine.ci.agent_eval import promotion_gate as _promotion_gate
 
 HEAD = "a" * 40
 REPO = 1160447354
 SCOPE_DIGEST = digest(["README.md"])
+SCOPE_COUNT = 1
+
+
+def promotion_gate(*args, **kwargs):
+    """Exercise the production gate with the fixture's independently pinned scope."""
+    kwargs.setdefault("expected_scope_count", SCOPE_COUNT)
+    return _promotion_gate(*args, **kwargs)
 
 
 def fixture_pair():
@@ -292,6 +299,17 @@ def test_promotion_requires_valid_pinned_scope_digest(scope_digest):
         )
 
 
+@pytest.mark.parametrize("scope_count", [None, -1, True, 1.0, 4097])
+def test_promotion_requires_valid_pinned_scope_count(scope_count):
+    before, after, rubric = paired_reports()
+    with pytest.raises(ValueError, match="scope manifest count"):
+        _promotion_gate(
+            [before], [after], case_ids=[after["case_id"]],
+            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
+            expected_scope_count=scope_count,
+        )
+
+
 def test_promotion_rejects_matching_but_unpinned_report_scopes():
     before, after, rubric = paired_reports()
     unauthorized = {
@@ -305,6 +323,32 @@ def test_promotion_rejects_matching_but_unpinned_report_scopes():
             [before], [after], case_ids=[after["case_id"]],
             rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
         )
+
+
+def test_promotion_rejects_correct_digest_with_wrong_scope_count():
+    before, after, rubric = paired_reports()
+    for report in (before, after):
+        report["scope"].update(
+            expected_count=0, observed_count=0, missing_count=0, complete=True,
+        )
+    with pytest.raises(ValueError, match="incomparable evidence"):
+        promotion_gate(
+            [before], [after], case_ids=[after["case_id"]],
+            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
+        )
+
+
+def test_report_consistency_accepts_equivalent_integer_scores():
+    before, after, rubric = paired_reports()
+    before["scores"] = {
+        key: int(value) if value in (0.0, 1.0) else value
+        for key, value in before["scores"].items()
+    }
+    result = promotion_gate(
+        [before], [after], case_ids=[after["case_id"]],
+        rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
+    )
+    assert result["decision"] == "eligible_for_review"
 
 
 def test_promotion_rejects_missing_report_rubric_digest():

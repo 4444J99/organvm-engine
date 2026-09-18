@@ -42,6 +42,10 @@ UNTRUSTED_CONTEXT = re.compile(
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
 PR_HEAD_REF = re.compile(r"github\.head_ref\b")
 PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
+WORKFLOW_RUN_HEAD_SHA = re.compile(r"github\.event\.workflow_run\.head_sha\b")
+WORKFLOW_RUN_HEAD_REPOSITORY = re.compile(
+    r"github\.event\.workflow_run\.head_repository\.full_name\b",
+)
 PR_SYNTHETIC_REF = re.compile(
     r"refs/pull/(?:[0-9]+|\$\{\{.*?github\.event\.(?:pull_request\.)?number\b.*?\}\})/(?:head|merge)\b",
     re.DOTALL,
@@ -103,6 +107,18 @@ def _contains_pr_head(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_pr_head(item) for item in value)
     return False
+
+
+def _contains_workflow_run_head(value: dict[str, Any]) -> bool:
+    """Require both the workflow-run head SHA and its contributor repository."""
+    ref_value = value.get("ref", "")
+    repository_value = value.get("repository", "")
+    if not isinstance(ref_value, str) or not isinstance(repository_value, str):
+        return False
+    ref = _normalize_event_paths(ref_value)
+    repository = _normalize_event_paths(repository_value)
+    return (WORKFLOW_RUN_HEAD_SHA.search(ref) is not None
+            and WORKFLOW_RUN_HEAD_REPOSITORY.search(repository) is not None)
 
 
 def _contains_untrusted_run_expression(value: str) -> bool:
@@ -336,6 +352,12 @@ def analyze_workflow(text: str) -> dict:
     normalized_doc = copy.deepcopy(doc)
     if isinstance(normalized_doc["on"], list):
         normalized_doc["on"] = sorted(normalized_doc["on"])
+    elif isinstance(normalized_doc["on"], dict):
+        for event_config in normalized_doc["on"].values():
+            if (isinstance(event_config, dict)
+                    and isinstance(event_config.get("types"), list)
+                    and all(isinstance(item, str) for item in event_config["types"])):
+                event_config["types"] = sorted(event_config["types"])
     for job_id, job in doc["jobs"].items():
         if not isinstance(job, dict):
             raise ValueError("workflow: invalid job")
@@ -380,8 +402,15 @@ def analyze_workflow(text: str) -> dict:
                 content_selectors = {
                     key: settings[key] for key in ("ref", "repository") if key in settings
                 }
-                if (checkout and "pull_request_target" in trigger_names
-                        and _contains_pr_head(content_selectors)):
+                privileged_pull_request = (
+                    "pull_request_target" in trigger_names
+                    and _contains_pr_head(content_selectors)
+                )
+                privileged_workflow_run = (
+                    "workflow_run" in trigger_names
+                    and _contains_workflow_run_head(content_selectors)
+                )
+                if checkout and (privileged_pull_request or privileged_workflow_run):
                     add("privileged_head_checkout", "critical", sloc)
             if "run" in step:
                 if not isinstance(step["run"], str):

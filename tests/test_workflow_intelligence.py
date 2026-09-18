@@ -238,6 +238,31 @@ def test_privileged_target_merge_checkout_is_detected(expression):
     assert "privileged_head_checkout" in codes(text)
 
 
+def test_privileged_workflow_run_head_checkout_is_detected():
+    text = SAFE.replace("on: [push, pull_request]", "on: workflow_run")
+    text = text.replace(
+        "      - run:",
+        "        with:\n"
+        "          ref: ${{ github.event.workflow_run.head_sha }}\n"
+        "          repository: ${{ github.event.workflow_run.head_repository.full_name }}\n"
+        "      - run:",
+    )
+    assert "privileged_head_checkout" in codes(text)
+
+
+@pytest.mark.parametrize("missing", ["ref", "repository"])
+def test_workflow_run_checkout_requires_both_untrusted_head_selectors(missing):
+    settings = {
+        "ref": "${{ github.event.workflow_run.head_sha }}",
+        "repository": "${{ github.event.workflow_run.head_repository.full_name }}",
+    }
+    settings.pop(missing)
+    rendered = "".join(f"          {key}: {value}\n" for key, value in settings.items())
+    text = SAFE.replace("on: [push, pull_request]", "on: workflow_run")
+    text = text.replace("      - run:", f"        with:\n{rendered}      - run:")
+    assert "privileged_head_checkout" not in codes(text)
+
+
 def test_untrusted_expression_in_env_is_not_shell_source():
     text = SAFE.replace("      - run: pytest tests/", "      - run: printf '%s' \"$TITLE\"\n        env:\n          TITLE: ${{ github.event.issue.title }}")
     assert "untrusted_run_expression" not in codes(text)
@@ -407,6 +432,19 @@ def test_trigger_order_only_change_is_representation_only():
         revision="b" * 40,
     )
     assert drift(snapshot(), reordered)["changes"][0]["kind"] == "representation_only"
+
+
+def test_nested_trigger_type_order_change_is_representation_only():
+    original = SAFE.replace(
+        "on: [push, pull_request]",
+        "on:\n  pull_request:\n    types: [opened, synchronize]",
+    )
+    reordered = original.replace(
+        "types: [opened, synchronize]", "types: [synchronize, opened]",
+    )
+    assert drift(
+        snapshot(original), snapshot(reordered, revision="b" * 40),
+    )["changes"][0]["kind"] == "representation_only"
 
 
 def test_drift_rejects_identity_and_time_mismatch():

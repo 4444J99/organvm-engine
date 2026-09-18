@@ -2,10 +2,10 @@
 import copy
 
 import pytest
-from test_agent_eval import SCOPE_DIGEST, fixture_pair, paired_reports, score
+from test_agent_eval import SCOPE_DIGEST, fixture_pair, paired_reports, promotion_gate, score
 from test_workflow_intelligence import HEAD, PATH, SAFE, WHEN, snapshot
 
-from organvm_engine.ci.agent_eval import DIMENSIONS, digest, promotion_gate
+from organvm_engine.ci.agent_eval import DIMENSIONS, digest
 from organvm_engine.ci.workflow_intelligence import drift, inventory
 
 
