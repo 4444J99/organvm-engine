@@ -289,6 +289,8 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
     if (type(minimum_gain) not in (int, float) or not math.isfinite(minimum_gain)
             or not 0 < minimum_gain <= 1):
         raise ValueError("gate: minimum_gain must be finite and in (0, 1]")
+    if not isinstance(rubric_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", rubric_digest):
+        raise ValueError("gate: valid pinned rubric digest required")
     if not case_ids or len(set(case_ids)) != len(case_ids):
         raise ValueError("gate: empty or duplicate held-out cases")
     for reports in (baseline, candidate):
@@ -297,7 +299,9 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
             raise ValueError("gate: paired case coverage mismatch")
         for report in reports:
             _validate_report(report)
-            if (report.get("rubric_digest") != rubric_digest
+            if (not isinstance(report.get("rubric_digest"), str)
+                    or not re.fullmatch(r"[0-9a-f]{64}", report["rubric_digest"])
+                    or report["rubric_digest"] != rubric_digest
                     or report.get("evidence_class") != "recorded_trace_consistency"
                     or report.get("outcome") != "completed"
                     or not report.get("scope", {}).get("complete")):
