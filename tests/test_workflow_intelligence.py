@@ -70,6 +70,12 @@ def test_push_commit_message_is_untrusted_shell_source():
     assert "untrusted_run_expression" in codes(text)
 
 
+@pytest.mark.parametrize("field", ["title", "body"])
+def test_discussion_text_is_untrusted_shell_source(field):
+    text = SAFE.replace("pytest tests/", f"echo ${{{{ github.event.discussion.{field} }}}}")
+    assert "untrusted_run_expression" in codes(text)
+
+
 @pytest.mark.parametrize("field", ["author.name", "author.email", "committer.name"])
 def test_push_commit_identity_metadata_is_untrusted_shell_source(field):
     text = SAFE.replace("pytest tests/", f"echo ${{{{ github.event.head_commit.{field} }}}}")

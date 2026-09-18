@@ -15,6 +15,7 @@ from organvm_engine.ci.agent_eval import (
 
 HEAD = "a" * 40
 REPO = 1160447354
+SCOPE_DIGEST = digest(["README.md"])
 
 
 def fixture_pair():
@@ -165,7 +166,8 @@ def test_refusal_abstention_error_separate_from_capability(outcome):
     assert result["scores"]["tool_choice"] is None
     assert result["scores"]["policy"] == 1
     with pytest.raises(ValueError):
-        promotion_gate([result], [result], case_ids=[result["case_id"]], rubric_digest=digest(rubric))
+        promotion_gate([result], [result], case_ids=[result["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_unapproved_refusal_still_fails_policy():
@@ -184,6 +186,13 @@ def test_json_null_is_not_absence_and_boolean_is_not_number():
     assert score(trace, rubric)["decision"] == "pass"
     check.update(pointer="/output/done", expected=1)
     assert score(trace, rubric)["decision"] == "fail"
+
+
+def test_json_numbers_compare_by_value_across_integer_and_decimal_forms():
+    trace, rubric = fixture_pair()
+    trace["output"]["quality"] = 1.0
+    rubric["checks"][0].update(pointer="/output/quality", expected=1)
+    assert score(trace, rubric)["decision"] == "pass"
 
 
 @pytest.mark.parametrize("value", [("python", "tuple"), {1: "non-string-key"}])
@@ -247,11 +256,13 @@ def paired_reports():
 
 def test_promotion_requires_gain_and_never_authorizes_learning():
     before, after, rubric = paired_reports()
-    result = promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
+    result = promotion_gate([before], [after], case_ids=[after["case_id"]],
+                            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
     assert result["decision"] == "eligible_for_review"
     assert result["mean_dimension_gain"] == pytest.approx(0.1)
     assert not result["authorizes_learning"] and not result["authorizes_release"]
-    blocked = promotion_gate([after], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
+    blocked = promotion_gate([after], [after], case_ids=[after["case_id"]],
+                             rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
     assert blocked["decision"] == "blocked"
 
 
@@ -260,14 +271,40 @@ def test_invalid_reward_threshold(gain):
     before, after, rubric = paired_reports()
     with pytest.raises(ValueError):
         promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
-                       minimum_gain=gain)
+                       scope_manifest_digest=SCOPE_DIGEST, minimum_gain=gain)
 
 
 @pytest.mark.parametrize("rubric_digest", [None, "", "a" * 63, "A" * 64])
 def test_promotion_requires_valid_pinned_rubric_digest(rubric_digest):
     before, after, _ = paired_reports()
     with pytest.raises(ValueError, match="rubric digest"):
-        promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=rubric_digest)
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=rubric_digest, scope_manifest_digest=SCOPE_DIGEST)
+
+
+@pytest.mark.parametrize("scope_digest", [None, "", "a" * 63, "A" * 64])
+def test_promotion_requires_valid_pinned_scope_digest(scope_digest):
+    before, after, rubric = paired_reports()
+    with pytest.raises(ValueError, match="scope manifest digest"):
+        promotion_gate(
+            [before], [after], case_ids=[after["case_id"]],
+            rubric_digest=digest(rubric), scope_manifest_digest=scope_digest,
+        )
+
+
+def test_promotion_rejects_matching_but_unpinned_report_scopes():
+    before, after, rubric = paired_reports()
+    unauthorized = {
+        "manifest_digest": digest([]), "expected_count": 0,
+        "observed_count": 0, "missing_count": 0, "complete": True,
+    }
+    before["scope"] = copy.deepcopy(unauthorized)
+    after["scope"] = copy.deepcopy(unauthorized)
+    with pytest.raises(ValueError, match="incomparable evidence"):
+        promotion_gate(
+            [before], [after], case_ids=[after["case_id"]],
+            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
+        )
 
 
 def test_promotion_rejects_missing_report_rubric_digest():
@@ -277,6 +314,7 @@ def test_promotion_rejects_missing_report_rubric_digest():
     with pytest.raises(ValueError):
         promotion_gate(
             [before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
+            scope_manifest_digest=SCOPE_DIGEST,
         )
 
 
@@ -292,6 +330,7 @@ def test_promotion_requires_valid_report_trace_digest(trace_digest):
     with pytest.raises(ValueError, match="immutable report identity"):
         promotion_gate(
             [before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
+            scope_manifest_digest=SCOPE_DIGEST,
         )
 
 
@@ -299,7 +338,8 @@ def test_promotion_requires_valid_report_trace_digest(trace_digest):
 def test_case_manifest_failures(ids):
     before, after, rubric = paired_reports()
     with pytest.raises(ValueError):
-        promotion_gate([before], [after], case_ids=ids, rubric_digest=digest(rubric))
+        promotion_gate([before], [after], case_ids=ids, rubric_digest=digest(rubric),
+                       scope_manifest_digest=SCOPE_DIGEST)
 
 
 @pytest.mark.parametrize("case_id", [None, 7, "", "case id", "case\n", "x" * 129])
@@ -308,14 +348,16 @@ def test_case_manifest_and_reports_require_token_identity(case_id):
     before["case_id"] = case_id
     after["case_id"] = case_id
     with pytest.raises(ValueError):
-        promotion_gate([before], [after], case_ids=[case_id], rubric_digest=digest(rubric))
+        promotion_gate([before], [after], case_ids=[case_id], rubric_digest=digest(rubric),
+                       scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_tampered_scores_do_not_enter_reward_gate():
     before, after, rubric = paired_reports()
     after["scores"]["policy"] = 0.9
     with pytest.raises(ValueError, match="inconsistent"):
-        promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_same_trace_digest_cannot_claim_changed_evaluation_outcome():
@@ -324,6 +366,7 @@ def test_same_trace_digest_cannot_claim_changed_evaluation_outcome():
     with pytest.raises(ValueError, match="trace digest"):
         promotion_gate(
             [before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
+            scope_manifest_digest=SCOPE_DIGEST,
         )
 
 
@@ -337,6 +380,7 @@ def test_trace_digest_cannot_be_reused_across_held_out_cases():
         promotion_gate(
             [before, before2], [after, after2],
             case_ids=[before["case_id"], "other-case"], rubric_digest=digest(rubric),
+            scope_manifest_digest=SCOPE_DIGEST,
         )
 
 
@@ -345,7 +389,7 @@ def test_scope_report_cannot_be_tampered_for_promotion():
     after["scope"]["missing_count"] = 1
     with pytest.raises(ValueError, match="scope"):
         promotion_gate([before], [after], case_ids=[after["case_id"]],
-                       rubric_digest=digest(rubric))
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_candidate_required_failures_and_regression_cannot_hide():
@@ -353,7 +397,8 @@ def test_candidate_required_failures_and_regression_cannot_hide():
     before = score(trace, rubric)
     trace["steps"][0]["arguments"]["mutate"] = True
     after = score(trace, rubric)
-    result = promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
+    result = promotion_gate([before], [after], case_ids=[after["case_id"]],
+                            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
     assert result["decision"] == "blocked"
     assert "per_case_dimension_regression" in result["reasons"]
     assert "candidate_required_check_failure" in result["reasons"]

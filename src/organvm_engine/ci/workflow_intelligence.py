@@ -33,6 +33,7 @@ UNTRUSTED_CONTEXT = re.compile(
     r"(?:github\.event(?=\s*(?:[),]|\}\}))|"
     r"github\.event\.issue\.(?:title|body)\b|"
     r"github\.event\.pull_request\.(?:title|body|head\.(?:ref|label)|head\.repo\.full_name)\b|"
+    r"github\.event\.discussion\.(?:title|body)\b|"
     r"github\.event\.(?:comment|review)\.body\b|"
     r"github\.event\.head_commit\.(?:message|author|committer)\b|"
     r"github\.event\.commits(?:\s*\[[^\]]+\]|\.\*)\.(?:message|author|committer)\b|"

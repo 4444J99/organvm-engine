@@ -98,6 +98,25 @@ def digest(value: Any) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
+def _json_equal(left: Any, right: Any) -> bool:
+    """Compare JSON values semantically while keeping booleans distinct from numbers."""
+    if type(left) is bool or type(right) is bool:
+        return type(left) is type(right) and left == right
+    if type(left) in (int, float) and type(right) in (int, float):
+        return left == right
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            _json_equal(a, b) for a, b in zip(left, right, strict=True)
+        )
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            _json_equal(left[key], right[key]) for key in left
+        )
+    return left == right
+
+
 def _validate(value: Any, schema: dict, label: str) -> None:
     # Do not echo schema validation messages: they can contain private input.
     try:
@@ -178,7 +197,9 @@ def evaluate_trace(trace: dict, rubric: dict, *, expected_revision: str,
     for check in checks:
         exists, value = _pointer(trace, check["pointer"])
         applicable = outcome in check["when"]
-        passed = exists and (check["op"] == "exists" or digest(value) == digest(check["expected"]))
+        passed = exists and (
+            check["op"] == "exists" or _json_equal(value, check["expected"])
+        )
         results.append({"id": check["id"], "dimension": check["dimension"],
                         "required": check["required"], "weight": check["weight"],
                         "status": ("pass" if passed else "fail") if applicable else "not_applicable"})
@@ -300,7 +321,8 @@ def _validate_report(report: dict) -> None:
 
 
 def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: list[str],
-                   rubric_digest: str, minimum_gain: float = 0.01) -> dict:
+                   rubric_digest: str, scope_manifest_digest: str,
+                   minimum_gain: float = 0.01) -> dict:
     """Paired held-out eligibility, never automatic learning or promotion.
 
     Caller must freeze the held-out case manifest separately from generation.
@@ -312,6 +334,9 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
         raise ValueError("gate: minimum_gain must be finite and in (0, 1]")
     if not isinstance(rubric_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", rubric_digest):
         raise ValueError("gate: valid pinned rubric digest required")
+    if (not isinstance(scope_manifest_digest, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", scope_manifest_digest)):
+        raise ValueError("gate: valid pinned scope manifest digest required")
     if (not Draft202012Validator({"type": "array", "items": TOKEN, "minItems": 1,
                                   "maxItems": 4096, "uniqueItems": True}).is_valid(case_ids)):
         raise ValueError("gate: empty or duplicate held-out cases")
@@ -329,6 +354,7 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
             if (not isinstance(report.get("rubric_digest"), str)
                     or not re.fullmatch(r"[0-9a-f]{64}", report["rubric_digest"])
                     or report["rubric_digest"] != rubric_digest
+                    or report.get("scope", {}).get("manifest_digest") != scope_manifest_digest
                     or report.get("evidence_class") != "recorded_trace_consistency"
                     or report.get("outcome") != "completed"
                     or not report.get("scope", {}).get("complete")):
@@ -378,6 +404,7 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
         reasons.add("insufficient_measured_gain")
     return {"schema_version": VERSION, "decision": "blocked" if reasons else "eligible_for_review",
             "case_manifest_digest": digest(sorted(case_ids)), "rubric_digest": rubric_digest,
+            "scope_manifest_digest": scope_manifest_digest,
             "baseline_digest": digest(baseline), "candidate_digest": digest(candidate),
             "paired_cases": len(case_ids), "mean_dimension_gain": gain,
             "minimum_gain": minimum_gain, "reasons": sorted(reasons),

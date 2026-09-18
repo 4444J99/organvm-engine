@@ -2,7 +2,7 @@
 import copy
 
 import pytest
-from test_agent_eval import fixture_pair, paired_reports, score
+from test_agent_eval import SCOPE_DIGEST, fixture_pair, paired_reports, score
 from test_workflow_intelligence import HEAD, PATH, SAFE, WHEN, snapshot
 
 from organvm_engine.ci.agent_eval import DIMENSIONS, digest, promotion_gate
@@ -39,21 +39,24 @@ def test_same_rubric_claim_does_not_hide_changed_check_identity():
     before, after, rubric = paired_reports()
     after["checks"][0]["id"] = "different-check"
     with pytest.raises(ValueError):
-        promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_equivalent_check_order_is_not_a_regression():
     before, after, rubric = paired_reports()
     after["checks"].reverse()
     assert promotion_gate([before], [after], case_ids=[after["case_id"]],
-                          rubric_digest=digest(rubric))["decision"] == "eligible_for_review"
+                          rubric_digest=digest(rubric),
+                          scope_manifest_digest=SCOPE_DIGEST)["decision"] == "eligible_for_review"
 
 
 def test_weight_changes_with_identical_scores_are_not_comparable():
     before, after, rubric = paired_reports()
     after["checks"][0]["weight"] = 2
     with pytest.raises(ValueError):
-        promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_mutated_partial_coverage_is_not_removal_evidence():
@@ -114,7 +117,7 @@ def test_scope_counts_cannot_be_tampered_for_promotion():
     after["scope"].update(observed_count=0, missing_count=0, complete=True)
     with pytest.raises(ValueError, match="scope"):
         promotion_gate([before], [after], case_ids=[after["case_id"]],
-                       rubric_digest=digest(rubric))
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 @pytest.mark.parametrize("field,value", [
@@ -127,7 +130,7 @@ def test_unbound_report_identity_cannot_be_paired(field, value):
     after[field] = value
     with pytest.raises(ValueError, match="identity"):
         promotion_gate([before], [after], case_ids=[after["case_id"]],
-                       rubric_digest=digest(rubric))
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_same_revision_cannot_claim_changed_workflow_content():
@@ -141,7 +144,7 @@ def test_promotion_rejects_cross_revision_comparison():
     after["revision"] = "b" * 40
     with pytest.raises(ValueError, match="revision mismatch"):
         promotion_gate([before], [after], case_ids=[after["case_id"]],
-                       rubric_digest=digest(rubric))
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
 
 
 def test_incomplete_enumeration_never_reports_complete_coverage():
