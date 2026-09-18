@@ -158,11 +158,17 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
             for step in selected:
                 if step is not None:
                     step_times = _execution_times(step, ("started_at", "completed_at"), timestamp)
+                    if (job_times.get("created_at")
+                            and any(moment < job_times["created_at"] for moment in step_times.values())):
+                        raise ValueError("execution: step predates parent job")
                     if (job_times.get("started_at")
                             and any(moment < job_times["started_at"] for moment in step_times.values())):
                         raise ValueError("execution: step predates parent job")
                     if (job_times.get("completed_at")
                             and any(moment > job_times["completed_at"] for moment in step_times.values())):
+                        raise ValueError("execution: step exceeds parent job")
+                    if (job_times.get("updated_at")
+                            and any(moment > job_times["updated_at"] for moment in step_times.values())):
                         raise ValueError("execution: step exceeds parent job")
             executed = sum(step is not None and step.get("status") == "completed"
                            and step.get("conclusion") in {"success", "failure"} for step in selected)
@@ -173,6 +179,9 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 raise ValueError("execution: runner and steps contradict")
             if not steps:
                 state = "not_executed"
+            elif any(step is not None and step.get("status") == "completed"
+                     and step.get("conclusion") == "failure" for step in selected):
+                state = "executed_failure"
             elif job.get("status") != "completed":
                 state = "pending"
             elif any(step is None or step.get("status") != "completed"
