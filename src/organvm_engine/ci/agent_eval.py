@@ -319,6 +319,8 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
             raise ValueError("gate: paired check contract mismatch")
         if report.get("repository_id") != old.get("repository_id"):
             raise ValueError("gate: repository identity mismatch")
+        if report.get("revision") != old.get("revision"):
+            raise ValueError("gate: paired revision mismatch")
         if (report["scope"]["manifest_digest"] != old["scope"]["manifest_digest"]
                 or report["scope"]["expected_count"] != old["scope"]["expected_count"]):
             raise ValueError("gate: paired scope manifest mismatch")
