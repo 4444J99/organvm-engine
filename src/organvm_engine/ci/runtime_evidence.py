@@ -30,6 +30,23 @@ def _names(values: object) -> bool:
             and len(set(values)) == len(values))
 
 
+def _execution_times(record: dict, fields: tuple[str, ...], observed: datetime) -> None:
+    """Reject impossible capture chronology without requiring optional API fields."""
+    parsed = []
+    for field in fields:
+        value = record.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise ValueError("execution: invalid timestamp")
+        moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if moment.tzinfo is None or moment.utcoffset() is None or moment > observed:
+            raise ValueError("execution: impossible observation chronology")
+        parsed.append(moment)
+    if parsed != sorted(parsed):
+        raise ValueError("execution: impossible execution chronology")
+
+
 def _pages(pages: list[dict]) -> tuple[list[dict], bool, int | None]:
     if not isinstance(pages, list) or len(pages) > MAX_PAGES:
         raise ValueError("execution: invalid page collection")
@@ -84,6 +101,7 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
             raise ValueError("execution: run identity mismatch")
         if run.get("status") not in {"queued", "in_progress", "completed", "waiting", "pending", "requested"}:
             raise ValueError("execution: unsupported run status")
+        _execution_times(run, ("created_at", "run_started_at", "updated_at"), timestamp)
         jobs, complete, total = _pages(jobs_pages)
         by_name: dict[str, list[dict]] = {}
         for job in jobs:
@@ -93,6 +111,7 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 raise ValueError("execution: job identity mismatch")
             if not isinstance(job.get("name"), str):
                 raise ValueError("execution: invalid job name")
+            _execution_times(job, ("created_at", "started_at", "completed_at", "updated_at"), timestamp)
             by_name.setdefault(job["name"], []).append(job)
         observations = []
         for name, required in required_steps.items():
@@ -140,11 +159,9 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                                  "runner_id": runner, "observed_steps": len(steps),
                                  "executed_required": executed, "required_count": len(required)})
         states = {row["state"] for row in observations}
-        if not complete or "missing" in states:
-            decision = "incomplete"
-        elif "executed_failure" in states:
+        if "executed_failure" in states:
             decision = "executed_failure"
-        elif "incomplete" in states:
+        elif not complete or "missing" in states or "incomplete" in states:
             decision = "incomplete"
         elif "not_executed" in states:
             decision = "not_executed"
