@@ -30,7 +30,8 @@ MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED = re.compile(r"\$\{\{[^}]*github\.event\.(?:issue|pull_request|comment|review)\b[^}]*\}\}")
-PR_HEAD = re.compile(r"github\.event(?:\.pull_request|\[['\"]pull_request['\"]\])\.head\b")
+PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
+BRACKET_SEGMENT = re.compile(r"\[\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1\s*\]")
 SEVERITIES = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 REPAIRS = {
     "permissions_unspecified": "Review effective token permissions; declare least privilege explicitly.",
@@ -44,9 +45,14 @@ REPAIRS = {
 }
 
 
+def _normalize_event_paths(value: str) -> str:
+    """Normalize quoted bracket property access for bounded GitHub expressions."""
+    return BRACKET_SEGMENT.sub(lambda match: "." + match.group(2), value)
+
+
 def _contains_pr_head(value: Any) -> bool:
     if isinstance(value, str):
-        return PR_HEAD.search(value) is not None
+        return PR_HEAD.search(_normalize_event_paths(value)) is not None
     if isinstance(value, dict):
         return any(_contains_pr_head(item) for item in value.values())
     if isinstance(value, list):
@@ -207,7 +213,7 @@ def analyze_workflow(text: str) -> dict:
             if "run" in step:
                 if not isinstance(step["run"], str):
                     raise ValueError("workflow: invalid run script")
-                if UNTRUSTED.search(step["run"]):
+                if UNTRUSTED.search(_normalize_event_paths(step["run"])):
                     add("untrusted_run_expression", "high", sloc)
     return {"source_digest": hashlib.sha256(text.encode("utf-8")).hexdigest(),
             "normalized_digest": digest(doc), "job_count": len(doc["jobs"]),
@@ -300,9 +306,12 @@ def drift(previous: dict, current: dict) -> dict:
         raise ValueError("drift: incompatible snapshots")
     if _time(current["observed_at"]) < _time(previous["observed_at"]):
         raise ValueError("drift: reversed observation chronology")
-    if (previous["revision"] == current["revision"]
-            and digest(previous["workflows"]) != digest(current["workflows"])):
-        raise ValueError("drift: content changed at unchanged revision")
+    if previous["revision"] == current["revision"]:
+        for path in set(previous["workflows"]) & set(current["workflows"]):
+            before, after = previous["workflows"][path], current["workflows"][path]
+            if (before["status"] == after["status"] == "analyzed"
+                    and before["source_digest"] != after["source_digest"]):
+                raise ValueError("drift: content changed at unchanged revision")
     changes = []
     old, new = previous["workflows"], current["workflows"]
     for path in sorted(set(old) | set(new)):
@@ -331,6 +340,7 @@ def drift(previous: dict, current: dict) -> dict:
 def proposals(snapshot: dict, *, owner_refs: list[str], criticality: int = 1,
               downstream_count: int = 0) -> list[dict]:
     """Risk routing hints; ownership resolution stays in the canonical registry."""
+    _validate_snapshot(snapshot)
     if type(criticality) is not int or not 1 <= criticality <= 5:
         raise ValueError("review: invalid criticality")
     if type(downstream_count) is not int or downstream_count < 0:
@@ -372,7 +382,12 @@ def review_metrics(records: list[dict], *, observed_at: str) -> dict:
         if type(count) is not int or count < 0:
             raise ValueError("reviews: invalid rework count")
         rework += count
-        reviewers.update(set(record.get("reviewer_ids", [])))
+        reviewer_ids = record.get("reviewer_ids", [])
+        if (not isinstance(reviewer_ids, list) or len(reviewer_ids) > 1024
+                or any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", value)
+                       for value in reviewer_ids)):
+            raise ValueError("reviews: invalid reviewer identities")
+        reviewers.update(set(reviewer_ids))
     total = sum(reviewers.values())
     return {"observed_at": observed_at, "records": len(records), "reviewed": len(latencies),
             "pending": len(pending_ages), "median_first_review_seconds": median(latencies) if latencies else None,
