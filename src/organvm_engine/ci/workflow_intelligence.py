@@ -30,7 +30,10 @@ MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED_CONTEXT = re.compile(
-    r"(?:github\.event\b|"
+    r"(?:github\.event(?=\s*(?:[),]|\}\}))|"
+    r"github\.event\.issue\.(?:title|body)\b|"
+    r"github\.event\.pull_request\.(?:title|body|head\.(?:ref|label)|head\.repo\.full_name)\b|"
+    r"github\.event\.(?:comment|review)\.body\b|"
     r"github\.event\.head_commit\.(?:message|author|committer)\b|"
     r"github\.event\.commits(?:\s*\[[^\]]+\]|\.\*)\.(?:message|author|committer)\b|"
     r"github\.head_ref\b)",
@@ -84,7 +87,12 @@ def _normalize_event_paths(value: str) -> str:
 def _contains_pr_head(value: Any) -> bool:
     if isinstance(value, str):
         normalized = _normalize_event_paths(value)
-        return (any(pattern.search(normalized) is not None
+        literal_stripped = normalized
+        for expression in _github_expressions(normalized):
+            literal_stripped = literal_stripped.replace(
+                expression, _strip_quoted_literals(expression),
+            )
+        return (any(pattern.search(literal_stripped) is not None
                     for pattern in (PR_HEAD, PR_HEAD_REF, PR_MERGE_SHA,
                                     PR_SYNTHETIC_REF))
                 or _contains_synthetic_format_ref(normalized)
@@ -324,6 +332,9 @@ def analyze_workflow(text: str) -> dict:
     if doc.get("permissions") == "write-all":
         add("write_all", "high", "permissions")
     trigger_names = {doc["on"]} if isinstance(doc["on"], str) else set(doc["on"])
+    normalized_doc = copy.deepcopy(doc)
+    if isinstance(normalized_doc["on"], list):
+        normalized_doc["on"] = sorted(normalized_doc["on"])
     for job_id, job in doc["jobs"].items():
         if not isinstance(job, dict):
             raise ValueError("workflow: invalid job")
@@ -377,7 +388,7 @@ def analyze_workflow(text: str) -> dict:
                 if _contains_untrusted_run_expression(step["run"]):
                     add("untrusted_run_expression", "high", sloc)
     return {"source_digest": hashlib.sha256(text.encode("utf-8")).hexdigest(),
-            "normalized_digest": digest(doc), "job_count": len(doc["jobs"]),
+            "normalized_digest": digest(normalized_doc), "job_count": len(doc["jobs"]),
             "triggers": sorted(trigger_names), "findings": findings,
             "transitive_coverage": "unresolved" if reusable else "not_requested",
             "reusable_references": reusable}
@@ -394,6 +405,8 @@ def inventory(repository_id: int, revision: str, files: dict[str, str], *,
     _time(observed_at)
     if type(enumeration_complete) is not bool:
         raise ValueError("inventory: enumeration completeness must be boolean")
+    if not isinstance(files, dict):
+        raise ValueError("inventory: files mapping required")
     if len(set(expected_paths)) != len(expected_paths):
         raise ValueError("inventory: duplicate expected paths")
     for path in [*expected_paths, *files]:

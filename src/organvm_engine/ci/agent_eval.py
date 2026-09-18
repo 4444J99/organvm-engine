@@ -21,8 +21,8 @@ DIMENSIONS = ("tool_choice", "parameters", "state", "outcome", "policy")
 OUTCOMES = ("completed", "refused", "abstained", "error")
 TOKEN = {"type": "string", "pattern": r"\A[A-Za-z0-9_.:-]{1,128}\Z"}
 ARTIFACT = {"type": "string", "minLength": 1, "maxLength": 1024,
-            "pattern": r"^[^\x00-\x1f\x7f]+$"}
-SHA = {"type": "string", "pattern": r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$"}
+            "pattern": r"\A[^\x00-\x1f\x7f]+\Z"}
+SHA = {"type": "string", "pattern": r"\A(?:[0-9a-f]{40}|[0-9a-f]{64})\Z"}
 STEP_SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["id", "tool", "depends_on", "arguments", "observation",

@@ -95,6 +95,12 @@ def test_context_shaped_text_inside_expression_literal_is_not_untrusted():
     assert "untrusted_run_expression" not in codes(text)
 
 
+@pytest.mark.parametrize("property_name", ["action", "pull_request.number"])
+def test_safe_event_properties_are_not_whole_event_shell_sources(property_name):
+    text = SAFE.replace("pytest tests/", f"echo ${{{{ github.event.{property_name} }}}}")
+    assert "untrusted_run_expression" not in codes(text)
+
+
 def test_snapshot_rejects_noncanonical_finding_severity():
     current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
     current["workflows"][PATH]["findings"][0]["severity"] = "info"
@@ -113,6 +119,15 @@ def test_privileged_target_head_checkout():
     text = SAFE.replace("[push, pull_request]", "pull_request_target")
     text = text.replace("      - run:", "        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - run:")
     assert "privileged_head_checkout" in codes(text)
+
+
+def test_privileged_target_ignores_head_context_inside_expression_literal():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n          ref: ${{ 'github.event.pull_request.head.sha' }}\n      - run:",
+    )
+    assert "privileged_head_checkout" not in codes(text)
 
 
 @pytest.mark.parametrize("expression", [
@@ -321,6 +336,11 @@ def test_inventory_rejects_non_string_workflow_contents(content):
         snapshot(files={PATH: content})
 
 
+def test_inventory_rejects_non_mapping_files_before_iteration():
+    with pytest.raises(ValueError, match="files mapping required"):
+        snapshot(files=[])
+
+
 def test_size_and_depth_budgets():
     with pytest.raises(ValueError):
         analyze_workflow("#" * (MAX_BYTES + 1))
@@ -373,6 +393,14 @@ def test_drift_separates_representation_from_declarations():
     empty = snapshot(files={}, expected_paths=[], revision="d" * 40)
     assert drift(original, empty)["changes"][0]["kind"] == "removed_from_enumeration"
     assert drift(empty, original)["changes"][0]["kind"] == "added"
+
+
+def test_trigger_order_only_change_is_representation_only():
+    reordered = snapshot(
+        SAFE.replace("on: [push, pull_request]", "on: [pull_request, push]"),
+        revision="b" * 40,
+    )
+    assert drift(snapshot(), reordered)["changes"][0]["kind"] == "representation_only"
 
 
 def test_drift_rejects_identity_and_time_mismatch():

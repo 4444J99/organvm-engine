@@ -131,6 +131,20 @@ def test_agent_cannot_shrink_or_duplicate_caller_scope():
         score(trace, rubric)
 
 
+def test_trace_rejects_artifact_with_trailing_newline():
+    trace, rubric = fixture_pair()
+    trace["observed_artifacts"] = ["README.md\n"]
+    with pytest.raises(ValueError):
+        score(trace, rubric)
+
+
+def test_trace_rejects_revision_with_trailing_newline():
+    trace, rubric = fixture_pair()
+    trace["revision"] = HEAD + "\n"
+    with pytest.raises(ValueError):
+        score(trace, rubric)
+
+
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -1, 0, True, "1"])
 def test_invalid_weights_fail_closed(value):
     trace, rubric = fixture_pair()

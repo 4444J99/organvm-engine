@@ -29,9 +29,9 @@
   "repository_id": 1160447354,
   "source_manifest": {
     "src/organvm_engine/ci/agent_eval.py": {
-      "bytes": 20874,
-      "git_blob_sha1": "bf41959ed12b1e44061857182cc0c7c6181cbeda",
-      "sha256": "1dc135286457cc3a520fed78e0dcebe8175564562b172bc8dfe16df23db3d1a2"
+      "bytes": 20878,
+      "git_blob_sha1": "43875defff1b0181ce1eb2f1ad55a0ed7450e1df",
+      "sha256": "e4bbd8468f2557fee52577dfde6a326e9ae87988ffd5c90a36c080f5c17e7ac9"
     },
     "src/organvm_engine/ci/runtime_evidence.py": {
       "bytes": 14283,
@@ -39,14 +39,14 @@
       "sha256": "80968cc5926c85cd10309d70f6d5708991c47ddbda20326a66d28652a38d9329"
     },
     "src/organvm_engine/ci/workflow_intelligence.py": {
-      "bytes": 32923,
-      "git_blob_sha1": "087038071c23358c51f69147e5d07fd3d2d12cc5",
-      "sha256": "4ee60b9a7fde5e66aea00b366cb5dc0e97b7b250fe4c2524a8189cc3d22fefa7"
+      "bytes": 33628,
+      "git_blob_sha1": "e3d867500ca023fd3e952802cf79a142fc8c3e56",
+      "sha256": "037b7ab7e64e2744b174932dd3a611e0111fb6e4c93536246fc8d4bebf78a96b"
     },
     "tests/test_agent_eval.py": {
-      "bytes": 15581,
-      "git_blob_sha1": "4cc8deb84ddda6fc858d48c51f8afa5716ea1396",
-      "sha256": "a9d04c69d4979505a98eee169bdf16c9578da43132318d3fe4db3e4cc4419e45"
+      "bytes": 15985,
+      "git_blob_sha1": "c3619386a7e7b83845d8b3824d7abeaf78a8ecd7",
+      "sha256": "b777da99d3db2d231ac0205793e58dd81e33764ab9d6dc95c94d25988abb9f98"
     },
     "tests/test_evidence_false_success.py": {
       "bytes": 6349,
@@ -59,9 +59,9 @@
       "sha256": "d87ea13e6261acd2636e882c8edb1b000b2e96c1276f6097b078315434c2f483"
     },
     "tests/test_workflow_intelligence.py": {
-      "bytes": 24221,
-      "git_blob_sha1": "c27834ae1ef8195cb6cbbf2787c0f99c2eb32725",
-      "sha256": "c148dec7e5ba50d1fd9f6ae39211d49f126a2fbcd54c5d4a0dae0e42d42c7d2c"
+      "bytes": 25338,
+      "git_blob_sha1": "5c5e6af10bc0cfc4f31c20a4d5e16ff7584a003c",
+      "sha256": "87d336b0c55c19ee58f8bf60c2f26c858e1490b9402a0f9ca96b2b78dcb1bb59"
     }
   },
   "verification": {
@@ -72,12 +72,12 @@
     "failures": 0,
     "jsonschema": "4.26.0",
     "junit_artifact": "docs/research/evidence/integration-2026-09-18.xml",
-    "junit_sha256": "050f760f528d57b19fdac8afa8bce88c870726d6ab1dbb83b44e7da9eb5f2dd9",
+    "junit_sha256": "bc8394b7cf67b78cc538197dd79387d3c36848726e9f71abc13cf91b46fb0290",
     "pytest": "9.1.1",
     "runtime": "3.12.14",
     "skipped": 0,
     "syntax": "Ruff passed; Pyright returned 0 errors with environment-only missing-source/import warnings",
-    "test_started_at": "2026-09-18T18:46:38.471772Z",
-    "tests": 300
+    "test_started_at": "2026-09-18T19:44:17.305255Z",
+    "tests": 307
   }
 }
