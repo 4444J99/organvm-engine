@@ -90,6 +90,17 @@ def test_privileged_target_synthetic_pull_ref_is_detected():
     assert "privileged_head_checkout" in codes(text)
 
 
+@pytest.mark.parametrize("expression", [
+    "${{ github.event.pull_request.merge_commit_sha }}",
+    "refs/pull/${{ github.event.pull_request.number }}/merge",
+    "refs/pull/123/merge",
+])
+def test_privileged_target_merge_checkout_is_detected(expression):
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace("      - run:", f"        with:\n          ref: {expression}\n      - run:")
+    assert "privileged_head_checkout" in codes(text)
+
+
 def test_untrusted_expression_in_env_is_not_shell_source():
     text = SAFE.replace("      - run: pytest tests/", "      - run: printf '%s' \"$TITLE\"\n        env:\n          TITLE: ${{ github.event.issue.title }}")
     assert "untrusted_run_expression" not in codes(text)
@@ -107,6 +118,14 @@ def test_privileged_checkout_normalizes_every_bracket_segment(expression):
 
 def test_untrusted_run_normalizes_every_bracket_segment():
     text = SAFE.replace("pytest tests/", "printf '%s' ${{ github.event['issue']['title'] }}")
+    assert "untrusted_run_expression" in codes(text)
+
+
+def test_untrusted_run_parses_braces_inside_expression_string():
+    text = SAFE.replace(
+        "pytest tests/",
+        "echo ${{ format('{0}', github.event.issue.title) }}",
+    )
     assert "untrusted_run_expression" in codes(text)
 
 
@@ -298,6 +317,14 @@ def test_review_metrics_reject_present_invalid_review_timestamp(value):
     with pytest.raises(ValueError):
         review_metrics(
             [{"id": 1, "requested_at": "2026-09-13T12:00:00Z", "first_review_at": value}],
+            observed_at=WHEN,
+        )
+
+
+def test_review_metrics_reject_rework_without_review_timestamp():
+    with pytest.raises(ValueError, match="rework requires"):
+        review_metrics(
+            [{"id": 1, "requested_at": "2026-09-13T12:00:00Z", "changes_requested": 1}],
             observed_at=WHEN,
         )
 
