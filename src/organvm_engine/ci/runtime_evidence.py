@@ -140,13 +140,17 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                                  "runner_id": runner, "observed_steps": len(steps),
                                  "executed_required": executed, "required_count": len(required)})
         states = {row["state"] for row in observations}
-        if not complete or "missing" in states or "incomplete" in states:
+        if not complete or "missing" in states:
+            decision = "incomplete"
+        elif "executed_failure" in states:
+            decision = "executed_failure"
+        elif "incomplete" in states:
             decision = "incomplete"
         elif "not_executed" in states:
             decision = "not_executed"
         elif "pending" in states or run["status"] != "completed":
             decision = "pending"
-        elif "executed_failure" in states or run.get("conclusion") != "success":
+        elif run.get("conclusion") != "success":
             decision = "executed_failure"
         else:
             decision = "executed_pass"
