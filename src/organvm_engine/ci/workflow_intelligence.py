@@ -30,6 +30,7 @@ MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED = re.compile(r"\$\{\{[^}]*github\.event\.(?:issue|pull_request|comment|review)\b[^}]*\}\}")
+PR_HEAD = re.compile(r"github\.event(?:\.pull_request|\[['\"]pull_request['\"]\])\.head\b")
 SEVERITIES = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 REPAIRS = {
     "permissions_unspecified": "Review effective token permissions; declare least privilege explicitly.",
@@ -41,6 +42,16 @@ REPAIRS = {
     "privileged_head_checkout": "Do not execute pull-request-head code in a privileged target context.",
     "reusable_workflow_unresolved": "Inventory the referenced workflow at an immutable revision before claiming transitive coverage.",
 }
+
+
+def _contains_pr_head(value: Any) -> bool:
+    if isinstance(value, str):
+        return PR_HEAD.search(value) is not None
+    if isinstance(value, dict):
+        return any(_contains_pr_head(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_pr_head(item) for item in value)
+    return False
 
 
 class _WorkflowLoader(yaml.SafeLoader):
@@ -191,7 +202,7 @@ def analyze_workflow(text: str) -> dict:
                 if not isinstance(settings, dict):
                     raise ValueError("workflow: invalid action inputs")
                 if (checkout and "pull_request_target" in trigger_names
-                        and "github.event.pull_request.head" in json.dumps(settings)):
+                        and _contains_pr_head(settings)):
                     add("privileged_head_checkout", "critical", sloc)
             if "run" in step:
                 if not isinstance(step["run"], str):
@@ -289,6 +300,9 @@ def drift(previous: dict, current: dict) -> dict:
         raise ValueError("drift: incompatible snapshots")
     if _time(current["observed_at"]) < _time(previous["observed_at"]):
         raise ValueError("drift: reversed observation chronology")
+    if (previous["revision"] == current["revision"]
+            and digest(previous["workflows"]) != digest(current["workflows"])):
+        raise ValueError("drift: content changed at unchanged revision")
     changes = []
     old, new = previous["workflows"], current["workflows"]
     for path in sorted(set(old) | set(new)):
