@@ -90,6 +90,15 @@ def test_privileged_target_synthetic_pull_ref_is_detected():
     assert "privileged_head_checkout" in codes(text)
 
 
+def test_privileged_target_top_level_event_number_synthetic_ref_is_detected():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n          ref: refs/pull/${{ github.event.number }}/head\n      - run:",
+    )
+    assert "privileged_head_checkout" in codes(text)
+
+
 @pytest.mark.parametrize("expression", [
     "${{ github.event.pull_request.merge_commit_sha }}",
     "refs/pull/${{ github.event.pull_request.number }}/merge",
@@ -133,6 +142,14 @@ def test_untrusted_run_parses_closing_delimiter_inside_expression_string():
     text = SAFE.replace(
         "pytest tests/",
         "echo ${{ format('}} {0}', github.event.issue.title) }}",
+    )
+    assert "untrusted_run_expression" in codes(text)
+
+
+def test_untrusted_run_does_not_treat_backslash_as_expression_quote_escape():
+    text = SAFE.replace(
+        "pytest tests/",
+        "echo ${{ format('{0}\\', github.event.issue.title) }}",
     )
     assert "untrusted_run_expression" in codes(text)
 
@@ -340,6 +357,15 @@ def test_review_metrics_reject_duplicate_and_bad_chronology():
         review_metrics([record, copy.deepcopy(record)], observed_at=WHEN)
     with pytest.raises(ValueError):
         review_metrics([{**record, "first_review_at": "2026-09-13T11:00:00Z"}], observed_at=WHEN)
+
+
+@pytest.mark.parametrize("identity", [None, True, 0, -1, "1", 1.0])
+def test_review_metrics_requires_positive_integer_identity(identity):
+    with pytest.raises(ValueError, match="invalid identity"):
+        review_metrics(
+            [{"id": identity, "requested_at": "2026-09-13T12:00:00Z"}],
+            observed_at=WHEN,
+        )
 
 
 @pytest.mark.parametrize("value", [0, ""])
