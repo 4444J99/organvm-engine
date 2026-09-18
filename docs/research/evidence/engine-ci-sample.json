@@ -96,6 +96,7 @@
     "authorizes_release": false,
     "coverage": "complete",
     "enumerated_count": 1,
+    "enumeration_complete": true,
     "evidence_class": "static_source_analysis",
     "expected_paths": [
       ".github/workflows/ci.yml"
