@@ -129,6 +129,14 @@ def test_untrusted_run_parses_braces_inside_expression_string():
     assert "untrusted_run_expression" in codes(text)
 
 
+def test_untrusted_run_parses_closing_delimiter_inside_expression_string():
+    text = SAFE.replace(
+        "pytest tests/",
+        "echo ${{ format('}} {0}', github.event.issue.title) }}",
+    )
+    assert "untrusted_run_expression" in codes(text)
+
+
 def test_head_ref_is_untrusted_generated_shell_source():
     assert "untrusted_run_expression" in codes(
         SAFE.replace("pytest tests/", "printf '%s' ${{ github.head_ref }}"),
@@ -245,6 +253,28 @@ def test_same_revision_rejects_conflicting_complete_enumeration():
     )
     with pytest.raises(ValueError, match="conflicting complete enumeration"):
         drift(previous, current)
+
+
+def test_same_revision_rejects_extra_path_against_either_complete_enumeration():
+    extra_path = ".github/workflows/other.yml"
+    complete = snapshot()
+    partial_with_extra = snapshot(
+        files={PATH: SAFE, extra_path: SAFE},
+        expected_paths=[PATH, extra_path],
+        enumeration_complete=False,
+    )
+    with pytest.raises(ValueError, match="conflicting complete enumeration"):
+        drift(complete, partial_with_extra)
+    with pytest.raises(ValueError, match="conflicting complete enumeration"):
+        drift(partial_with_extra, complete)
+
+
+def test_same_revision_allows_partial_enumeration_to_omit_complete_paths():
+    extra_path = ".github/workflows/other.yml"
+    complete = snapshot(files={PATH: SAFE, extra_path: SAFE}, expected_paths=[PATH, extra_path])
+    partial = snapshot(enumeration_complete=False)
+    drift(complete, partial)
+    drift(partial, complete)
 
 
 def test_identical_source_rejects_conflicting_normalization():
