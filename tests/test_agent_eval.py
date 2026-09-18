@@ -265,6 +265,15 @@ def test_case_manifest_failures(ids):
         promotion_gate([before], [after], case_ids=ids, rubric_digest=digest(rubric))
 
 
+@pytest.mark.parametrize("case_id", [None, 7, "", "case id", "x" * 129])
+def test_case_manifest_and_reports_require_token_identity(case_id):
+    before, after, rubric = paired_reports()
+    before["case_id"] = case_id
+    after["case_id"] = case_id
+    with pytest.raises(ValueError):
+        promotion_gate([before], [after], case_ids=[case_id], rubric_digest=digest(rubric))
+
+
 def test_tampered_scores_do_not_enter_reward_gate():
     before, after, rubric = paired_reports()
     after["scores"]["policy"] = 0.9
