@@ -81,10 +81,31 @@ def test_push_commit_array_message_is_untrusted_shell_source():
     assert "untrusted_run_expression" in codes(text)
 
 
+@pytest.mark.parametrize("field", ["message", "author.name", "committer.email"])
+def test_push_commit_array_wildcard_metadata_is_untrusted_shell_source(field):
+    text = SAFE.replace(
+        "pytest tests/",
+        f"echo ${{{{ join(github.event.commits.*.{field}, ' ') }}}}",
+    )
+    assert "untrusted_run_expression" in codes(text)
+
+
+def test_context_shaped_text_inside_expression_literal_is_not_untrusted():
+    text = SAFE.replace("pytest tests/", "echo ${{ 'github.event.issue.title' }}")
+    assert "untrusted_run_expression" not in codes(text)
+
+
 def test_snapshot_rejects_noncanonical_finding_severity():
     current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
     current["workflows"][PATH]["findings"][0]["severity"] = "info"
     with pytest.raises(ValueError, match="invalid finding"):
+        proposals(current, owner_refs=[])
+
+
+def test_snapshot_rejects_duplicate_findings():
+    current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
+    current["workflows"][PATH]["findings"] *= 2
+    with pytest.raises(ValueError, match="duplicate finding"):
         proposals(current, owner_refs=[])
 
 
@@ -139,6 +160,26 @@ def test_privileged_target_multi_placeholder_format_ref_is_detected():
         "        with:\n"
         "          ref: ${{ format('refs/pull/{0}/{1}', github.event.number, 'head') }}\n"
         "      - run:",
+    )
+    assert "privileged_head_checkout" in codes(text)
+
+
+def test_privileged_target_format_ref_matches_placeholder_positions():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n"
+        "          ref: ${{ format('refs/pull/{0}/{1}', 'head', github.event.number) }}\n"
+        "      - run:",
+    )
+    assert "privileged_head_checkout" not in codes(text)
+
+
+def test_privileged_target_github_head_ref_is_detected():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n          ref: ${{ github.head_ref }}\n      - run:",
     )
     assert "privileged_head_checkout" in codes(text)
 
@@ -332,6 +373,22 @@ def test_same_revision_rejects_digest_change_across_analysis_status():
     assert invalid["workflows"][PATH]["status"] == "invalid_or_unsupported"
     with pytest.raises(ValueError, match="content changed at unchanged revision"):
         drift(snapshot(), invalid)
+
+
+def test_same_source_rejects_conflicting_analysis_status():
+    previous = snapshot(revision="b" * 40)
+    current = copy.deepcopy(previous)
+    current["workflows"][PATH]["status"] = "invalid_or_unsupported"
+    current["workflows"][PATH].pop("normalized_digest")
+    current["workflows"][PATH].pop("job_count")
+    current["workflows"][PATH].pop("triggers")
+    current["workflows"][PATH].pop("transitive_coverage")
+    current["workflows"][PATH].pop("reusable_references")
+    current["workflows"][PATH]["findings"] = []
+    current["analyzed_count"] = 0
+    current["coverage"] = "partial"
+    with pytest.raises(ValueError, match="inconsistent analysis status"):
+        drift(previous, current)
 
 
 def test_same_revision_rejects_conflicting_complete_enumeration():

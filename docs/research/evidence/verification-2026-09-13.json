@@ -16,7 +16,7 @@
     "remote deployment",
     "broker task or lease transitions"
   ],
-  "observed_at": "2026-09-18T18:15:41.242313Z",
+  "observed_at": "2026-09-18T18:33:49.389469Z",
   "publication_state": "prepared_for_draft_PR; published head and hosted observation belong in PR receipt",
   "record_id": "ORGANVM-RESEARCH-20260911-VERIFICATION",
   "repository_id": 1160447354,
@@ -33,9 +33,9 @@
       "sha256": "80968cc5926c85cd10309d70f6d5708991c47ddbda20326a66d28652a38d9329"
     },
     "src/organvm_engine/ci/workflow_intelligence.py": {
-      "bytes": 27851,
-      "git_blob_sha1": "6a5c0baf7eb43e84aea5b9f76754ad853b5a3ffe",
-      "sha256": "55c35582d8a7040703a9368f1aa5d3b2136e25d19d6c9a412c9028bbc4b197ea"
+      "bytes": 31155,
+      "git_blob_sha1": "876ddcdb094877a144d8c4427684d874cfeec0a6",
+      "sha256": "150c32fa605e89e6e8a03b52579262af7f5b877cb5d6088a05f1e5a7576d1060"
     },
     "tests/test_agent_eval.py": {
       "bytes": 15014,
@@ -53,9 +53,9 @@
       "sha256": "d87ea13e6261acd2636e882c8edb1b000b2e96c1276f6097b078315434c2f483"
     },
     "tests/test_workflow_intelligence.py": {
-      "bytes": 20675,
-      "git_blob_sha1": "c31ac0e29f96647d1021e4dad0509098f2c9c8f9",
-      "sha256": "0b64dac4f0c19f504e6a65fa80c4c509ac4b946c2dd5b8365ac821bbfe534f3f"
+      "bytes": 22908,
+      "git_blob_sha1": "5f49a44ffafd31226836391172c03a26878675d3",
+      "sha256": "d1f067c749191706e9a05ad9774db6d7e28a021b16a3d79a568a65070f9c7db4"
     }
   },
   "verification": {
@@ -64,9 +64,9 @@
     "exit_code": 0,
     "failures": 0,
     "junit_artifact": "docs/research/evidence/integration-2026-09-18.xml",
-    "junit_sha256": "bab7c7cfe611d4c1ec0450c2e6d72871463f185557ddd186810ae91d32fa1371",
+    "junit_sha256": "ab601a4f865f3ab99f081fc5693c6e56bad15429a3451da968d43e4f8bfe3336",
     "skipped": 0,
     "syntax": "Ruff passed; Pyright returned 0 errors with environment-only missing-source/import warnings",
-    "tests": 281
+    "tests": 289
   }
 }

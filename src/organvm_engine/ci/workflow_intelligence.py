@@ -32,10 +32,11 @@ DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED_CONTEXT = re.compile(
     r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|"
     r"github\.event\.head_commit\.(?:message|author|committer)\b|"
-    r"github\.event\.commits\s*\[[^\]]+\]\.(?:message|author|committer)\b|"
+    r"github\.event\.commits(?:\s*\[[^\]]+\]|\.\*)\.(?:message|author|committer)\b|"
     r"github\.head_ref\b)",
 )
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
+PR_HEAD_REF = re.compile(r"github\.head_ref\b")
 PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
 PR_SYNTHETIC_REF = re.compile(
     r"refs/pull/(?:[0-9]+|\$\{\{.*?github\.event\.(?:pull_request\.)?number\b.*?\}\})/(?:head|merge)\b",
@@ -47,9 +48,8 @@ PR_SYNTHETIC_FORMAT_REF = re.compile(
     re.DOTALL,
 )
 PR_SYNTHETIC_FORMAT_COMPONENT_REF = re.compile(
-    r"format\(\s*(['\"])refs/pull/\{[0-9]+\}/\{[0-9]+\}\1\s*,"
-    r"(?=[^)]*github\.event\.(?:pull_request\.)?number\b)"
-    r"(?=[^)]*['\"](?:head|merge)['\"])[^)]*\)",
+    r"format\(\s*(['\"])(?P<template>refs/pull/\{[0-9]+\}/\{[0-9]+\})\1\s*,"
+    r"(?P<arguments>[^)]*)\)",
     re.DOTALL,
 )
 BRACKET_SEGMENT = re.compile(r"\[\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1\s*\]")
@@ -84,10 +84,10 @@ def _normalize_event_paths(value: str) -> str:
 def _contains_pr_head(value: Any) -> bool:
     if isinstance(value, str):
         normalized = _normalize_event_paths(value)
-        return any(pattern.search(normalized) is not None
-                   for pattern in (PR_HEAD, PR_MERGE_SHA, PR_SYNTHETIC_REF,
-                                   PR_SYNTHETIC_FORMAT_REF,
-                                   PR_SYNTHETIC_FORMAT_COMPONENT_REF))
+        return (any(pattern.search(normalized) is not None
+                    for pattern in (PR_HEAD, PR_HEAD_REF, PR_MERGE_SHA,
+                                    PR_SYNTHETIC_REF, PR_SYNTHETIC_FORMAT_REF))
+                or _contains_synthetic_format_component_ref(normalized))
     if isinstance(value, dict):
         return any(_contains_pr_head(item) for item in value.values())
     if isinstance(value, list):
@@ -98,8 +98,81 @@ def _contains_pr_head(value: Any) -> bool:
 def _contains_untrusted_run_expression(value: str) -> bool:
     """Scan complete GitHub expressions; braces inside quoted format strings are data."""
     normalized = _normalize_event_paths(value)
-    return any(UNTRUSTED_CONTEXT.search(expression)
+    return any(UNTRUSTED_CONTEXT.search(_strip_quoted_literals(expression))
                for expression in _github_expressions(normalized))
+
+
+def _strip_quoted_literals(expression: str) -> str:
+    """Remove expression string-literal content before scanning context references."""
+    result: list[str] = []
+    quote: str | None = None
+    index = 0
+    while index < len(expression):
+        char = expression[index]
+        if quote is not None:
+            result.append(" ")
+            if char == quote:
+                if index + 1 < len(expression) and expression[index + 1] == quote:
+                    result.append(" ")
+                    index += 2
+                    continue
+                quote = None
+        elif char in {"'", '"'}:
+            quote = char
+            result.append(" ")
+        else:
+            result.append(char)
+        index += 1
+    return "".join(result)
+
+
+def _split_format_arguments(arguments: str) -> list[str]:
+    """Split the bounded scalar arguments used by synthetic-ref format calls."""
+    result: list[str] = []
+    start = 0
+    quote: str | None = None
+    index = 0
+    while index < len(arguments):
+        char = arguments[index]
+        if quote is not None:
+            if char == quote:
+                if index + 1 < len(arguments) and arguments[index + 1] == quote:
+                    index += 2
+                    continue
+                quote = None
+        elif char in {"'", '"'}:
+            quote = char
+        elif char == ",":
+            result.append(arguments[start:index].strip())
+            start = index + 1
+        index += 1
+    result.append(arguments[start:].strip())
+    return result
+
+
+def _contains_synthetic_format_component_ref(value: str) -> bool:
+    """Resolve placeholder positions in refs/pull/{n}/{m} format expressions."""
+    for match in PR_SYNTHETIC_FORMAT_COMPONENT_REF.finditer(value):
+        template = match.group("template")
+        arguments = _split_format_arguments(match.group("arguments"))
+        parts = template.split("/")
+        if len(parts) != 4 or parts[:2] != ["refs", "pull"]:
+            continue
+        placeholders = []
+        for part in parts[2:]:
+            placeholder = re.fullmatch(r"\{([0-9]+)\}", part)
+            if placeholder is None:
+                placeholders = []
+                break
+            placeholders.append(int(placeholder.group(1)))
+        if len(placeholders) != 2 or max(placeholders) >= len(arguments):
+            continue
+        number_arg = arguments[placeholders[0]]
+        kind_arg = arguments[placeholders[1]]
+        if (re.search(r"github\.event\.(?:pull_request\.)?number\b", number_arg)
+                and re.fullmatch(r"(['\"])(?:head|merge)\1", kind_arg)):
+            return True
+    return False
 
 
 def _github_expressions(value: str) -> list[str]:
@@ -364,6 +437,7 @@ def _validate_snapshot(snapshot: dict) -> None:
                 }
                 if not isinstance(findings, list) or len(findings) > MAX_NODES:
                     raise ValueError("snapshot: invalid findings")
+                finding_identities: set[tuple[Any, ...]] = set()
                 for finding in findings:
                     if not isinstance(finding, dict) or set(finding) != expected_fields:
                         raise ValueError("snapshot: invalid finding")
@@ -376,6 +450,10 @@ def _validate_snapshot(snapshot: dict) -> None:
                             or finding.get("requires_review") is not True
                             or finding.get("proposed_action") != REPAIRS[code]):
                         raise ValueError("snapshot: invalid finding")
+                    identity = tuple(finding[field] for field in sorted(expected_fields))
+                    if identity in finding_identities:
+                        raise ValueError("snapshot: duplicate finding")
+                    finding_identities.add(identity)
             elif record["status"] == "invalid_or_unsupported":
                 if record.get("findings"):
                     raise ValueError("snapshot: findings require analyzed source")
@@ -426,6 +504,11 @@ def drift(previous: dict, current: dict) -> dict:
     old, new = previous["workflows"], current["workflows"]
     for path in sorted(set(old) | set(new)):
         before, after = old.get(path), new.get(path)
+        if (before and after
+                and before.get("source_digest") is not None
+                and before.get("source_digest") == after.get("source_digest")
+                and before["status"] != after["status"]):
+            raise ValueError("drift: inconsistent analysis status")
         if (before and after and before["status"] == after["status"] == "analyzed"
                 and before["source_digest"] == after["source_digest"]):
             deterministic_fields = (
