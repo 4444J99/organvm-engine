@@ -30,9 +30,10 @@ def _names(values: object) -> bool:
             and len(set(values)) == len(values))
 
 
-def _execution_times(record: dict, fields: tuple[str, ...], observed: datetime) -> None:
+def _execution_times(record: dict, fields: tuple[str, ...], observed: datetime) -> dict[str, datetime]:
     """Reject impossible capture chronology without requiring optional API fields."""
     parsed = []
+    moments = {}
     for field in fields:
         value = record.get(field)
         if value is None:
@@ -43,8 +44,10 @@ def _execution_times(record: dict, fields: tuple[str, ...], observed: datetime) 
         if moment.tzinfo is None or moment.utcoffset() is None or moment > observed:
             raise ValueError("execution: impossible observation chronology")
         parsed.append(moment)
+        moments[field] = moment
     if parsed != sorted(parsed):
         raise ValueError("execution: impossible execution chronology")
+    return moments
 
 
 def _pages(pages: list[dict]) -> tuple[list[dict], bool, int | None]:
@@ -101,7 +104,7 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
             raise ValueError("execution: run identity mismatch")
         if run.get("status") not in {"queued", "in_progress", "completed", "waiting", "pending", "requested"}:
             raise ValueError("execution: unsupported run status")
-        _execution_times(run, ("created_at", "run_started_at", "updated_at"), timestamp)
+        run_times = _execution_times(run, ("created_at", "run_started_at", "updated_at"), timestamp)
         jobs, complete, total = _pages(jobs_pages)
         by_name: dict[str, list[dict]] = {}
         for job in jobs:
@@ -111,7 +114,20 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 raise ValueError("execution: job identity mismatch")
             if not isinstance(job.get("name"), str):
                 raise ValueError("execution: invalid job name")
-            _execution_times(job, ("created_at", "started_at", "completed_at", "updated_at"), timestamp)
+            job_times = _execution_times(
+                job, ("created_at", "started_at", "completed_at", "updated_at"), timestamp,
+            )
+            run_created = run_times.get("created_at")
+            run_started = run_times.get("run_started_at")
+            run_updated = run_times.get("updated_at")
+            if (run_created and any(moment < run_created for moment in job_times.values())):
+                raise ValueError("execution: job predates parent run")
+            if (run_started and any(job_times[field] < run_started
+                                    for field in ("started_at", "completed_at", "updated_at")
+                                    if field in job_times)):
+                raise ValueError("execution: job predates parent run start")
+            if (run_updated and any(moment > run_updated for moment in job_times.values())):
+                raise ValueError("execution: job exceeds parent run observation")
             by_name.setdefault(job["name"], []).append(job)
         observations = []
         for name, required in required_steps.items():
@@ -141,7 +157,13 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 selected.append(rows[0] if rows else None)
             for step in selected:
                 if step is not None:
-                    _execution_times(step, ("started_at", "completed_at"), timestamp)
+                    step_times = _execution_times(step, ("started_at", "completed_at"), timestamp)
+                    if (job_times.get("started_at")
+                            and any(moment < job_times["started_at"] for moment in step_times.values())):
+                        raise ValueError("execution: step predates parent job")
+                    if (job_times.get("completed_at")
+                            and any(moment > job_times["completed_at"] for moment in step_times.values())):
+                        raise ValueError("execution: step exceeds parent job")
             executed = sum(step is not None and step.get("status") == "completed"
                            and step.get("conclusion") in {"success", "failure"} for step in selected)
             runner = job.get("runner_id")
