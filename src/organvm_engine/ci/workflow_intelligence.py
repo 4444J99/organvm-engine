@@ -35,7 +35,7 @@ UNTRUSTED_CONTEXT = re.compile(
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
 PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
 PR_SYNTHETIC_REF = re.compile(
-    r"refs/pull/(?:[0-9]+|\$\{\{.*?github\.event\.pull_request\.number\b.*?\}\})/(?:head|merge)\b",
+    r"refs/pull/(?:[0-9]+|\$\{\{.*?github\.event\.(?:pull_request\.)?number\b.*?\}\})/(?:head|merge)\b",
     re.DOTALL,
 )
 BRACKET_SEGMENT = re.compile(r"\[\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1\s*\]")
@@ -86,9 +86,6 @@ def _github_expressions(value: str) -> list[str]:
         while index < len(value) - 1:
             char = value[index]
             if quote is not None:
-                if char == "\\" and index + 1 < len(value):
-                    index += 2
-                    continue
                 if char == quote:
                     if index + 1 < len(value) and value[index + 1] == quote:
                         index += 2
@@ -452,6 +449,8 @@ def review_metrics(records: list[dict], *, observed_at: str) -> dict:
     seen = set()
     for record in records:
         identity = record["id"]
+        if type(identity) is not int or identity <= 0:
+            raise ValueError("reviews: invalid identity")
         if identity in seen:
             raise ValueError("reviews: duplicate identity")
         seen.add(identity)
