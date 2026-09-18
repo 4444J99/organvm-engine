@@ -141,6 +141,31 @@ def test_step_cannot_escape_parent_job_timestamps():
         evaluate_run(**data)
 
 
+@pytest.mark.parametrize("bound", ["created_at", "updated_at"])
+def test_step_uses_available_parent_job_bounds_when_optional_times_are_absent(bound):
+    data = payload()
+    job = data["jobs_pages"][0]["jobs"][0]
+    job[bound] = "2026-09-13T13:00:00Z" if bound == "created_at" else "2026-09-13T13:30:00Z"
+    if bound == "created_at":
+        job["steps"][0].update(
+            started_at="2026-09-13T12:00:00Z", completed_at="2026-09-13T12:10:00Z",
+        )
+    else:
+        job["steps"][0].update(
+            started_at="2026-09-13T13:20:00Z", completed_at="2026-09-13T13:40:00Z",
+        )
+    with pytest.raises(ValueError, match="parent job"):
+        evaluate_run(**data)
+
+
+def test_completed_required_failure_wins_while_job_is_still_running():
+    data = payload()
+    job = data["jobs_pages"][0]["jobs"][0]
+    job.update(status="in_progress", conclusion=None)
+    job["steps"][0]["conclusion"] = "failure"
+    assert evaluate_run(**data)["decision"] == "executed_failure"
+
+
 @pytest.mark.parametrize("value,state", [("skipped", "incomplete"), ("cancelled", "incomplete"),
                                          (None, "incomplete"), ("failure", "executed_failure")])
 def test_required_step_status_not_job_badge_controls_evidence(value, state):
