@@ -221,7 +221,9 @@ def _validate_report(report: dict) -> None:
     if (not Draft202012Validator(TOKEN).is_valid(report.get("case_id"))
             or type(report.get("repository_id")) is not int or report["repository_id"] <= 0
             or not isinstance(report.get("revision"), str)
-            or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", report["revision"])):
+            or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", report["revision"])
+            or not isinstance(report.get("trace_digest"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", report["trace_digest"])):
         raise ValueError("gate: immutable report identity required")
     results = report.get("checks")
     result_schema = {
