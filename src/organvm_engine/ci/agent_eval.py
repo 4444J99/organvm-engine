@@ -218,7 +218,8 @@ def _validate_report(report: dict) -> None:
     """Check internal score consistency, not producer authenticity."""
     if report.get("schema_version") != VERSION:
         raise ValueError("gate: unsupported report version")
-    if (type(report.get("repository_id")) is not int or report["repository_id"] <= 0
+    if (not Draft202012Validator(TOKEN).is_valid(report.get("case_id"))
+            or type(report.get("repository_id")) is not int or report["repository_id"] <= 0
             or not isinstance(report.get("revision"), str)
             or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", report["revision"])):
         raise ValueError("gate: immutable report identity required")
@@ -291,7 +292,8 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
         raise ValueError("gate: minimum_gain must be finite and in (0, 1]")
     if not isinstance(rubric_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", rubric_digest):
         raise ValueError("gate: valid pinned rubric digest required")
-    if not case_ids or len(set(case_ids)) != len(case_ids):
+    if (not Draft202012Validator({"type": "array", "items": TOKEN, "minItems": 1,
+                                  "maxItems": 4096, "uniqueItems": True}).is_valid(case_ids)):
         raise ValueError("gate: empty or duplicate held-out cases")
     for reports in (baseline, candidate):
         ids = [r.get("case_id") for r in reports]
