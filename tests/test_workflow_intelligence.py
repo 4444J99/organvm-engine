@@ -71,6 +71,16 @@ def test_privileged_target_head_checkout():
     assert "privileged_head_checkout" in codes(text)
 
 
+@pytest.mark.parametrize("expression", [
+    "${{ github.event['pull_request'].head.sha }}",
+    '${{ github.event["pull_request"].head.repo.full_name }}',
+])
+def test_privileged_target_bracket_notation_head_checkout(expression):
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace("      - run:", f"        with:\n          ref: {expression}\n      - run:")
+    assert "privileged_head_checkout" in codes(text)
+
+
 def test_untrusted_expression_in_env_is_not_shell_source():
     text = SAFE.replace("      - run: pytest tests/", "      - run: printf '%s' \"$TITLE\"\n        env:\n          TITLE: ${{ github.event.issue.title }}")
     assert "untrusted_run_expression" not in codes(text)
@@ -137,7 +147,7 @@ def test_mutable_or_invalid_revisions_rejected(revision):
 
 
 def test_missing_files_are_coverage_not_success_or_deletion():
-    current = snapshot(files={})
+    current = snapshot(files={}, revision="b" * 40)
     assert current["coverage"] == "partial"
     assert current["analyzed_count"] == 0
     assert current["workflows"][PATH]["status"] == "unavailable"
