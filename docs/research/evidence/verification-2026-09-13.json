@@ -5,54 +5,67 @@
   "environment": {
     "PyYAML": "6.0.3",
     "jsonschema": "4.26.0",
-    "pytest": "9.0.2",
-    "python": "3.13.5"
+    "pytest": "9.1.1",
+    "python": "3.12.14"
   },
   "not_executed": [
-    "full Engine checkout conftest and test suite",
-    "Python 3.11 or 3.12 runtime",
-    "Ruff (unavailable; pinned install attempt failed)",
-    "Pyright (unavailable)",
+    "optional ontologia dependencies",
+    "Python 3.11 runtime",
     "model or training experiment",
     "complete estate workflow collection",
     "remote deployment",
     "broker task or lease transitions"
   ],
-  "observed_at": "2026-09-13T14:10:54.259040+00:00",
+  "observed_at": "2026-09-18T11:36:00Z",
   "publication_state": "prepared_for_draft_PR; published head and hosted observation belong in PR receipt",
   "record_id": "ORGANVM-RESEARCH-20260911-VERIFICATION",
   "repository_id": 1160447354,
-  "scope": "only_four_new_source_test_files_in_isolated_workspace_not_full_engine_checkout",
+  "scope": "seven_changed_source_test_files_in_complete_checkout",
   "source_manifest": {
     "src/organvm_engine/ci/agent_eval.py": {
-      "bytes": 14569,
-      "git_blob_sha1": "ba84efb5d364fd605feb05d52042a44a8d0f144c",
-      "sha256": "3588047cd8bdf590b75e926569efab053a905ffb9858432c81d7ea6ab6159789"
+      "bytes": 18602,
+      "git_blob_sha1": "cec2823c75883576b6506563de84b5a90d5e299c",
+      "sha256": "7f5ac1593bccd7071f36e9bd6c61cd63dfe0161e225be026625b13a81afc5768"
+    },
+    "src/organvm_engine/ci/runtime_evidence.py": {
+      "bytes": 9620,
+      "git_blob_sha1": "65ea02e2aef97f9f9bbe44bdb61f7de25542e426",
+      "sha256": "5c59ea2e8ae458e9572854befdea36aca322cb22332dc7aed643d3af27039de4"
     },
     "src/organvm_engine/ci/workflow_intelligence.py": {
-      "bytes": 16962,
-      "git_blob_sha1": "e19b9cb80625f3056757afc7be5adc12a93a8c26",
-      "sha256": "43bdb944536d110b4c55f25be7ab4bd1d8f0dbe6d91966aa9e7aebdc8f2e89a0"
+      "bytes": 20294,
+      "git_blob_sha1": "b2748ac6e327401b2ca9bcffffea5aa5862d6168",
+      "sha256": "1a0d57cc9c99d829be55ab846010f8b2688074006b8b78dea75ebb6f55269e1c"
     },
     "tests/test_agent_eval.py": {
       "bytes": 11041,
       "git_blob_sha1": "4cbd1d16a31465253159947acfee518c580d4641",
       "sha256": "0f8b0b216b781f9990a1c45fd28e0543e52cfc67543f12643c6c4a8d565b5b43"
     },
+    "tests/test_evidence_false_success.py": {
+      "bytes": 5841,
+      "git_blob_sha1": "01da793f74026a2a6da5b79faaa1295dc68bccb1",
+      "sha256": "b0ed68a5a0231b2306dfcbef109bb7f993cae4aace88abd709c0f1ac839eb43f"
+    },
+    "tests/test_runtime_evidence.py": {
+      "bytes": 6701,
+      "git_blob_sha1": "75254163a21984c4bbb033ff6b2322d77177a755",
+      "sha256": "68cafb42b8bd2fb499b0075d1565836c1461562e9e21f8f0d6d7e419081e2b52"
+    },
     "tests/test_workflow_intelligence.py": {
-      "bytes": 9546,
-      "git_blob_sha1": "0b177e6d2b25920a59e71e448be555e87ab4aba1",
-      "sha256": "15d943fa2cb57566fda691b6a2fc854e0d4bfe5a2c930e1095fdf6785ffcae00"
+      "bytes": 10076,
+      "git_blob_sha1": "5b5904da3a04820cb10b42cd88329fdbfb5391b3",
+      "sha256": "805f24407f8d745f3b1ef53dcb5a3380187c48d6c5055817da03e4f638b2e00c"
     }
   },
   "verification": {
-    "command": "PYTHONPATH=src python -m pytest tests/test_agent_eval.py tests/test_workflow_intelligence.py -q --junitxml=docs/research/evidence/pytest.xml",
+    "command": ".venv/bin/pytest -q tests/test_agent_eval.py tests/test_workflow_intelligence.py tests/test_evidence_false_success.py tests/test_runtime_evidence.py",
     "errors": 0,
     "exit_code": 0,
     "failures": 0,
-    "log_sha256": "354c4b20ff58de2ae06e3231ff0e8aa6645fd45409b3c0155b4b493cd9598980",
+    "log_sha256": "40698b4be5e7ea008d87d8856480c7b0f0d113e8328780400bf2618e63e59d70",
     "skipped": 0,
-    "syntax": "AST parsed using Python 3.11 grammar; not Python 3.11 execution",
-    "tests": 114
+    "syntax": "Ruff passed; Pyright returned 0 errors with environment-only missing-source/import warnings",
+    "tests": 181
   }
 }
