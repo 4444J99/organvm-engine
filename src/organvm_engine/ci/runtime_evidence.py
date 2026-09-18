@@ -139,6 +139,9 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 if len(rows) > 1:
                     raise ValueError("execution: ambiguous required step name")
                 selected.append(rows[0] if rows else None)
+            for step in selected:
+                if step is not None:
+                    _execution_times(step, ("started_at", "completed_at"), timestamp)
             executed = sum(step is not None and step.get("status") == "completed"
                            and step.get("conclusion") in {"success", "failure"} for step in selected)
             runner = job.get("runner_id")
