@@ -296,6 +296,15 @@ def test_tampered_scores_do_not_enter_reward_gate():
         promotion_gate([before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric))
 
 
+def test_same_trace_digest_cannot_claim_changed_evaluation_outcome():
+    before, after, rubric = paired_reports()
+    after["trace_digest"] = before["trace_digest"]
+    with pytest.raises(ValueError, match="trace digest"):
+        promotion_gate(
+            [before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
+        )
+
+
 def test_scope_report_cannot_be_tampered_for_promotion():
     before, after, rubric = paired_reports()
     after["scope"]["missing_count"] = 1

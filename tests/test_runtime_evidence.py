@@ -56,6 +56,30 @@ def test_actual_shape_of_zero_step_failure_is_not_executed_test_failure():
     assert result["jobs"][0]["executed_required"] == 0
 
 
+@pytest.mark.parametrize("status", ["queued", "in_progress"])
+@pytest.mark.parametrize("runner_id", [None, 0])
+def test_active_zero_step_job_is_pending(status, runner_id):
+    data = payload()
+    data["run"].update(status=status, conclusion=None)
+    data["jobs_pages"][0]["jobs"][0].update(
+        status=status, conclusion=None, runner_id=runner_id, steps=[],
+    )
+    assert evaluate_run(**data)["decision"] == "pending"
+
+
+def test_completed_zero_step_job_allows_null_runner():
+    data = payload()
+    data["jobs_pages"][0]["jobs"][0].update(runner_id=None, steps=[])
+    assert evaluate_run(**data)["decision"] == "not_executed"
+
+
+def test_null_runner_cannot_claim_recorded_steps():
+    data = payload()
+    data["jobs_pages"][0]["jobs"][0]["runner_id"] = None
+    with pytest.raises(ValueError, match="invalid runner identity"):
+        evaluate_run(**data)
+
+
 @pytest.mark.parametrize("change,decision", [
     ({"steps": []}, "not_executed"),
     ({"status": "in_progress"}, "pending"), ({"conclusion": "failure"}, "executed_failure"),
@@ -155,6 +179,29 @@ def test_step_uses_available_parent_job_bounds_when_optional_times_are_absent(bo
             started_at="2026-09-13T13:20:00Z", completed_at="2026-09-13T13:40:00Z",
         )
     with pytest.raises(ValueError, match="parent job"):
+        evaluate_run(**data)
+
+
+@pytest.mark.parametrize("bound", ["created_at", "run_started_at", "updated_at"])
+def test_step_uses_parent_run_bounds_when_job_times_are_absent(bound):
+    data = payload()
+    run = data["run"]
+    if bound == "created_at":
+        run[bound] = "2026-09-13T13:00:00Z"
+        data["jobs_pages"][0]["jobs"][0]["steps"][0].update(
+            started_at="2026-09-13T12:00:00Z", completed_at="2026-09-13T12:10:00Z",
+        )
+    elif bound == "run_started_at":
+        run[bound] = "2026-09-13T13:00:00Z"
+        data["jobs_pages"][0]["jobs"][0]["steps"][0].update(
+            started_at="2026-09-13T12:59:00Z", completed_at="2026-09-13T13:01:00Z",
+        )
+    else:
+        run[bound] = "2026-09-13T13:30:00Z"
+        data["jobs_pages"][0]["jobs"][0]["steps"][0].update(
+            started_at="2026-09-13T13:20:00Z", completed_at="2026-09-13T13:40:00Z",
+        )
+    with pytest.raises(ValueError, match="parent run"):
         evaluate_run(**data)
 
 

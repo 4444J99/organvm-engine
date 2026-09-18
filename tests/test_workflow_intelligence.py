@@ -65,6 +65,18 @@ def test_selected_antipatterns(text, expected):
     assert expected in codes(text)
 
 
+def test_push_commit_message_is_untrusted_shell_source():
+    text = SAFE.replace("pytest tests/", "echo ${{ github.event.head_commit.message }}")
+    assert "untrusted_run_expression" in codes(text)
+
+
+def test_snapshot_rejects_noncanonical_finding_severity():
+    current = snapshot(SAFE.replace(f"@{PIN}", "@v7"))
+    current["workflows"][PATH]["findings"][0]["severity"] = "info"
+    with pytest.raises(ValueError, match="invalid finding"):
+        proposals(current, owner_refs=[])
+
+
 def test_privileged_target_head_checkout():
     text = SAFE.replace("[push, pull_request]", "pull_request_target")
     text = text.replace("      - run:", "        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - run:")

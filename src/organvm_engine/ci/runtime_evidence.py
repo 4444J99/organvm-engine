@@ -170,14 +170,27 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                     if (job_times.get("updated_at")
                             and any(moment > job_times["updated_at"] for moment in step_times.values())):
                         raise ValueError("execution: step exceeds parent job")
+                    if (run_created
+                            and any(moment < run_created for moment in step_times.values())):
+                        raise ValueError("execution: step predates parent run")
+                    if (run_started
+                            and any(moment < run_started for moment in step_times.values())):
+                        raise ValueError("execution: step predates parent run")
+                    if (run_updated
+                            and any(moment > run_updated for moment in step_times.values())):
+                        raise ValueError("execution: step exceeds parent run observation")
             executed = sum(step is not None and step.get("status") == "completed"
                            and step.get("conclusion") in {"success", "failure"} for step in selected)
             runner = job.get("runner_id")
-            if type(runner) is not int or runner < 0:
+            if runner is None and steps:
+                raise ValueError("execution: invalid runner identity")
+            if runner is not None and (type(runner) is not int or runner < 0):
                 raise ValueError("execution: invalid runner identity")
             if runner == 0 and steps:
                 raise ValueError("execution: runner and steps contradict")
-            if not steps:
+            if not steps and job.get("status") != "completed":
+                state = "pending"
+            elif not steps:
                 state = "not_executed"
             elif any(step is not None and step.get("status") == "completed"
                      and step.get("conclusion") == "failure" for step in selected):

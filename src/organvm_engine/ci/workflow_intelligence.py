@@ -30,7 +30,8 @@ MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED_CONTEXT = re.compile(
-    r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|github\.head_ref\b)",
+    r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|"
+    r"github\.event\.head_commit\.message\b|github\.head_ref\b)",
 )
 PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
 PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
@@ -49,6 +50,16 @@ REPAIRS = {
     "untrusted_run_expression": "Move untrusted event values out of generated shell source and validate usage.",
     "privileged_head_checkout": "Do not execute pull-request-head code in a privileged target context.",
     "reusable_workflow_unresolved": "Inventory the referenced workflow at an immutable revision before claiming transitive coverage.",
+}
+FINDING_SEVERITIES = {
+    "permissions_unspecified": "medium",
+    "write_all": "high",
+    "mutable_action": "medium",
+    "timeout_unspecified": "low",
+    "failure_tolerated": "medium",
+    "untrusted_run_expression": "high",
+    "privileged_head_checkout": "critical",
+    "reusable_workflow_unresolved": "info",
 }
 
 
@@ -185,6 +196,8 @@ def analyze_workflow(text: str) -> dict:
     reusable = []
 
     def add(code: str, severity: str, location: str) -> None:
+        if FINDING_SEVERITIES.get(code) != severity:
+            raise ValueError("workflow: inconsistent finding severity")
         findings.append({"code": code, "severity": severity, "location": location,
                          "basis": "static_source", "requires_review": True,
                          "proposed_action": REPAIRS[code]})
@@ -333,14 +346,16 @@ def _validate_snapshot(snapshot: dict) -> None:
                 if not isinstance(findings, list) or len(findings) > MAX_NODES:
                     raise ValueError("snapshot: invalid findings")
                 for finding in findings:
-                    if (not isinstance(finding, dict) or set(finding) != expected_fields
-                            or finding.get("code") not in REPAIRS
-                            or finding.get("severity") not in SEVERITIES
+                    if not isinstance(finding, dict) or set(finding) != expected_fields:
+                        raise ValueError("snapshot: invalid finding")
+                    code = finding.get("code")
+                    if (not isinstance(code, str) or code not in REPAIRS
+                            or finding.get("severity") != FINDING_SEVERITIES[code]
                             or not isinstance(finding.get("location"), str)
                             or not 0 < len(finding["location"]) <= 1024
                             or finding.get("basis") != "static_source"
                             or finding.get("requires_review") is not True
-                            or finding.get("proposed_action") != REPAIRS[finding["code"]]):
+                            or finding.get("proposed_action") != REPAIRS[code]):
                         raise ValueError("snapshot: invalid finding")
             elif record.get("findings"):
                 raise ValueError("snapshot: findings require analyzed source")

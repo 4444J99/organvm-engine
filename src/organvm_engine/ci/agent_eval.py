@@ -338,6 +338,11 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
         if (report["scope"]["manifest_digest"] != old["scope"]["manifest_digest"]
                 or report["scope"]["expected_count"] != old["scope"]["expected_count"]):
             raise ValueError("gate: paired scope manifest mismatch")
+        outcome_fields = ("checks", "scores", "coverage", "failed_required", "decision", "scope")
+        if (report["trace_digest"] == old["trace_digest"]
+                and digest({field: report[field] for field in outcome_fields})
+                != digest({field: old[field] for field in outcome_fields})):
+            raise ValueError("gate: trace digest contradicts evaluation outcome")
         if report.get("decision") != "pass" or report.get("failed_required") != []:
             reasons.add("candidate_required_check_failure")
         for dimension in DIMENSIONS:
