@@ -107,3 +107,26 @@ def test_controls_still_score_each_dimension():
     result = score()
     assert result["decision"] == "pass"
     assert set(result["scores"]) == set(DIMENSIONS)
+
+def test_promotion_rejects_cross_revision_comparison():
+    before, after, rubric = paired_reports()
+    after["revision"] = "b" * 40
+    with pytest.raises(ValueError, match="revision mismatch"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric))
+
+
+def test_incomplete_enumeration_never_reports_complete_coverage():
+    partial = inventory(1160447354, HEAD, {PATH: SAFE}, expected_paths=[PATH],
+                        observed_at=WHEN, enumeration_complete=False)
+    assert partial["analyzed_count"] == 1
+    assert partial["coverage"] == "partial"
+
+    empty = inventory(1160447354, HEAD, {}, expected_paths=[], observed_at=WHEN,
+                      enumeration_complete=False)
+    assert empty["coverage"] == "partial"
+
+    partial["coverage"] = "complete"
+    with pytest.raises(ValueError, match="inconsistent coverage"):
+        drift(snapshot(), partial)
+
