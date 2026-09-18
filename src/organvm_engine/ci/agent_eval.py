@@ -19,7 +19,7 @@ VERSION = "organvm.agent-eval.v2"
 MAX_JSON_BYTES = 2_097_152
 DIMENSIONS = ("tool_choice", "parameters", "state", "outcome", "policy")
 OUTCOMES = ("completed", "refused", "abstained", "error")
-TOKEN = {"type": "string", "pattern": r"^[A-Za-z0-9_.:-]{1,128}$"}
+TOKEN = {"type": "string", "pattern": r"\A[A-Za-z0-9_.:-]{1,128}\Z"}
 ARTIFACT = {"type": "string", "minLength": 1, "maxLength": 1024,
             "pattern": r"^[^\x00-\x1f\x7f]+$"}
 SHA = {"type": "string", "pattern": r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$"}
@@ -315,12 +315,17 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
     if (not Draft202012Validator({"type": "array", "items": TOKEN, "minItems": 1,
                                   "maxItems": 4096, "uniqueItems": True}).is_valid(case_ids)):
         raise ValueError("gate: empty or duplicate held-out cases")
+    trace_cases: dict[str, str] = {}
     for reports in (baseline, candidate):
         ids = [r.get("case_id") for r in reports]
         if len(ids) != len(case_ids) or set(ids) != set(case_ids):
             raise ValueError("gate: paired case coverage mismatch")
         for report in reports:
             _validate_report(report)
+            trace_digest = report["trace_digest"]
+            previous_case = trace_cases.setdefault(trace_digest, report["case_id"])
+            if previous_case != report["case_id"]:
+                raise ValueError("gate: trace digest reused across held-out cases")
             if (not isinstance(report.get("rubric_digest"), str)
                     or not re.fullmatch(r"[0-9a-f]{64}", report["rubric_digest"])
                     or report["rubric_digest"] != rubric_digest

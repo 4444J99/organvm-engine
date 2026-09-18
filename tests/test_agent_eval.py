@@ -288,7 +288,7 @@ def test_case_manifest_failures(ids):
         promotion_gate([before], [after], case_ids=ids, rubric_digest=digest(rubric))
 
 
-@pytest.mark.parametrize("case_id", [None, 7, "", "case id", "x" * 129])
+@pytest.mark.parametrize("case_id", [None, 7, "", "case id", "case\n", "x" * 129])
 def test_case_manifest_and_reports_require_token_identity(case_id):
     before, after, rubric = paired_reports()
     before["case_id"] = case_id
@@ -310,6 +310,19 @@ def test_same_trace_digest_cannot_claim_changed_evaluation_outcome():
     with pytest.raises(ValueError, match="trace digest"):
         promotion_gate(
             [before], [after], case_ids=[after["case_id"]], rubric_digest=digest(rubric),
+        )
+
+
+def test_trace_digest_cannot_be_reused_across_held_out_cases():
+    before, after, rubric = paired_reports()
+    before2, after2, _ = paired_reports()
+    before2["case_id"] = after2["case_id"] = "other-case"
+    before2["trace_digest"] = before["trace_digest"]
+    after2["trace_digest"] = after["trace_digest"]
+    with pytest.raises(ValueError, match="reused across held-out cases"):
+        promotion_gate(
+            [before, before2], [after, after2],
+            case_ids=[before["case_id"], "other-case"], rubric_digest=digest(rubric),
         )
 
 

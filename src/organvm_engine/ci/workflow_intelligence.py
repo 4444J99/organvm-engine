@@ -30,7 +30,7 @@ MAX_DEPTH = 64
 PIN = re.compile(r"@[0-9a-fA-F]{40}$")
 DIGEST_PIN = re.compile(r"@sha256:[0-9a-fA-F]{64}$")
 UNTRUSTED_CONTEXT = re.compile(
-    r"(?:github\.event\.(?:issue|pull_request|comment|review)\b|"
+    r"(?:github\.event\b|"
     r"github\.event\.head_commit\.(?:message|author|committer)\b|"
     r"github\.event\.commits(?:\s*\[[^\]]+\]|\.\*)\.(?:message|author|committer)\b|"
     r"github\.head_ref\b)",
@@ -43,8 +43,8 @@ PR_SYNTHETIC_REF = re.compile(
     re.DOTALL,
 )
 PR_SYNTHETIC_FORMAT_REF = re.compile(
-    r"format\(\s*(['\"])refs/pull/\{[0-9]+\}/(?:head|merge)\1\s*,"
-    r"[^)]*github\.event\.(?:pull_request\.)?number\b",
+    r"format\(\s*(['\"])refs/pull/\{(?P<placeholder>[0-9]+)\}/(?:head|merge)\1\s*,"
+    r"(?P<arguments>[^)]*)\)",
     re.DOTALL,
 )
 PR_SYNTHETIC_FORMAT_COMPONENT_REF = re.compile(
@@ -86,7 +86,8 @@ def _contains_pr_head(value: Any) -> bool:
         normalized = _normalize_event_paths(value)
         return (any(pattern.search(normalized) is not None
                     for pattern in (PR_HEAD, PR_HEAD_REF, PR_MERGE_SHA,
-                                    PR_SYNTHETIC_REF, PR_SYNTHETIC_FORMAT_REF))
+                                    PR_SYNTHETIC_REF))
+                or _contains_synthetic_format_ref(normalized)
                 or _contains_synthetic_format_component_ref(normalized))
     if isinstance(value, dict):
         return any(_contains_pr_head(item) for item in value.values())
@@ -171,6 +172,18 @@ def _contains_synthetic_format_component_ref(value: str) -> bool:
         kind_arg = arguments[placeholders[1]]
         if (re.search(r"github\.event\.(?:pull_request\.)?number\b", number_arg)
                 and re.fullmatch(r"(['\"])(?:head|merge)\1", kind_arg)):
+            return True
+    return False
+
+
+def _contains_synthetic_format_ref(value: str) -> bool:
+    """Resolve the numbered placeholder in refs/pull/{n}/kind format calls."""
+    for match in PR_SYNTHETIC_FORMAT_REF.finditer(value):
+        arguments = _split_format_arguments(match.group("arguments"))
+        placeholder = int(match.group("placeholder"))
+        if (placeholder < len(arguments)
+                and re.search(r"github\.event\.(?:pull_request\.)?number\b",
+                              arguments[placeholder])):
             return True
     return False
 
@@ -387,6 +400,8 @@ def inventory(repository_id: int, revision: str, files: dict[str, str], *,
         _path(path)
     if not set(files) <= set(expected_paths):
         raise ValueError("inventory: files outside declared enumeration")
+    if any(not isinstance(content, str) for content in files.values()):
+        raise ValueError("inventory: workflow contents must be strings")
     records = {}
     for path in sorted(expected_paths):
         if path not in files:

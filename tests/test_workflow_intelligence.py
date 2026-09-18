@@ -153,6 +153,17 @@ def test_privileged_target_format_built_synthetic_ref_is_detected():
     assert "privileged_head_checkout" in codes(text)
 
 
+def test_privileged_target_format_ref_uses_numbered_argument_position():
+    text = SAFE.replace("[push, pull_request]", "pull_request_target")
+    text = text.replace(
+        "      - run:",
+        "        with:\n"
+        "          ref: ${{ format('refs/pull/{0}/head', 'main', github.event.number) }}\n"
+        "      - run:",
+    )
+    assert "privileged_head_checkout" not in codes(text)
+
+
 def test_privileged_target_multi_placeholder_format_ref_is_detected():
     text = SAFE.replace("[push, pull_request]", "pull_request_target")
     text = text.replace(
@@ -223,6 +234,11 @@ def test_privileged_checkout_normalizes_every_bracket_segment(expression):
 
 def test_untrusted_run_normalizes_every_bracket_segment():
     text = SAFE.replace("pytest tests/", "printf '%s' ${{ github.event['issue']['title'] }}")
+    assert "untrusted_run_expression" in codes(text)
+
+
+def test_whole_event_serialization_is_untrusted_shell_source():
+    text = SAFE.replace("pytest tests/", "echo '${{ toJSON(github.event) }}'")
     assert "untrusted_run_expression" in codes(text)
 
 
@@ -297,6 +313,12 @@ def test_invalid_or_unsupported_input_never_passes(text):
     result = snapshot(text)
     assert result["coverage"] == "partial"
     assert result["workflows"][PATH]["status"] == "invalid_or_unsupported"
+
+
+@pytest.mark.parametrize("content", [None, [], {}])
+def test_inventory_rejects_non_string_workflow_contents(content):
+    with pytest.raises(ValueError, match="workflow contents must be strings"):
+        snapshot(files={PATH: content})
 
 
 def test_size_and_depth_budgets():
