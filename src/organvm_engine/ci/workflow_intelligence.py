@@ -35,7 +35,7 @@ UNTRUSTED_CONTEXT = re.compile(
     r"github\.event\.pull_request\.(?:title|body|head\.(?:ref|label)|head\.repo\.full_name)\b|"
     r"github\.event\.discussion\.(?:title|body)\b|"
     r"github\.event\.(?:comment|review)\.body\b|"
-    r"github\.event\.head_commit\.(?:message|author|committer)\b|"
+    r"github\.event\.(?:workflow_run\.)?head_commit\.(?:message|author|committer)\b|"
     r"github\.event\.commits(?:\s*\[[^\]]+\]|\.\*)\.(?:message|author|committer)\b|"
     r"github\.head_ref\b)",
 )
@@ -115,10 +115,16 @@ def _contains_workflow_run_head(value: dict[str, Any]) -> bool:
     repository_value = value.get("repository", "")
     if not isinstance(ref_value, str) or not isinstance(repository_value, str):
         return False
-    ref = _normalize_event_paths(ref_value)
-    repository = _normalize_event_paths(repository_value)
-    return (WORKFLOW_RUN_HEAD_SHA.search(ref) is not None
-            and WORKFLOW_RUN_HEAD_REPOSITORY.search(repository) is not None)
+
+    def references(selector: str, pattern: re.Pattern[str]) -> bool:
+        """Match executable context references, never literal selector text."""
+        return any(
+            pattern.search(_strip_quoted_literals(expression)) is not None
+            for expression in _github_expressions(_normalize_event_paths(selector))
+        )
+
+    return (references(ref_value, WORKFLOW_RUN_HEAD_SHA)
+            and references(repository_value, WORKFLOW_RUN_HEAD_REPOSITORY))
 
 
 def _contains_untrusted_run_expression(value: str) -> bool:
