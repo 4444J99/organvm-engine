@@ -20,8 +20,10 @@ SCOPE_COUNT = 1
 
 
 def promotion_gate(*args, **kwargs):
-    """Exercise the production gate with the fixture's independently pinned scope."""
+    """Exercise the production gate with the fixture's independent source and scope pins."""
     kwargs.setdefault("expected_scope_count", SCOPE_COUNT)
+    kwargs.setdefault("expected_repository_id", REPO)
+    kwargs.setdefault("expected_revision", HEAD)
     return _promotion_gate(*args, **kwargs)
 
 
@@ -307,6 +309,7 @@ def test_promotion_requires_valid_pinned_scope_count(scope_count):
             [before], [after], case_ids=[after["case_id"]],
             rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
             expected_scope_count=scope_count,
+            expected_repository_id=REPO, expected_revision=HEAD,
         )
 
 
@@ -480,3 +483,94 @@ def test_cli_generic_error_does_not_expose_source(tmp_path, capsys):
                    "--scope-digest", digest(["README.md"])])
     assert result == 2
     assert "SYNTHETIC-PRIVATE" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("field,value", [
+    ("repository_id", REPO + 1), ("revision", "b" * 40),
+])
+@pytest.mark.parametrize("targets", ["baseline", "candidate", "both"])
+def test_promotion_rejects_valid_but_unintended_source(field, value, targets):
+    """Neither matching reports nor one stale report can replace caller pins."""
+    before, after, rubric = paired_reports()
+    if targets in {"baseline", "both"}:
+        before[field] = value
+    if targets in {"candidate", "both"}:
+        after[field] = value
+    with pytest.raises(ValueError, match="mismatch"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
+
+
+@pytest.mark.parametrize("value", [None, True, False, 0, -1, 1.0, "1160447354"])
+def test_promotion_source_pin_rejects_invalid_repository(value):
+    """Repository identity has no truthiness or numeric/string coercion."""
+    before, after, rubric = paired_reports()
+    with pytest.raises(ValueError, match="pinned repository"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
+                       expected_repository_id=value)
+
+
+@pytest.mark.parametrize("value", [None, True, 123, "main", "a" * 39, "A" * 40, HEAD + "\n"])
+def test_promotion_source_pin_rejects_invalid_revision(value):
+    """A caller must identify an immutable lowercase commit, not a branch name."""
+    before, after, rubric = paired_reports()
+    with pytest.raises(ValueError, match="pinned revision"):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST,
+                       expected_revision=value)
+
+
+@pytest.mark.parametrize("missing", ["expected_repository_id", "expected_revision"])
+def test_promotion_does_not_default_source_pins_from_reports(missing):
+    """The public gate API requires both independently supplied source fields."""
+    before, after, rubric = paired_reports()
+    kwargs = {"case_ids": [after["case_id"]], "rubric_digest": digest(rubric),
+              "scope_manifest_digest": SCOPE_DIGEST, "expected_scope_count": SCOPE_COUNT,
+              "expected_repository_id": REPO, "expected_revision": HEAD}
+    kwargs.pop(missing)
+    with pytest.raises(TypeError):
+        _promotion_gate([before], [after], **kwargs)
+
+
+def test_gate_receipt_records_the_independent_source_pins():
+    """Retain the expected source on the decision without claiming execution."""
+    before, after, rubric = paired_reports()
+    result = promotion_gate([before], [after], case_ids=[after["case_id"]],
+                            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
+    assert result["repository_id"] == REPO
+    assert result["revision"] == HEAD
+    assert not result["authorizes_release"]
+
+
+def test_equivalent_numeric_weights_do_not_change_paired_contract():
+    """JSON integer and decimal encodings have the same numeric weight."""
+    before, after, rubric = paired_reports()
+    for check in after["checks"]:
+        check["weight"] = float(check["weight"])
+    result = promotion_gate([before], [after], case_ids=[after["case_id"]],
+                            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
+    assert result["decision"] == "eligible_for_review"
+
+
+def test_identical_trace_accepts_semantically_equivalent_numeric_evidence():
+    """Representation changes must not invent contradictory trace outcomes."""
+    _, before, rubric = paired_reports()
+    after = copy.deepcopy(before)
+    for check in after["checks"]:
+        check["weight"] = float(check["weight"])
+    after["scores"] = {key: int(value) for key, value in after["scores"].items()}
+    result = promotion_gate([before], [after], case_ids=[after["case_id"]],
+                            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
+    assert result["decision"] == "blocked"
+    assert result["mean_dimension_gain"] == 0
+
+
+@pytest.mark.parametrize("value", [True, False, "1", 2])
+def test_nonequivalent_weights_remain_rejected(value):
+    """Numeric equivalence never permits boolean, string or changed weights."""
+    before, after, rubric = paired_reports()
+    after["checks"][0]["weight"] = value
+    with pytest.raises(ValueError):
+        promotion_gate([before], [after], case_ids=[after["case_id"]],
+                       rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)

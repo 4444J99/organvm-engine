@@ -322,13 +322,21 @@ def _validate_report(report: dict) -> None:
 
 def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: list[str],
                    rubric_digest: str, scope_manifest_digest: str, expected_scope_count: int,
+                   expected_repository_id: int, expected_revision: str,
                    minimum_gain: float = 0.01) -> dict:
     """Paired held-out eligibility, never automatic learning or promotion.
 
-    Caller must freeze the held-out case manifest separately from generation.
+    Caller must freeze the repository, revision and held-out case manifest
+    independently of the reports and their producer. Both report sets must match
+    those pins; agreement between the reports alone is not an authority source.
     All cases/dimensions must be comparable; refusal/abstention is not scored as
     failure. No per-case dimension regression may hide inside an average gain.
     """
+    if type(expected_repository_id) is not int or expected_repository_id <= 0:
+        raise ValueError("gate: valid pinned repository identity required")
+    if (not isinstance(expected_revision, str)
+            or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", expected_revision)):
+        raise ValueError("gate: valid pinned revision required")
     if (type(minimum_gain) not in (int, float) or not math.isfinite(minimum_gain)
             or not 0 < minimum_gain <= 1):
         raise ValueError("gate: minimum_gain must be finite and in (0, 1]")
@@ -349,6 +357,10 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
             raise ValueError("gate: paired case coverage mismatch")
         for report in reports:
             _validate_report(report)
+            if report["repository_id"] != expected_repository_id:
+                raise ValueError("gate: repository identity mismatch")
+            if report["revision"] != expected_revision:
+                raise ValueError("gate: revision mismatch")
             trace_digest = report["trace_digest"]
             previous_case = trace_cases.setdefault(trace_digest, report["case_id"])
             if previous_case != report["case_id"]:
@@ -381,7 +393,7 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
                 key=lambda row: row[0],
             )
 
-        if digest(signature(old)) != digest(signature(report)):
+        if not _json_equal(signature(old), signature(report)):
             raise ValueError("gate: paired check contract mismatch")
         if report.get("repository_id") != old.get("repository_id"):
             raise ValueError("gate: repository identity mismatch")
@@ -392,8 +404,8 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
             raise ValueError("gate: paired scope manifest mismatch")
         outcome_fields = ("checks", "scores", "coverage", "failed_required", "decision", "scope")
         if (report["trace_digest"] == old["trace_digest"]
-                and digest({field: report[field] for field in outcome_fields})
-                != digest({field: old[field] for field in outcome_fields})):
+                and not _json_equal({field: report[field] for field in outcome_fields},
+                                    {field: old[field] for field in outcome_fields})):
             raise ValueError("gate: trace digest contradicts evaluation outcome")
         if report.get("decision") != "pass" or report.get("failed_required") != []:
             reasons.add("candidate_required_check_failure")
@@ -408,6 +420,7 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
     return {"schema_version": VERSION, "decision": "blocked" if reasons else "eligible_for_review",
             "case_manifest_digest": digest(sorted(case_ids)), "rubric_digest": rubric_digest,
             "scope_manifest_digest": scope_manifest_digest,
+            "repository_id": expected_repository_id, "revision": expected_revision,
             "expected_scope_count": expected_scope_count,
             "baseline_digest": digest(baseline), "candidate_digest": digest(candidate),
             "paired_cases": len(case_ids), "mean_dimension_gain": gain,
