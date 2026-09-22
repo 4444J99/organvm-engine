@@ -132,7 +132,7 @@ def parse_session(jsonl_path: Path) -> SessionMeta | None:
     first_human = ""
 
     try:
-        with jsonl_path.open(encoding="utf-8") as f:
+        with jsonl_path.open(encoding="utf-8", errors="replace") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -140,6 +140,9 @@ def parse_session(jsonl_path: Path) -> SessionMeta | None:
                 try:
                     msg = json.loads(line)
                 except json.JSONDecodeError:
+                    continue
+
+                if not isinstance(msg, dict):
                     continue
 
                 msg_type = msg.get("type", "")
@@ -438,7 +441,7 @@ def render_prompts(jsonl_path: Path) -> str:
     pending_actions: list[str] = []
     prompt_texts: list[str] = []  # for pattern summary
 
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for raw_line in f:
             raw_line = raw_line.strip()
             if not raw_line:
@@ -574,7 +577,7 @@ def render_transcript(jsonl_path: Path) -> str:
     lines.append("")
 
     turn = 0
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -740,7 +743,7 @@ def render_transcript_unabridged(jsonl_path: Path) -> str:
     lines.append("")
 
     msg_num = 0
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for raw_line in f:
             raw_line = raw_line.strip()
             if not raw_line:
@@ -1168,7 +1171,7 @@ def parse_codex_session(jsonl_path: Path) -> SessionMeta | None:
     first_human = ""
 
     try:
-        with jsonl_path.open(encoding="utf-8") as f:
+        with jsonl_path.open(encoding="utf-8", errors="replace") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -1255,7 +1258,7 @@ def render_codex_transcript(jsonl_path: Path, unabridged: bool = False) -> str:
     ]
 
     msg_num = 0
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for raw_line in f:
             raw_line = raw_line.strip()
             if not raw_line:

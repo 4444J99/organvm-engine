@@ -46,7 +46,7 @@ def discover_seeds(
 
         manifest = load_workspace_manifest(ws / "workspace-manifest.yaml")
         manifest_organs = organs_in_manifest(manifest)
-        if manifest_organs:
+        if manifest is not None:
             dir_map = organ_dir_map()
             scan_orgs = [dir_map[k] for k in manifest_organs if k in dir_map]
         else:

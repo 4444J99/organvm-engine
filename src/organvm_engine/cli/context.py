@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 
 
 def cmd_context_surfaces(args: argparse.Namespace) -> int:
@@ -26,6 +27,9 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
 
     # --write overrides the default dry_run=True
     dry_run = not getattr(args, "write", False)
+    if dry_run and getattr(args, "receipt", None) is not None:
+        print("Error: --receipt requires --write", file=sys.stderr)
+        return 1
 
     organs = [args.organ] if args.organ else None
     result = sync_all(
@@ -33,6 +37,7 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
         registry_path=args.registry,
         dry_run=dry_run,
         organs=organs,
+        receipt_path=getattr(args, "receipt", None),
     )
 
     print("System Context Sync Results")
@@ -66,6 +71,8 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
 
     if result.get("dry_run"):
         print("\n[DRY RUN] No files were modified.")
+    elif result.get("receipt_path"):
+        print(f"\nReceipt: {result['receipt_path']} ({result['receipt_sha256']})")
 
     return 1 if result["errors"] else 0
 
@@ -208,4 +215,3 @@ def cmd_context_rollback(args: argparse.Namespace) -> int:
 
     print("Rollback complete.")
     return 0
-

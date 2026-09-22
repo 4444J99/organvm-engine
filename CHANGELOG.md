@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Reader-mode documentation engine: canonical `project-record.yml` integrity
+  validation, class-aware audience-route checks, seven-dimension repository
+  audits, workspace discovery, and table/JSON/Markdown CLI reporting.
+- Bind pilot, public, and retired deployment lifecycle states to at least one
+  qualifying verified deployment assertion, with conservative retired-state
+  support for verified current-unavailability evidence.
+- Bind canonical and noncanonical delivery roles to an explicitly supplied
+  checked-out repository identity, preventing Class D self-redirects.
+- Executed 323-repository estate-audit notebook with privacy-bounded public
+  outputs, reproducible input manifest, and first-wave rollout queue.
+- Clarified canonical repository ownership versus the engine's historical
+  meta-system functional placement.
 - MCP tool layer (`organvm_engine.mcp`): pure, JSON-serializable wrappers
   exposing the five core CLIs (registry, governance, seed, metrics, dispatch)
   to the `organvm-mcp-server` without an MCP-SDK dependency. Includes a

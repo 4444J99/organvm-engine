@@ -1,10 +1,13 @@
 """Validate registry-v2.json against schema and governance rules."""
 
+import hashlib
 import json
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Iterable
 
+from organvm_engine._stable_io import StableReadError, read_stable_regular_bytes
 from organvm_engine.registry.query import all_repos, find_repo
 
 # Fallback enum values — used when schema-definitions is unavailable
@@ -23,13 +26,35 @@ _FALLBACK_PROMOTION_STATES = {"LOCAL", "CANDIDATE", "PUBLIC_PROCESS", "GRADUATED
 _FALLBACK_TIERS = {"flagship", "standard", "stub", "archive", "infrastructure", "sovereign"}
 
 
-def _load_schema_enums() -> dict[str, set[str]]:
-    """Load enum values from registry-v2 JSON schema.
+@dataclass(frozen=True)
+class RegistryValidationPolicy:
+    """Immutable enum policy and portable provenance used for one validation."""
 
-    Searches for the schema file in known locations. Falls back to
-    hardcoded values with a warning if the schema is unavailable.
-    """
-    candidates = [
+    statuses: frozenset[str]
+    revenue_models: frozenset[str]
+    revenue_statuses: frozenset[str]
+    promotion_states: frozenset[str]
+    tiers: frozenset[str]
+    source_kind: str
+    source_sha256: str
+
+    def evidence(self) -> dict[str, str | list[str]]:
+        """Return canonical, path-free receipt evidence for this policy."""
+        return {
+            "policy_version": "organvm.registry-validation-policy.v1",
+            "source_kind": self.source_kind,
+            "source_sha256": self.source_sha256,
+            "statuses": sorted(self.statuses),
+            "revenue_models": sorted(self.revenue_models),
+            "revenue_statuses": sorted(self.revenue_statuses),
+            "promotion_states": sorted(self.promotion_states),
+            "tiers": sorted(self.tiers),
+        }
+
+
+def _schema_candidates() -> tuple[Path, ...]:
+    """Return schema locations in precedence order."""
+    return (
         Path(__file__).resolve().parents[4]
         / "schema-definitions"
         / "schemas"
@@ -40,34 +65,127 @@ def _load_schema_enums() -> dict[str, set[str]]:
         / "schema-definitions"
         / "schemas"
         / "registry-v2.schema.json",
-    ]
+    )
 
+
+def _fallback_policy() -> RegistryValidationPolicy:
+    enum_evidence = {
+        "statuses": sorted(_FALLBACK_STATUSES),
+        "revenue_models": sorted(_FALLBACK_REVENUE_MODELS),
+        "revenue_statuses": sorted(_FALLBACK_REVENUE_STATUSES),
+        "promotion_states": sorted(_FALLBACK_PROMOTION_STATES),
+        "tiers": sorted(_FALLBACK_TIERS),
+    }
+    payload = json.dumps(
+        enum_evidence,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return RegistryValidationPolicy(
+        statuses=frozenset(_FALLBACK_STATUSES),
+        revenue_models=frozenset(_FALLBACK_REVENUE_MODELS),
+        revenue_statuses=frozenset(_FALLBACK_REVENUE_STATUSES),
+        promotion_states=frozenset(_FALLBACK_PROMOTION_STATES),
+        tiers=frozenset(_FALLBACK_TIERS),
+        source_kind="embedded-fallback",
+        source_sha256="sha256:" + hashlib.sha256(payload).hexdigest(),
+    )
+
+
+def capture_registry_validation_policy(
+    schema_candidates: Iterable[Path] | None = None,
+) -> RegistryValidationPolicy:
+    """Load enum values from registry-v2 JSON schema.
+
+    Searches for the schema file in known locations. Falls back to
+    hardcoded values with a warning if the schema is unavailable. The
+    returned policy is immutable so validation cannot silently switch to
+    different module globals after capture.
+    """
+    candidates = (
+        _schema_candidates() if schema_candidates is None else schema_candidates
+    )
     for schema_path in candidates:
         if schema_path.is_file():
             try:
-                schema = json.loads(schema_path.read_text())
-                repo_props = schema.get("$defs", {}).get("repository", {}).get("properties", {})
-                return {
-                    "statuses": set(repo_props.get("implementation_status", {}).get("enum", [])),
-                    "revenue_models": set(repo_props.get("revenue_model", {}).get("enum", [])),
-                    "revenue_statuses": set(repo_props.get("revenue_status", {}).get("enum", [])),
-                    "promotion_states": set(repo_props.get("promotion_status", {}).get("enum", [])),
-                    "tiers": set(repo_props.get("tier", {}).get("enum", [])),
-                }
-            except (json.JSONDecodeError, KeyError, TypeError) as e:
+                schema_payload = read_stable_regular_bytes(schema_path)
+                schema = json.loads(schema_payload)
+                if not isinstance(schema, dict):
+                    raise TypeError("registry schema root is not a mapping")
+                definitions = schema.get("$defs")
+                if not isinstance(definitions, dict):
+                    raise TypeError("registry schema $defs is not a mapping")
+                repository = definitions.get("repository")
+                if not isinstance(repository, dict):
+                    raise TypeError(
+                        "registry schema repository definition is not a mapping",
+                    )
+                repo_props = repository.get("properties")
+                if not isinstance(repo_props, dict):
+                    raise TypeError(
+                        "registry schema repository properties are not a mapping",
+                    )
+                fallback = _fallback_policy()
+                return RegistryValidationPolicy(
+                    statuses=_schema_enum(
+                        repo_props,
+                        "implementation_status",
+                        fallback.statuses,
+                    ),
+                    revenue_models=_schema_enum(
+                        repo_props,
+                        "revenue_model",
+                        fallback.revenue_models,
+                    ),
+                    revenue_statuses=_schema_enum(
+                        repo_props,
+                        "revenue_status",
+                        fallback.revenue_statuses,
+                    ),
+                    promotion_states=_schema_enum(
+                        repo_props,
+                        "promotion_status",
+                        fallback.promotion_states,
+                    ),
+                    tiers=_schema_enum(repo_props, "tier", fallback.tiers),
+                    source_kind="external-schema",
+                    source_sha256="sha256:" + hashlib.sha256(schema_payload).hexdigest(),
+                )
+            except (StableReadError, json.JSONDecodeError, KeyError, TypeError) as e:
                 warnings.warn(f"Failed to parse registry-v2 schema enums: {e}", stacklevel=2)
                 break
 
-    return {}
+    return _fallback_policy()
 
 
-_schema_enums = _load_schema_enums()
+def _schema_enum(
+    properties: dict,
+    key: str,
+    fallback: frozenset[str],
+) -> frozenset[str]:
+    """Return one validated schema enum, retaining historical empty fallback."""
+    definition = properties.get(key)
+    if definition is None:
+        return fallback
+    if not isinstance(definition, dict):
+        raise TypeError(f"registry schema {key} definition is not a mapping")
+    values = definition.get("enum")
+    if values is None or values == []:
+        return fallback
+    if not isinstance(values, list) or any(
+        not isinstance(value, str) or not value for value in values
+    ):
+        raise TypeError(f"registry schema {key} enum is not a list of nonempty strings")
+    return frozenset(values)
 
-VALID_STATUSES = _schema_enums.get("statuses") or _FALLBACK_STATUSES
-VALID_REVENUE_MODELS = _schema_enums.get("revenue_models") or _FALLBACK_REVENUE_MODELS
-VALID_REVENUE_STATUSES = _schema_enums.get("revenue_statuses") or _FALLBACK_REVENUE_STATUSES
-VALID_PROMOTION_STATES = _schema_enums.get("promotion_states") or _FALLBACK_PROMOTION_STATES
-VALID_TIERS = _schema_enums.get("tiers") or _FALLBACK_TIERS
+
+_DEFAULT_VALIDATION_POLICY = capture_registry_validation_policy()
+
+VALID_STATUSES = _DEFAULT_VALIDATION_POLICY.statuses
+VALID_REVENUE_MODELS = _DEFAULT_VALIDATION_POLICY.revenue_models
+VALID_REVENUE_STATUSES = _DEFAULT_VALIDATION_POLICY.revenue_statuses
+VALID_PROMOTION_STATES = _DEFAULT_VALIDATION_POLICY.promotion_states
+VALID_TIERS = _DEFAULT_VALIDATION_POLICY.tiers
 
 REQUIRED_FIELDS = {"name", "org", "implementation_status", "public", "description"}
 ORGAN_III_EXTRA = {"type", "revenue_model", "revenue_status"}
@@ -100,7 +218,11 @@ class ValidationResult:
         return "\n".join(lines)
 
 
-def validate_registry(registry: dict) -> ValidationResult:
+def validate_registry(
+    registry: dict,
+    *,
+    policy: RegistryValidationPolicy | None = None,
+) -> ValidationResult:
     """Run full validation on a registry dict.
 
     Checks:
@@ -118,6 +240,7 @@ def validate_registry(registry: dict) -> ValidationResult:
         ValidationResult with errors and warnings.
     """
     result = ValidationResult()
+    validation_policy = policy or _DEFAULT_VALIDATION_POLICY
 
     for organ_key, repo in all_repos(registry):
         result.total_repos += 1
@@ -130,20 +253,20 @@ def validate_registry(registry: dict) -> ValidationResult:
 
         # Status enum
         status = repo.get("implementation_status")
-        if status and status not in VALID_STATUSES:
+        if status and status not in validation_policy.statuses:
             result.errors.append(
                 f"{name}: invalid implementation_status '{status}' "
-                f"(valid: {', '.join(sorted(VALID_STATUSES))})",
+                f"(valid: {', '.join(sorted(validation_policy.statuses))})",
             )
 
         # Promotion status enum
         promo = repo.get("promotion_status")
-        if promo and promo not in VALID_PROMOTION_STATES:
+        if promo and promo not in validation_policy.promotion_states:
             result.errors.append(f"{name}: invalid promotion_status '{promo}'")
 
         # Tier enum
         tier = repo.get("tier")
-        if tier and tier not in VALID_TIERS:
+        if tier and tier not in validation_policy.tiers:
             result.errors.append(f"{name}: invalid tier '{tier}'")
 
         # ORGAN-III revenue fields
@@ -153,11 +276,11 @@ def validate_registry(registry: dict) -> ValidationResult:
                     result.warnings.append(f"{name}: ORGAN-III repo missing '{f}'")
 
             rm = repo.get("revenue_model")
-            if rm and rm not in VALID_REVENUE_MODELS:
+            if rm and rm not in validation_policy.revenue_models:
                 result.errors.append(f"{name}: invalid revenue_model '{rm}'")
 
             rs = repo.get("revenue_status")
-            if rs and rs not in VALID_REVENUE_STATUSES:
+            if rs and rs not in validation_policy.revenue_statuses:
                 result.errors.append(f"{name}: invalid revenue_status '{rs}'")
 
         # Dependency validation
