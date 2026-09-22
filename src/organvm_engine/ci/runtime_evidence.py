@@ -107,6 +107,7 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
         run_times = _execution_times(run, ("created_at", "run_started_at", "updated_at"), timestamp)
         jobs, complete, total = _pages(jobs_pages)
         by_name: dict[str, list[dict]] = {}
+        times_by_job: dict[int, dict[str, datetime]] = {}
         for job in jobs:
             if (not _positive(job.get("run_id")) or not _positive(job.get("run_attempt"))
                     or job["run_id"] != expected_run_id or job["run_attempt"] != expected_attempt
@@ -128,6 +129,7 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 raise ValueError("execution: job predates parent run start")
             if (run_updated and any(moment > run_updated for moment in job_times.values())):
                 raise ValueError("execution: job exceeds parent run observation")
+            times_by_job[job["id"]] = job_times
             by_name.setdefault(job["name"], []).append(job)
         observations = []
         for name, required in required_steps.items():
@@ -138,6 +140,7 @@ def evaluate_run(run: dict, jobs_pages: list[dict], *, expected_repository_id: i
                 observations.append({"name": name, "state": "missing", "executed_required": 0})
                 continue
             job = matches[0]
+            job_times = times_by_job[job["id"]]
             steps = job.get("steps")
             if not isinstance(steps, list) or len(steps) > MAX_STEPS:
                 raise ValueError("execution: invalid step collection")
