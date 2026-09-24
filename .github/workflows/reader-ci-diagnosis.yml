@@ -4,41 +4,56 @@ on:
     branches: [verify/reader-ci-diagnosis-20260924]
     paths: [.github/workflows/reader-ci-diagnosis.yml]
   workflow_dispatch:
-permissions:
-  contents: read
-  actions: read
+permissions: {}
 jobs:
   diagnose:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: Checkout reviewed Engine candidate without credentials
+      - name: Set up Python 3.11
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.11'
+      - name: Fetch exact public Engine source
         shell: bash
         run: |
           set -euo pipefail
-          git init -q .
-          git remote add origin https://github.com/4444J99/organvm-engine.git
-          git -c credential.helper= fetch --depth=1 origin cc01b80019dde6280a8f4344f657804c24972394
-          git checkout --detach -q FETCH_HEAD
-          test "$(git rev-parse HEAD)" = cc01b80019dde6280a8f4344f657804c24972394
-      - name: Capture source manifest and existing failure
-        env:
-          GH_TOKEN: ${{ github.token }}
+          git init -q source
+          git -C source remote add origin https://github.com/4444J99/organvm-engine.git
+          git -C source -c credential.helper= fetch --depth=1 origin cc01b80019dde6280a8f4344f657804c24972394
+          git -C source checkout --detach -q FETCH_HEAD
+          test "$(git -C source rev-parse HEAD)" = cc01b80019dde6280a8f4344f657804c24972394
+          test "$(git -C source rev-parse HEAD^{tree})" = 8b75087a4cbf23398773325669fd4d112eea7571
+          mkdir evidence
+      - name: Install native CI dependency set
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install 'organvm-ontologia @ git+https://github.com/meta-organvm/organvm-ontologia.git'
+          python -m pip install -e './source[dev]'
+          python -m pip freeze > evidence/packages.txt
+          python --version > evidence/python.txt
+      - name: Reproduce complete native suite and retain failures
+        shell: bash
+        run: |
+          set -uo pipefail
+          cd source
+          python -m pytest tests/ -q --tb=short --junitxml=../evidence/pytest.xml 2>&1 | tee ../evidence/pytest.log
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > ../evidence/pytest-exit.txt
+          git diff --exit-code HEAD || exit 90
+          exit "$status"
+      - name: Bind diagnostic receipt
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p evidence
-          git ls-tree -r HEAD > evidence/git-tree.txt
-          git archive HEAD | gzip > evidence/engine-source.tar.gz
-          gh api --hostname github.com repos/4444J99/organvm-engine/actions/jobs/107699012585 > evidence/job.json
-          gh api --hostname github.com repos/4444J99/organvm-engine/actions/jobs/107699012585/logs > evidence/native-python311.log
-          python3 - <<'PY'
-          import hashlib, json, os, pathlib, subprocess
+          python - <<'PY'
+          import datetime, hashlib, json, os, pathlib, subprocess
           root=pathlib.Path('evidence')
-          job=json.loads((root/'job.json').read_text())
-          assert job['run_id'] == 35539591550
-          assert job['conclusion'] == 'failure'
-          receipt={'run_id':os.environ['GITHUB_RUN_ID'],'workflow_sha':os.environ['GITHUB_SHA'],'head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'tree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),'diagnosed_job_id':job['id'],'files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()}}
+          receipt={'observed_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'run_id':os.environ['GITHUB_RUN_ID'],'workflow_sha':os.environ['GITHUB_SHA'],'source_head':subprocess.check_output(['git','-C','source','rev-parse','HEAD'],text=True).strip(),'source_tree':subprocess.check_output(['git','-C','source','rev-parse','HEAD^{tree}'],text=True).strip(),'scope':'Native hosted reproduction with retained logs; not a replacement target check or merge approval.','files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()}}
           (root/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
           PY
       - name: Retain diagnostics
