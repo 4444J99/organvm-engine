@@ -2,9 +2,10 @@
 
 from unittest.mock import patch
 
+from test_session_review import _FakeArgs, _make_test_session
+
 from organvm_engine.cli.session import cmd_session_review
 from organvm_engine.session.parser import parse_any_session
-from test_session_review import _FakeArgs, _make_test_session
 
 
 def test_review_rejects_corruption_after_valid_messages(tmp_path, capsys):
