@@ -1,0 +1,48 @@
+name: Reader CI diagnosis
+on:
+  push:
+    branches: [verify/reader-ci-diagnosis-20260924]
+    paths: [.github/workflows/reader-ci-diagnosis.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout reviewed Engine candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: cc01b80019dde6280a8f4344f657804c24972394
+          persist-credentials: false
+      - name: Capture source manifest and existing failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "$(git rev-parse HEAD)" = cc01b80019dde6280a8f4344f657804c24972394
+          git ls-tree -r HEAD > evidence/git-tree.txt
+          git archive HEAD | gzip > evidence/engine-source.tar.gz
+          gh api --hostname github.com repos/4444J99/organvm-engine/actions/jobs/107699012585 > evidence/job.json
+          gh api --hostname github.com repos/4444J99/organvm-engine/actions/jobs/107699012585/logs > evidence/native-python311.log
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          root=pathlib.Path('evidence')
+          job=json.loads((root/'job.json').read_text())
+          assert job['run_id'] == 35539591550
+          assert job['conclusion'] == 'failure'
+          receipt={'run_id':os.environ['GITHUB_RUN_ID'],'workflow_sha':os.environ['GITHUB_SHA'],'head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'tree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),'diagnosed_job_id':job['id'],'files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()}}
+          (root/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+      - name: Retain diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: reader-ci-diagnosis-${{ github.run_id }}
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: error
