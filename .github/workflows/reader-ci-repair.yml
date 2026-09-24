@@ -1,0 +1,93 @@
+name: Reader CI repair publication
+on:
+  push:
+    branches: [verify/reader-ci-diagnosis-20260924]
+    paths: [.github/workflows/reader-ci-repair.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Publish exactly the tested two-file compatibility repair
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib, urllib.request
+          REPO='4444J99/organvm-engine'
+          BASE='a7d0abffab1e3490f8cdf6395d56ef739bc27ec1'
+          BRANCH='fix/session-review-utf8-20260924'
+          def api(path,method='GET',body=None):
+              req=urllib.request.Request('https://api.github.com/'+path,method=method,headers={'User-Agent':'reader-ci-repair','Accept':'application/vnd.github+json','Authorization':'Bearer '+os.environ['GH_TOKEN']},data=None if body is None else json.dumps(body).encode())
+              with urllib.request.urlopen(req,timeout=30) as r:return json.load(r)
+          def blob(text):
+              b=text.encode();return hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()
+          assert api(f'repos/{REPO}')['id']==1160447354
+          assert api(f'repos/{REPO}/git/ref/heads/main')['object']['sha']==BASE
+          path='src/organvm_engine/cli/session.py'
+          value=api(f'repos/{REPO}/contents/{path}?ref={BASE}')
+          assert value['sha']=='b8e302a0b88315ababd0f16df947064abb760b3b'
+          original=base64.b64decode(value['content']).decode()
+          needle='    try:\n        meta = parse_any_session(jsonl_path)\n        prompts_content = render_any_prompts(jsonl_path) if meta else ""\n'
+          replacement='    try:\n        # Review promises actionable decode diagnostics even though the shared\n        # parser deliberately tolerates corrupt bytes for recovery workflows.\n        with jsonl_path.open(encoding="utf-8") as stream:\n            while stream.read(65_536):\n                pass\n        meta = parse_any_session(jsonl_path)\n        prompts_content = render_any_prompts(jsonl_path) if meta else ""\n'
+          assert original.count(needle)==1
+          repaired=original.replace(needle,replacement)
+          test='''"""Session review must not silently promote lossy parser output."""
+
+          from unittest.mock import patch
+
+          from organvm_engine.cli.session import cmd_session_review
+          from organvm_engine.session.parser import parse_any_session
+          from test_session_review import _FakeArgs, _make_test_session
+
+
+          def test_review_rejects_corruption_after_valid_messages(tmp_path, capsys):
+              path = _make_test_session(tmp_path)
+              original = path.read_bytes()
+              prefix = original + b"{}\\n" * 30_000
+              path.write_bytes(prefix + b"\\x8d\\n")
+              # Recovery parsing stays deliberately tolerant; only review is strict.
+              assert parse_any_session(path) is not None
+              with patch("organvm_engine.cli.session.find_session", return_value=path):
+                  assert cmd_session_review(_FakeArgs(session_id="test-abc")) == 1
+              output = capsys.readouterr().out
+              assert '"status": "unreadable-session"' in output
+              assert f'"reason": "non-UTF-8 input at byte {len(prefix)}"' in output
+              assert "Session Review:" not in output
+
+
+          def test_review_accepts_valid_unicode_replacement_character(tmp_path, capsys):
+              path = _make_test_session(tmp_path)
+              path.write_text(path.read_text().replace("Implement the feature", "Implement \\ufffd café"))
+              with (
+                  patch("organvm_engine.cli.session.find_session", return_value=path),
+                  patch("organvm_engine.cli.session.discover_plans", return_value=[]),
+              ):
+                  assert cmd_session_review(_FakeArgs(session_id="test-abc")) == 0
+              assert "unreadable-session" not in capsys.readouterr().out
+          '''
+          assert blob(repaired)=='c1dfa1b9dffa6fe7bcc4e112d9f49fef60449d6f'
+          assert blob(test)=='3a54c9505f4918b6bc26a167ad1c7d366b084433'
+          parent=api(f'repos/{REPO}/git/commits/{BASE}')
+          tree=api(f'repos/{REPO}/git/trees','POST',{'base_tree':parent['tree']['sha'],'tree':[{'path':path,'mode':'100644','type':'blob','content':repaired},{'path':'tests/test_session_review_encoding.py','mode':'100644','type':'blob','content':test}]})
+          commit=api(f'repos/{REPO}/git/commits','POST',{'message':'fix(session): preserve strict review diagnostics over tolerant parser','tree':tree['sha'],'parents':[BASE]})
+          assert api(f'repos/{REPO}/git/ref/heads/main')['object']['sha']==BASE
+          api(f'repos/{REPO}/git/refs','POST',{'ref':'refs/heads/'+BRANCH,'sha':commit['sha']})
+          receipt={'parent':BASE,'branch':BRANCH,'head':commit['sha'],'tree':tree['sha'],'tested_file_blobs':{path:blob(repaired),'tests/test_session_review_encoding.py':blob(test)},'local_test_scope':'12 session review tests passed on CPython 3.13.5; native Python matrix remains required.','reproduction_run':36021428758,'status':'published_branch_not_merged'}
+          pathlib.Path('evidence/publication.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt,indent=2))
+          PY
+      - name: Retain publication receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: reader-ci-repair-${{ github.run_id }}
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: error
