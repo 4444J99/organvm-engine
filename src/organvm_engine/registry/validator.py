@@ -172,11 +172,23 @@ def _schema_enum(
     values = definition.get("enum")
     if values is None or values == []:
         return fallback
+    declared_type = definition.get("type")
+    nullable_string = (
+        isinstance(declared_type, list)
+        and len(declared_type) == 2
+        and all(isinstance(item, str) for item in declared_type)
+        and set(declared_type) == {"string", "null"}
+    )
     if not isinstance(values, list) or any(
-        not isinstance(value, str) or not value for value in values
+        (value is None and not nullable_string)
+        or (value is not None and (not isinstance(value, str) or not value))
+        for value in values
     ):
         raise TypeError(f"registry schema {key} enum is not a list of nonempty strings")
-    return frozenset(values)
+    # This policy projects non-null string choices; null remains unassessed,
+    # never the string "none" or "n/a". The complete schema, including its null
+    # declaration, stays bound by source_sha256 and is not rewritten.
+    return frozenset(value for value in values if value is not None)
 
 
 _DEFAULT_VALIDATION_POLICY = capture_registry_validation_policy()
