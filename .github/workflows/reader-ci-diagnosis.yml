@@ -12,11 +12,15 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Checkout reviewed Engine candidate
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: cc01b80019dde6280a8f4344f657804c24972394
-          persist-credentials: false
+      - name: Checkout reviewed Engine candidate without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin https://github.com/4444J99/organvm-engine.git
+          git -c credential.helper= fetch --depth=1 origin cc01b80019dde6280a8f4344f657804c24972394
+          git checkout --detach -q FETCH_HEAD
+          test "$(git rev-parse HEAD)" = cc01b80019dde6280a8f4344f657804c24972394
       - name: Capture source manifest and existing failure
         env:
           GH_TOKEN: ${{ github.token }}
@@ -24,7 +28,6 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence
-          test "$(git rev-parse HEAD)" = cc01b80019dde6280a8f4344f657804c24972394
           git ls-tree -r HEAD > evidence/git-tree.txt
           git archive HEAD | gzip > evidence/engine-source.tar.gz
           gh api --hostname github.com repos/4444J99/organvm-engine/actions/jobs/107699012585 > evidence/job.json
