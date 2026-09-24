@@ -495,6 +495,11 @@ def cmd_session_review(args: argparse.Namespace) -> int:
         return 1
 
     try:
+        # Review promises actionable decode diagnostics even though the shared
+        # parser deliberately tolerates corrupt bytes for recovery workflows.
+        with jsonl_path.open(encoding="utf-8") as stream:
+            while stream.read(65_536):
+                pass
         meta = parse_any_session(jsonl_path)
         prompts_content = render_any_prompts(jsonl_path) if meta else ""
     except UnicodeDecodeError as exc:
