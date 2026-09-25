@@ -77,7 +77,9 @@ def cmd_session_agents(args: argparse.Namespace) -> int:
         total_sessions += info["count"]
         total_bytes += info["total_bytes"]
 
-    from organvm_engine.session.agents import _human_size
+    from organvm_engine.session.agents import _human_size, codex_home_dir
+
+    codex_home = codex_home_dir()
 
     print("-" * 56)
     print(f"{'Total':<10} {total_sessions:>8} {_human_size(total_bytes):>10}")
@@ -86,8 +88,8 @@ def cmd_session_agents(args: argparse.Namespace) -> int:
     print("  Claude:   ~/.claude/projects/<encoded-cwd>/*.jsonl")
     print("  Gemini:   ~/.local/share/gemini/tmp/<slug>/chats/session-*.{json,jsonl}")
     print("            (slug ← projects.json reverse map of cwd)")
-    print("  Codex:    ~/.local/share/codex/sessions/YYYY/MM/DD/rollout-*.jsonl")
-    print("            ~/.local/share/codex/archived_sessions/rollout-*.jsonl")
+    print(f"  Codex:    {codex_home}/sessions/YYYY/MM/DD/rollout-*.jsonl")
+    print(f"            {codex_home}/archived_sessions/rollout-*.jsonl")
     print("  OpenCode: ~/.local/share/opencode/opencode.db  (SQLite; `session.directory` column)")
     print()
     print("All local-only. Back up ~/.local/share/{claude,codex,gemini,opencode} for durability.")
