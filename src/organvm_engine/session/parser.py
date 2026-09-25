@@ -1385,6 +1385,18 @@ def detect_agent(file_path: Path) -> str:
         return "gemini"
     if "/.codex/" in path_str:
         return "codex"
+
+    from organvm_engine.session.agents import codex_home_dir
+    try:
+        codex_home = str(codex_home_dir())
+        if codex_home in path_str or file_path.is_relative_to(codex_home_dir()):
+            return "codex"
+    except Exception:
+        pass
+
+    if file_path.name.startswith("rollout-"):
+        return "codex"
+
     # Fallback: check file format
     if file_path.suffix == ".json":
         return "gemini"
@@ -1436,9 +1448,9 @@ def _parse_iso_ts(ts_str: str | None) -> datetime | None:
 def find_session(session_id: str) -> Path | None:
     """Find a session by full or partial ID across all agents."""
     from organvm_engine.session.agents import (
-        CODEX_ARCHIVED_DIR,
-        CODEX_SESSIONS_DIR,
         GEMINI_TMP_DIR,
+        codex_archived_dir,
+        codex_sessions_dir,
     )
 
     candidates: list[Path] = []
@@ -1456,7 +1468,7 @@ def find_session(session_id: str) -> Path | None:
                 candidates.append(json_file)
 
     # Codex — session ID is in the JSONL payload, filename contains UUID
-    for codex_dir in (CODEX_SESSIONS_DIR, CODEX_ARCHIVED_DIR):
+    for codex_dir in (codex_sessions_dir(), codex_archived_dir()):
         if codex_dir.exists():
             for jsonl in codex_dir.rglob("rollout-*.jsonl"):
                 if session_id in jsonl.stem:

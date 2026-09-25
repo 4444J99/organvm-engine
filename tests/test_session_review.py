@@ -243,3 +243,69 @@ def test_unreadable_session_output_is_capped(tmp_path, capsys):
     assert '"count": 2, "status": "unreadable-sessions-omitted"' in output
     assert "broken-9.jsonl" in output
     assert "broken-10.jsonl" not in output
+
+
+def test_review_latest_with_relocated_codex_home(tmp_path, monkeypatch, capsys):
+    relocated = tmp_path / ".agent-runtime" / "codex"
+    active_dir = relocated / "sessions" / "2026" / "09" / "16"
+    active_dir.mkdir(parents=True)
+
+    session_file = active_dir / "rollout-2026-09-16T10-00-00-relocated.jsonl"
+    entries = [
+        {
+            "timestamp": "2026-09-16T10:00:00Z",
+            "type": "session_meta",
+            "payload": {
+                "id": "relocated-codex-123",
+                "cwd": "/Users/test/Workspace/project",
+                "timestamp": "2026-09-16T10:00:00Z",
+            },
+        },
+        {
+            "timestamp": "2026-09-16T10:01:00Z",
+            "type": "response_item",
+            "payload": {
+                "role": "user",
+                "type": "message",
+                "content": [{"type": "input_text", "text": "Execute Styx closeout"}],
+            },
+        },
+        {
+            "timestamp": "2026-09-16T10:01:30Z",
+            "type": "response_item",
+            "payload": {
+                "role": "assistant",
+                "type": "message",
+                "content": [{"type": "output_text", "text": "Styx closeout complete."}],
+            },
+        },
+    ]
+    with session_file.open("w") as fh:
+        for e in entries:
+            fh.write(json.dumps(e) + "\n")
+
+    monkeypatch.setenv("CODEX_HOME", str(relocated))
+
+    with patch("organvm_engine.cli.session.discover_plans", return_value=[]):
+        args = _FakeArgs(latest=True)
+        result = cmd_session_review(args)
+
+    assert result == 0
+    captured = capsys.readouterr()
+    assert "Session Review:" in captured.out
+    assert "codex" in captured.out
+    assert "relocated" in captured.out or "relocate" in captured.out
+
+
+def test_session_agents_diagnostics_reports_relocated_codex_home(tmp_path, monkeypatch, capsys):
+    from organvm_engine.cli.session import cmd_session_agents
+
+    relocated = tmp_path / "my_relocated_codex"
+    monkeypatch.setenv("CODEX_HOME", str(relocated))
+
+    args = _FakeArgs()
+    result = cmd_session_agents(args)
+    assert result == 0
+
+    captured = capsys.readouterr()
+    assert str(relocated) in captured.out
