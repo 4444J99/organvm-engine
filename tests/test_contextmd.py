@@ -8,6 +8,7 @@ from organvm_engine.contextmd import AUTO_END, AUTO_START
 from organvm_engine.contextmd.generator import (
     _build_variable_context,
     _read_omega_counts,
+    _system_library_stats,
     generate_organ_section,
     generate_repo_section,
     generate_workspace_section,
@@ -111,6 +112,29 @@ class TestInjectSection:
 
 
 class TestGenerateRepoSection:
+    def test_external_system_library_has_no_machine_specific_path_or_counts(
+        self, tmp_path, monkeypatch,
+    ):
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        external = tmp_path / "external"
+        library = external / "praxis-perpetua" / "library"
+        (library / "chains").mkdir(parents=True)
+        (library / "chains" / "example.yaml").write_text("name: example\n")
+        monkeypatch.setattr("organvm_engine.paths.workspace_root", lambda: workspace)
+        monkeypatch.setattr("organvm_engine.paths.corpus_dir", lambda: external / "corpus")
+
+        _system_library_stats.cache_clear()
+        try:
+            assert _system_library_stats() == (
+                "unknown",
+                "unknown",
+                "unknown",
+                "unavailable outside current workspace",
+            )
+        finally:
+            _system_library_stats.cache_clear()
+
     def test_generates_valid_section(self, registry):
         section = generate_repo_section("recursive-engine", "organvm-i-theoria", registry)
         assert AUTO_START in section
