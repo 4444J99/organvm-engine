@@ -819,7 +819,10 @@ def _system_library_stats() -> tuple[str, str, str, str]:
     try:
         library_path = f"{library_root.relative_to(ws).as_posix()}/"
     except ValueError:
-        library_path = str(library_root)
+        # Context files are published across machines. An external local
+        # library is not a portable discovery target or a valid source for
+        # machine-independent counts.
+        return plan_count, chain_count, sop_count, "unavailable outside current workspace"
 
     if not library_root.exists():
         return plan_count, chain_count, sop_count, library_path
