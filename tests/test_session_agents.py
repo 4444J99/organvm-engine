@@ -9,6 +9,9 @@ from organvm_engine.session.agents import (
     UnreadableSession,
     _human_size,
     _parse_iso,
+    codex_archived_dir,
+    codex_home_dir,
+    codex_sessions_dir,
     discover_all_sessions,
     discover_claude_sessions,
     discover_codex_sessions,
@@ -491,6 +494,73 @@ class TestDiscovery:
         monkeypatch.setattr("organvm_engine.session.agents.OPENCODE_DB", tmp_path / "nope5.db")
 
         assert discover_all_sessions() == []
+
+
+# ── Relocated CODEX_HOME ───────────────────────────────────────────
+
+
+class TestCodexRelocatedHome:
+    def test_relocated_codex_home_discovery(self, tmp_path, monkeypatch):
+        relocated = tmp_path / "custom_codex"
+        active_dir = relocated / "sessions" / "2026" / "09" / "16"
+        archived_dir = relocated / "archived_sessions"
+        active_dir.mkdir(parents=True)
+        archived_dir.mkdir(parents=True)
+
+        _codex_jsonl(active_dir, "rollout-2026-09-16T10-00-00-active.jsonl")
+        _codex_jsonl(archived_dir, "rollout-2026-09-15T10-00-00-archived.jsonl")
+
+        monkeypatch.setenv("CODEX_HOME", str(relocated))
+
+        assert codex_home_dir() == relocated
+        assert codex_sessions_dir() == relocated / "sessions"
+        assert codex_archived_dir() == relocated / "archived_sessions"
+
+        sessions = discover_codex_sessions()
+        assert len(sessions) == 2
+        ids = {s.session_id for s in sessions}
+        assert "abc123-codex" in ids
+
+        active_file = next(active_dir.glob("*.jsonl"))
+        assert detect_agent(active_file) == "codex"
+
+    def test_codex_home_fallback_when_unset_or_empty(self, monkeypatch):
+        monkeypatch.delenv("CODEX_HOME", raising=False)
+        assert codex_home_dir() == (Path.home() / ".codex").resolve()
+        assert codex_sessions_dir() == Path.home() / ".codex" / "sessions"
+        assert codex_archived_dir() == Path.home() / ".codex" / "archived_sessions"
+
+        monkeypatch.setenv("CODEX_HOME", "   ")
+        assert codex_home_dir() == (Path.home() / ".codex").resolve()
+        assert codex_sessions_dir() == Path.home() / ".codex" / "sessions"
+        assert codex_archived_dir() == Path.home() / ".codex" / "archived_sessions"
+
+    def test_codex_home_relative_path_resolution(self, monkeypatch):
+        monkeypatch.setenv("CODEX_HOME", "./rel_codex")
+        expected = Path("./rel_codex").expanduser().resolve()
+        assert codex_home_dir() == expected
+        assert codex_sessions_dir() == expected / "sessions"
+        assert codex_archived_dir() == expected / "archived_sessions"
+
+    def test_detect_agent_codex_nested_in_legacy_marker_dir(self, tmp_path, monkeypatch):
+        legacy_nested_codex = tmp_path / ".claude" / "codex_runtime"
+        monkeypatch.setenv("CODEX_HOME", str(legacy_nested_codex))
+
+        session_file = legacy_nested_codex / "sessions" / "2026" / "09" / "16" / "rollout-abc.jsonl"
+        session_file.parent.mkdir(parents=True)
+        session_file.touch()
+
+        assert detect_agent(session_file) == "codex"
+
+    def test_detect_agent_does_not_match_sibling_prefix_path(self, tmp_path, monkeypatch):
+        codex_home = tmp_path / "codex"
+        monkeypatch.setenv("CODEX_HOME", str(codex_home))
+
+        sibling_file = tmp_path / "codex-backup" / "some-file.jsonl"
+        sibling_file.parent.mkdir(parents=True)
+        sibling_file.touch()
+
+        assert detect_agent(sibling_file) != "codex"
 
 
 # ── Helpers ────────────────────────────────────────────────────────

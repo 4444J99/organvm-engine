@@ -1378,6 +1378,16 @@ def render_codex_transcript(jsonl_path: Path, unabridged: bool = False) -> str:
 
 def detect_agent(file_path: Path) -> str:
     """Detect which agent produced a session file."""
+    from organvm_engine.session.agents import codex_home_dir
+
+    try:
+        resolved_file = file_path.expanduser().resolve()
+        codex_home = codex_home_dir().resolve()
+        if resolved_file.is_relative_to(codex_home):
+            return "codex"
+    except (ValueError, OSError, RuntimeError):
+        pass
+
     path_str = str(file_path)
     if "/.claude/" in path_str:
         return "claude"
@@ -1385,6 +1395,10 @@ def detect_agent(file_path: Path) -> str:
         return "gemini"
     if "/.codex/" in path_str:
         return "codex"
+
+    if file_path.name.startswith("rollout-"):
+        return "codex"
+
     # Fallback: check file format
     if file_path.suffix == ".json":
         return "gemini"
@@ -1436,9 +1450,10 @@ def _parse_iso_ts(ts_str: str | None) -> datetime | None:
 def find_session(session_id: str) -> Path | None:
     """Find a session by full or partial ID across all agents."""
     from organvm_engine.session.agents import (
-        CODEX_ARCHIVED_DIR,
-        CODEX_SESSIONS_DIR,
         GEMINI_TMP_DIR,
+        _quick_parse_codex,
+        codex_archived_dir,
+        codex_sessions_dir,
     )
 
     candidates: list[Path] = []
@@ -1456,11 +1471,19 @@ def find_session(session_id: str) -> Path | None:
                 candidates.append(json_file)
 
     # Codex — session ID is in the JSONL payload, filename contains UUID
-    for codex_dir in (CODEX_SESSIONS_DIR, CODEX_ARCHIVED_DIR):
+    for codex_dir in (codex_sessions_dir(), codex_archived_dir()):
         if codex_dir.exists():
             for jsonl in codex_dir.rglob("rollout-*.jsonl"):
                 if session_id in jsonl.stem:
                     candidates.append(jsonl)
+                else:
+                    meta = _quick_parse_codex(jsonl, project_filter=None)
+                    if meta and (
+                        session_id == meta.session_id
+                        or meta.session_id.startswith(session_id)
+                        or session_id in meta.session_id
+                    ):
+                        candidates.append(jsonl)
 
     # Deduplicate exact matches
     exact = [c for c in candidates if c.stem == session_id]
