@@ -92,7 +92,7 @@ def cmd_session_agents(args: argparse.Namespace) -> int:
     print(f"            {codex_home}/archived_sessions/rollout-*.jsonl")
     print("  OpenCode: ~/.local/share/opencode/opencode.db  (SQLite; `session.directory` column)")
     print()
-    print("All local-only. Back up ~/.local/share/{claude,codex,gemini,opencode} for durability.")
+    print(f"All local-only. Back up ~/.local/share/{{claude,gemini,opencode}} and {codex_home} for durability.")
     return 0
 
 

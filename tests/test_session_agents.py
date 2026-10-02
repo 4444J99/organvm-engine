@@ -526,14 +526,41 @@ class TestCodexRelocatedHome:
 
     def test_codex_home_fallback_when_unset_or_empty(self, monkeypatch):
         monkeypatch.delenv("CODEX_HOME", raising=False)
-        assert codex_home_dir() == Path.home() / ".codex"
+        assert codex_home_dir() == (Path.home() / ".codex").resolve()
         assert codex_sessions_dir() == Path.home() / ".codex" / "sessions"
         assert codex_archived_dir() == Path.home() / ".codex" / "archived_sessions"
 
         monkeypatch.setenv("CODEX_HOME", "   ")
-        assert codex_home_dir() == Path.home() / ".codex"
+        assert codex_home_dir() == (Path.home() / ".codex").resolve()
         assert codex_sessions_dir() == Path.home() / ".codex" / "sessions"
         assert codex_archived_dir() == Path.home() / ".codex" / "archived_sessions"
+
+    def test_codex_home_relative_path_resolution(self, monkeypatch):
+        monkeypatch.setenv("CODEX_HOME", "./rel_codex")
+        expected = Path("./rel_codex").expanduser().resolve()
+        assert codex_home_dir() == expected
+        assert codex_sessions_dir() == expected / "sessions"
+        assert codex_archived_dir() == expected / "archived_sessions"
+
+    def test_detect_agent_codex_nested_in_legacy_marker_dir(self, tmp_path, monkeypatch):
+        legacy_nested_codex = tmp_path / ".claude" / "codex_runtime"
+        monkeypatch.setenv("CODEX_HOME", str(legacy_nested_codex))
+
+        session_file = legacy_nested_codex / "sessions" / "2026" / "09" / "16" / "rollout-abc.jsonl"
+        session_file.parent.mkdir(parents=True)
+        session_file.touch()
+
+        assert detect_agent(session_file) == "codex"
+
+    def test_detect_agent_does_not_match_sibling_prefix_path(self, tmp_path, monkeypatch):
+        codex_home = tmp_path / "codex"
+        monkeypatch.setenv("CODEX_HOME", str(codex_home))
+
+        sibling_file = tmp_path / "codex-backup" / "some-file.jsonl"
+        sibling_file.parent.mkdir(parents=True)
+        sibling_file.touch()
+
+        assert detect_agent(sibling_file) != "codex"
 
 
 # ── Helpers ────────────────────────────────────────────────────────

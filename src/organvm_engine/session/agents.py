@@ -28,15 +28,15 @@ def codex_home_dir() -> Path:
     """Return resolved Codex root directory, honoring CODEX_HOME if set."""
     val = os.environ.get("CODEX_HOME", "").strip()
     if val:
-        return Path(val).expanduser()
-    return Path.home() / ".codex"
+        return Path(val).expanduser().resolve()
+    return (Path.home() / ".codex").resolve()
 
 
 def codex_sessions_dir() -> Path:
     """Return active Codex sessions directory."""
     val = os.environ.get("CODEX_HOME", "").strip()
     if val:
-        return Path(val).expanduser() / "sessions"
+        return codex_home_dir() / "sessions"
     return CODEX_SESSIONS_DIR
 
 
@@ -44,7 +44,7 @@ def codex_archived_dir() -> Path:
     """Return archived Codex sessions directory."""
     val = os.environ.get("CODEX_HOME", "").strip()
     if val:
-        return Path(val).expanduser() / "archived_sessions"
+        return codex_home_dir() / "archived_sessions"
     return CODEX_ARCHIVED_DIR
 
 _UTF8_SCAN_CHUNK_BYTES = 64 * 1024

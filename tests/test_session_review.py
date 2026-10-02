@@ -8,6 +8,7 @@ from unittest.mock import patch
 from organvm_engine.cli.session import _print_unreadable_sessions, cmd_session_review
 from organvm_engine.session import agents as session_agents
 from organvm_engine.session.agents import UnreadableSession
+from organvm_engine.session.parser import find_session
 
 # ── Helpers ───────────────────────────────────────────────────────
 
@@ -308,4 +309,29 @@ def test_session_agents_diagnostics_reports_relocated_codex_home(tmp_path, monke
     assert result == 0
 
     captured = capsys.readouterr()
-    assert str(relocated) in captured.out
+    resolved = str(relocated.resolve())
+    assert resolved in captured.out
+    assert f"and {resolved} for durability" in captured.out
+
+
+def test_find_session_by_payload_id_when_filename_differs(tmp_path, monkeypatch):
+    relocated = tmp_path / "codex_payload_test"
+    sessions_dir = relocated / "sessions" / "2026" / "09" / "16"
+    sessions_dir.mkdir(parents=True)
+
+    jsonl = sessions_dir / "rollout-2026-09-16T10-00-00-uuid12345.jsonl"
+    entry = {
+        "timestamp": "2026-09-16T10:00:00Z",
+        "type": "session_meta",
+        "payload": {
+            "id": "my-custom-payload-id",
+            "cwd": "/Users/test/Workspace/project",
+            "timestamp": "2026-09-16T10:00:00Z",
+        },
+    }
+    jsonl.write_text(json.dumps(entry) + "\n", encoding="utf-8")
+
+    monkeypatch.setenv("CODEX_HOME", str(relocated))
+
+    found = find_session("my-custom-payload-id")
+    assert found == jsonl
