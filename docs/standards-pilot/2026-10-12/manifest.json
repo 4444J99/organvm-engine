@@ -1,0 +1,30 @@
+{
+  "owner": "4444J99",
+  "repository": "4444J99/organvm-engine",
+  "repository_id": 1160447354,
+  "revision": "3cfb12c7db85456373cd94efe0480ac5bf79436b",
+  "toolkit_commit": "a5cdf48e9f255cb407a1ae69be62397f1151847d",
+  "toolkit_validation": "670 tests, catalog validation and compile passed; local ges tree identical to merged commit",
+  "sensitivity": "public repository source only",
+  "storage": "git-tracked plan/report and source manifest; workflow bodies remain in the named source Git revision",
+  "retention": "retain while any claim relies on this baseline; supersede by dated receipts, never silently overwrite",
+  "retrieval_verified": true,
+  "hosted_onboarding": false,
+  "files": {
+    "plan.json": {
+      "sha256": "5c990fe179ca95a7853a13c74078e8dc40b6e2454d8c4a776944a7ec5afc0a63",
+      "bytes": 259,
+      "media_type": "application/json"
+    },
+    "report.json": {
+      "sha256": "8219b0abb145a588b585f0e47fc81d9ffd4d4f36abc2d37eded6038b9491da5a",
+      "bytes": 3624,
+      "media_type": "application/json"
+    },
+    "snapshot-manifest.json": {
+      "sha256": "2c07c35d9f1002b9e2890eb6efa0c2ecaea104a3e53f561491a5c1abe6f1ac36",
+      "bytes": 1820,
+      "media_type": "application/json"
+    }
+  }
+}

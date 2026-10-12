@@ -1,0 +1,10 @@
+{
+  "repository_id": 1160447354,
+  "revision": "3cfb12c7db85456373cd94efe0480ac5bf79436b",
+  "checks": [
+    "test",
+    "test-matrix (3.11)",
+    "test-matrix (3.12)"
+  ],
+  "plan_digest": "e7a71fe9c6c3e4ae6e252afa93fd4f3524b56e96925bcb58f89bd2f3906fcea4"
+}
