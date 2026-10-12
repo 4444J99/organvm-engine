@@ -26,5 +26,7 @@
       "bytes": 1820,
       "media_type": "application/json"
     }
-  }
+  },
+  "toolkit_repository": "4444J99/github-engineering-standards",
+  "repository_identity_authority": "Authenticated GitHub API: full_name 4444J99/organvm-engine, ID 1160447354, verified 2026-10-12; README ownership prose is not current remote authority"
 }
