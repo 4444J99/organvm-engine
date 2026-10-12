@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
@@ -38,7 +38,7 @@ jobs:
   test:
     needs: test-matrix
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Require all matrix legs to pass
         run: |
