@@ -1,0 +1,14 @@
+name: Warning-only standards pilot
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  warning-inspection:
+    uses: 4444J99/github-engineering-standards/.github/workflows/warning-pilot.yml@8b2383a2dd67c74f8392246a95cd6a3e085a5f62
+    with:
+      expected-checks: '["test", "test-matrix (3.11)", "test-matrix (3.12)"]'

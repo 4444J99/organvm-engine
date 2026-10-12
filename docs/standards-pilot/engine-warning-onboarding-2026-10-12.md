@@ -1,0 +1,11 @@
+# Engine warning-only onboarding candidate
+
+Owner: @4444J99; implementation/evidence: Codex pilot lane. Exactly this already approved consumer is targeted. The new workflow pins shared wrapper `8b2383a2dd67c74f8392246a95cd6a3e085a5f62`, merged through tooling PR #504 after 678 tests and workflow lint. The wrapper pins the existing inspector and its approved dependency bytes. Existing CI names and required contexts remain intact; the new job is advisory and is not added to protections.
+
+The wrapper inspects workflow data without executing consumer code and uploads only a plan, report and integrity manifest to this repository's Actions artifact custody. Its execution-receipt finding stays NOT_VERIFIABLE; warnings are advisory and infrastructure errors fail visibly. The wrapper records exact target/source identity, GitHub's invoked wrapper SHA, dependency digest and run/attempt identity.
+
+Before accepting onboarding, verify an actual completed hosted job with positive runner and executed-step evidence; download and inspect the exact three-file artifact, verify sizes/hashes and revision/code bindings, and reconstruct/replay the report. Measure whole-job overhead against the two-minute target, not only the reported inspector time. Preserve these receipts before the 30-day artifact expiry if claims still rely on them. Verify unchanged protection readback against the adjacent baseline. Rehearse rollback by reverting only this isolated invocation on a disposable branch and checking original CI/protection configuration remains intact; do not create manufactured representative changes.
+
+Existing required CI currently fails during dependency acquisition before tests. That independent access gate is retained in baseline PR #212 and restricted pilot custody. This invocation PR can provide hosted advisory evidence while delivery remains gated. No successful default-branch onboarding or seven-day observation clock is claimed until this integration actually lands and its evidence is accepted.
+
+Rollback removes only `.github/workflows/standards-warning.yml` through the normal PR process, retains all evidence and confirms the original required contexts. Spending changes, required-check activation and expansion beyond the same three consumers remain separately authorized. Historical holds are unaffected.
