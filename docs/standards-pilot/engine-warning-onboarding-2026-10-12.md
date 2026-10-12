@@ -1,6 +1,6 @@
 # Engine warning-only onboarding candidate
 
-Owner: @4444J99; implementation/evidence: Codex pilot lane. Exactly this already approved consumer is targeted. The new workflow pins shared wrapper `8b2383a2dd67c74f8392246a95cd6a3e085a5f62`, merged through tooling PR #504 after 678 tests and workflow lint. The wrapper pins the existing inspector and its approved dependency bytes. Existing CI names and required contexts remain intact; the new job is advisory and is not added to protections.
+Owner: @4444J99; implementation/evidence: Codex pilot lane. Exactly this already approved consumer is targeted. The new workflow pins shared wrapper `3c2cc51ffc9d2facf2caaa9c8edc8fb85613421b`, merged through tooling PR #504 after 678 tests and workflow lint. The wrapper pins the existing inspector and its approved dependency bytes. Existing CI names and required contexts remain intact; the new job is advisory and is not added to protections.
 
 The wrapper inspects workflow data without executing consumer code and uploads only a plan, report and integrity manifest to this repository's Actions artifact custody. Its execution-receipt finding stays NOT_VERIFIABLE; warnings are advisory and infrastructure errors fail visibly. The wrapper records exact target/source identity, GitHub's invoked wrapper SHA, dependency digest and run/attempt identity.
 
