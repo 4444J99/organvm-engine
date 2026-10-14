@@ -1,0 +1,38 @@
+{
+  "schema": "ges.warning-pilot.v1",
+  "mode": "warning-only",
+  "repository_id": 1160447354,
+  "revision": "3cfb12c7db85456373cd94efe0480ac5bf79436b",
+  "plan_digest": "e7a71fe9c6c3e4ae6e252afa93fd4f3524b56e96925bcb58f89bd2f3906fcea4",
+  "findings": [
+    {
+      "control": "workflow_permissions",
+      "status": "WARN",
+      "reason": ".github/workflows/cla.yml: default permissions are absent or not read-only; .github/workflows/dependabot-auto-merge.yml: default permissions are absent or not read-only; .github/workflows/release-drafter.yml: default permissions are absent or not read-only; .github/workflows/spec-compliance.yml: default permissions are absent or not read-only; .github/workflows/stale.yml: default permissions are absent or not read-only"
+    },
+    {
+      "control": "workflow_pinning",
+      "status": "WARN",
+      "reason": ".github/workflows/ci.yml: action/workflow not pinned to a full SHA: actions/checkout@v7; .github/workflows/ci.yml: action/workflow not pinned to a full SHA: actions/setup-python@v7; .github/workflows/cla.yml: action/workflow not pinned to a full SHA: contributor-assistant/github-action@v2.6.1; .github/workflows/dependabot-auto-merge.yml: action/workflow not pinned to a full SHA: dependabot/fetch-metadata@v3; .github/workflows/ecosystem-sync-check.yml: action/workflow not pinned to a full SHA: actions/checkout@v7; .github/workflows/ecosystem-sync-check.yml: action/workflow not pinned to a full SHA: actions/setup-python@v7; .github/workflows/ecosystem-verify-contracts.yml: action/workflow not pinned to a full SHA: actions/checkout@v7; .github/workflows/ecosystem-verify-contracts.yml: action/workflow not pinned to a full SHA: actions/setup-python@v7; .github/workflows/monthly-infrastructure-audit.yml: action/workflow not pinned to a full SHA: actions/checkout@v7; .github/workflows/monthly-infrastructure-audit.yml: action/workflow not pinned to a full SHA: actions/setup-python@v7; .github/workflows/monthly-infrastructure-audit.yml: action/workflow not pinned to a full SHA: actions/upload-artifact@v7; .github/workflows/release-drafter.yml: action/workflow not pinned to a full SHA: release-drafter/release-drafter@v7; .github/workflows/secret-scan.yml: action/workflow not pinned to a full SHA: actions/checkout@v7; .github/workflows/spec-compliance.yml: action/workflow not pinned to a full SHA: actions/checkout@v7; .github/workflows/spec-compliance.yml: action/workflow not pinned to a full SHA: actions/setup-python@v7; .github/workflows/spec-compliance.yml: action/workflow not pinned to a full SHA: actions/github-script@v9; .github/workflows/stale.yml: action/workflow not pinned to a full SHA: actions/stale@v11; .github/workflows/testament-render.yml: action/workflow not pinned to a full SHA: actions/checkout@v7; .github/workflows/testament-render.yml: action/workflow not pinned to a full SHA: actions/setup-python@v7; .github/workflows/testament-render.yml: action/workflow not pinned to a full SHA: actions/upload-artifact@v7"
+    },
+    {
+      "control": "execution_receipt",
+      "status": "NOT_VERIFIABLE",
+      "reason": "Execution receipt absent"
+    }
+  ],
+  "compliance_certified": false,
+  "native_enforcement_verified": false,
+  "not_evaluated": [
+    "publication_artifacts",
+    "checker_protection",
+    "retention_and_restoration",
+    "complete_workflow_schema",
+    "privileged_trigger_dataflow",
+    "evidence_authenticity"
+  ],
+  "input_digests": {
+    "snapshot": "86c2762aaf6f995e7d08fa41f5a4cf5cddadbe16bae2c21eeed19842c6baa862",
+    "plan": "5c990fe179ca95a7853a13c74078e8dc40b6e2454d8c4a776944a7ec5afc0a63"
+  }
+}

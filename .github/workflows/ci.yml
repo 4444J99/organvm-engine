@@ -20,10 +20,21 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
+      # Repository-scoped read-only key; fork PRs do not receive this secret.
+      - name: Fetch pinned private dependency
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: 4444J99/organvm-ontologia
+          ref: ecc7ff7e3048562164a8973281d6794db5c16029
+          path: .ci-dependencies/ontologia
+          ssh-key: ${{ secrets.ONTOLOGIA_READ_KEY }}
+          persist-credentials: false
+          submodules: false
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "organvm-ontologia @ git+https://github.com/meta-organvm/organvm-ontologia.git"
+          pip install ./.ci-dependencies/ontologia
           pip install -e ".[dev]"
       - name: Lint with ruff
         run: ruff check src/ tests/ --ignore SIM105
