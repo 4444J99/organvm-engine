@@ -7,7 +7,12 @@
   to the `organvm-mcp-server` without an MCP-SDK dependency. Includes a
   `MCP_TOOLS` manifest plus `list_tools()` / `call_tool()` for generic
   registration and dispatch.
-
+- ci: Add CodeQL security analysis workflow (content-path-scoped triggers plus a
+  weekly baseline scan) — satisfies the GRADUATED-tier `codeql` requirement of
+  the Descent Protocol infrastructure audit.
+- ci: Add publish-on-tag release workflow that validates the tag against the
+  pyproject version, builds distributions, and publishes a GitHub Release —
+  complements the existing release-drafter draft automation.
 ## 0.1.0 (2026-02-17)
 
 - Initial release: 5 modules (registry, governance, seed, metrics, dispatch)
