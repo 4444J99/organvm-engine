@@ -63,3 +63,32 @@ The map above does **not** imply that unrelated open PRs lock the whole reposito
 An independent authorized reviewer should be able to take one eligible issue and answer, from **current GitHub state and the existing receipt**: who owns the exact paths; what base and acceptance are pinned; which action is permitted; what tested it; and what condition allows integration. If the reviewer must infer any of those fields, this constitution alone has **not** satisfied the issue.
 
 **This file changes no settings, launches no agents, grants no leases, and activates no release.** It is an initial reproducible custody contract pending issue-specific mapping, exact-head repository verification, and owner review.
+
+## Executable custody counterexamples (non-authoritative)
+
+`tests/test_branch_custody_contract.py` contains an isolated, network-free
+test harness for the **structure** of the scope record above. It exercises
+missing writer identity, stale base and policy, directory/file writer overlap,
+dependency cycles, unacknowledged broker admission, incomplete source coverage,
+malformed paths, a disabled monitor, and a non-independent monitor, alongside
+positive disjoint-work and non-broker controls. Run:
+
+```sh
+python -m pytest tests/test_branch_custody_contract.py -q
+```
+
+These assertions use synthetic fixtures. They do **not** validate a connected
+source's authenticity, lease ownership, live provider state, current repo rules,
+full issue-family coverage, monitor independence, a real integration checkout,
+or acceptance on `main`. In particular, `structurally_prepared` is not
+`admitted`, `executed`, `merged`, or `integrated`; only source-authenticated,
+independently checked evidence can establish those states. Failure to retrieve
+coverage is a hold, never an inferred all-clear.
+
+**Issue #187 remains open.** Complete its real issue/family mapping, replay
+against authenticated current GitHub and broker records, obtain independent
+review and required exact-head CI, and verify accepted default inclusion before
+claiming its governing acceptance predicates are satisfied. PR-triggered
+automated Codex review observed on #212 remains an unverified app-level effect;
+do not open/ready a PR merely to generate CI while that permitted-trigger
+boundary is unresolved.
