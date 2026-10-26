@@ -70,6 +70,39 @@ def inspect_custody(snapshot: dict, candidate: dict) -> tuple[str, list[str]]:
             failures.append("overlapping_writer")
             break
 
+    # Critical workflow/governance paths need a separately observed, revision-
+    # bound approval. Candidate-declared authority never suffices; this remains
+    # only a structural check, not authentication of the snapshot's producer.
+    protected = snapshot.get("protected_paths")
+    if not isinstance(protected, list) or not protected or any(
+        not isinstance(path, str)
+        or not path
+        or path.startswith("/")
+        or any(segment in ("", ".", "..") for segment in path.split("/"))
+        for path in protected
+    ):
+        failures.append("unverified_protected_path_inventory")
+    else:
+        affected = [
+            path for path in paths
+            if any(_overlaps(path, sensitive) for sensitive in protected)
+        ]
+        if affected:
+            authorizations = snapshot.get("protected_write_approvals", {})
+            approval = (
+                authorizations.get(candidate.get("work_id"), {})
+                if isinstance(authorizations, dict) else {}
+            )
+            if not isinstance(approval, dict) or (
+                approval.get("disposition") != "approved"
+                or approval.get("policy_sha") != snapshot.get("policy_sha")
+                or approval.get("default_sha") != snapshot.get("default_sha")
+                or approval.get("approver") in (None, "", candidate.get("writer"))
+                or not isinstance(approval.get("paths"), list)
+                or any(path not in approval.get("paths", []) for path in affected)
+            ):
+                failures.append("unapproved_protected_scope")
+
     graph = dict(snapshot.get("dependencies", {}))
     graph[str(candidate.get("work_id"))] = list(candidate.get("dependencies", []))
     if _has_cycle(graph):
@@ -103,6 +136,8 @@ def _case() -> tuple[dict, dict]:
         "coverage": "complete",
         "active_writers": [{"work_id": "W1", "paths": ["src/agent_eval.py"]}],
         "dependencies": {"W1": []},
+        "protected_paths": [".github/workflows", "signatures/cla.json"],
+        "protected_write_approvals": {},
         "monitor": {"observer": "external-audit", "coverage": "complete", "disposition": "enabled"},
     }
     candidate = {
@@ -193,3 +228,69 @@ def test_no_broker_rule_does_not_invent_a_lease() -> None:
     claim["requires_broker"] = False
     claim["admission"] = {}
     assert inspect_custody(state, claim)[0] == "structurally_prepared"
+
+def test_injected_new_workflow_requires_separate_approval() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = [".github/workflows/security-audit.yml"]
+    assert "unapproved_protected_scope" in inspect_custody(state, claim)[1]
+
+
+def test_broad_workflow_directory_claim_requires_exact_scope() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = [".github"]
+    state["protected_write_approvals"]["W2"] = {
+        "disposition": "approved", "approver": "owner",
+        "default_sha": "a" * 40, "policy_sha": "b" * 40,
+        "paths": [".github/workflows/security-audit.yml"],
+    }
+    assert "unapproved_protected_scope" in inspect_custody(state, claim)[1]
+
+
+def test_candidate_self_attestation_cannot_grant_workflow_access() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = [".github/workflows/ci.yml"]
+    claim["protected_write_approval"] = {"disposition": "approved"}
+    assert "unapproved_protected_scope" in inspect_custody(state, claim)[1]
+
+
+def test_self_approved_protected_write_is_held() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = [".github/workflows/ci.yml"]
+    state["protected_write_approvals"]["W2"] = {
+        "disposition": "approved", "approver": claim["writer"],
+        "default_sha": "a" * 40, "policy_sha": "b" * 40,
+        "paths": [".github/workflows/ci.yml"],
+    }
+    assert "unapproved_protected_scope" in inspect_custody(state, claim)[1]
+
+
+def test_stale_protected_write_approval_is_held() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = ["signatures/cla.json"]
+    state["protected_write_approvals"]["W2"] = {
+        "disposition": "approved", "approver": "owner",
+        "default_sha": "old", "policy_sha": "b" * 40,
+        "paths": ["signatures/cla.json"],
+    }
+    assert "unapproved_protected_scope" in inspect_custody(state, claim)[1]
+
+
+def test_unknown_protected_path_inventory_is_not_an_all_clear() -> None:
+    state, claim = deepcopy(_case())
+    del state["protected_paths"]
+    assert "unverified_protected_path_inventory" in inspect_custody(state, claim)[1]
+
+
+def test_revision_bound_independent_scope_is_structurally_prepared() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = [".github/workflows/ci.yml"]
+    state["protected_write_approvals"]["W2"] = {
+        "disposition": "approved", "approver": "owner",
+        "default_sha": "a" * 40, "policy_sha": "b" * 40,
+        "paths": [".github/workflows/ci.yml"],
+    }
+    assert inspect_custody(state, claim) == ("structurally_prepared", [])
+
+
+def test_normal_documentation_path_needs_no_protected_path_approval() -> None:
+    assert inspect_custody(*_case()) == ("structurally_prepared", [])
