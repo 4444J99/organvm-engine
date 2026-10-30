@@ -125,6 +125,39 @@ def inspect_custody(snapshot: dict, candidate: dict) -> tuple[str, list[str]]:
         if monitor.get("disposition") == "disabled":
             failures.append("monitor_disabled")
 
+    # Declared tool effects are a separate authority surface from file/path
+    # custody. These synthetic records can check structural consistency only:
+    # a real host must authenticate effect grants, lifecycle and every call.
+    effects = candidate.get("effect_requests", [])
+    if not isinstance(effects, list) or any(
+        not isinstance(effect, dict)
+        or not isinstance(effect.get("operation"), str)
+        or not effect.get("operation")
+        or not isinstance(effect.get("target"), str)
+        or not effect.get("target")
+        for effect in effects
+    ):
+        failures.append("invalid_effect_request")
+    elif effects:
+        terminal = snapshot.get("terminal_work_ids")
+        if not isinstance(terminal, list):
+            failures.append("unknown_effect_lifecycle")
+        elif candidate.get("work_id") in terminal:
+            failures.append("effect_after_terminal")
+
+        grants = snapshot.get("effect_approvals")
+        grant = grants.get(candidate.get("work_id")) if isinstance(grants, dict) else None
+        if not isinstance(grant, dict) or (
+            grant.get("disposition") != "approved"
+            or grant.get("approver") in (None, "", candidate.get("writer"))
+            or grant.get("default_sha") != snapshot.get("default_sha")
+            or grant.get("policy_sha") != snapshot.get("policy_sha")
+            or not isinstance(grant.get("effects"), list)
+        ):
+            failures.append("unverified_effect_approval")
+        elif any(effect not in grant["effects"] for effect in effects):
+            failures.append("unapproved_secondary_effect")
+
     return ("structurally_prepared" if not failures else "hold", sorted(set(failures)))
 
 
@@ -294,3 +327,62 @@ def test_revision_bound_independent_scope_is_structurally_prepared() -> None:
 
 def test_normal_documentation_path_needs_no_protected_path_approval() -> None:
     assert inspect_custody(*_case()) == ("structurally_prepared", [])
+
+
+def _authorized_effect_case() -> tuple[dict, dict]:
+    state, claim = deepcopy(_case())
+    state["terminal_work_ids"] = []
+    state["effect_approvals"] = {"W2": {
+        "disposition": "approved", "approver": "independent-owner",
+        "default_sha": "a" * 40, "policy_sha": "b" * 40,
+        "effects": [{"operation": "get_issue", "target": "github:engine/187"}],
+    }}
+    claim["effect_requests"] = [{"operation": "get_issue", "target": "github:engine/187"}]
+    return state, claim
+
+
+def test_independently_approved_exact_effect_is_structurally_prepared() -> None:
+    assert inspect_custody(*_authorized_effect_case()) == ("structurally_prepared", [])
+
+
+def test_extra_post_task_logging_tool_call_is_not_implicitly_authorized() -> None:
+    state, claim = _authorized_effect_case()
+    claim["effect_requests"].append({"operation": "save_logs", "target": "external:attacker"})
+    assert "unapproved_secondary_effect" in inspect_custody(state, claim)[1]
+
+
+def test_approved_scope_does_not_survive_terminal_completion() -> None:
+    state, claim = _authorized_effect_case()
+    state["terminal_work_ids"].append("W2")
+    assert "effect_after_terminal" in inspect_custody(state, claim)[1]
+
+
+def test_effect_grant_from_the_agent_itself_is_rejected() -> None:
+    state, claim = _authorized_effect_case()
+    state["effect_approvals"]["W2"]["approver"] = claim["writer"]
+    assert "unverified_effect_approval" in inspect_custody(state, claim)[1]
+
+
+def test_stale_effect_grant_does_not_carry_forward() -> None:
+    state, claim = _authorized_effect_case()
+    state["effect_approvals"]["W2"]["default_sha"] = "old"
+    assert "unverified_effect_approval" in inspect_custody(state, claim)[1]
+
+
+def test_unproven_effect_lifecycle_is_not_open_ended() -> None:
+    state, claim = _authorized_effect_case()
+    del state["terminal_work_ids"]
+    assert "unknown_effect_lifecycle" in inspect_custody(state, claim)[1]
+
+
+def test_malformed_effect_request_does_not_grant_authority() -> None:
+    state, claim = _authorized_effect_case()
+    claim["effect_requests"] = [{"operation": "save_logs", "target": ""}]
+    assert "invalid_effect_request" in inspect_custody(state, claim)[1]
+
+
+def test_candidate_declared_effect_approval_is_not_independent_proof() -> None:
+    state, claim = _authorized_effect_case()
+    del state["effect_approvals"]
+    claim["effect_approval"] = {"disposition": "approved", "effects": claim["effect_requests"]}
+    assert "unverified_effect_approval" in inspect_custody(state, claim)[1]
