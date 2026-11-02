@@ -65,6 +65,8 @@ def inspect_custody(snapshot: dict, candidate: dict) -> tuple[str, list[str]]:
     # different work identity. Repo-wide locking is not implied.
     for active in snapshot.get("active_writers", []):
         if active.get("work_id") == candidate.get("work_id"):
+            if not active.get("writer") or active.get("writer") != candidate.get("writer"):
+                failures.append("work_identity_collision")
             continue
         if any(_overlaps(path, prior) for path in paths for prior in active.get("paths", [])):
             failures.append("overlapping_writer")
@@ -386,3 +388,29 @@ def test_candidate_declared_effect_approval_is_not_independent_proof() -> None:
     del state["effect_approvals"]
     claim["effect_approval"] = {"disposition": "approved", "effects": claim["effect_requests"]}
     assert "unverified_effect_approval" in inspect_custody(state, claim)[1]
+
+
+def test_reused_work_id_by_different_writer_fails_closed() -> None:
+    state, claim = deepcopy(_case())
+    state["active_writers"].append({
+        "work_id": "W2",
+        "writer": "other-agent",
+        "paths": ["docs/BRANCHES.md"],
+    })
+    assert "work_identity_collision" in inspect_custody(state, claim)[1]
+
+
+def test_reused_work_id_without_observed_writer_fails_closed() -> None:
+    state, claim = deepcopy(_case())
+    state["active_writers"].append({"work_id": "W2", "paths": ["docs/BRANCHES.md"]})
+    assert "work_identity_collision" in inspect_custody(state, claim)[1]
+
+
+def test_same_writer_resuming_own_work_identity_remains_structurally_prepared() -> None:
+    state, claim = deepcopy(_case())
+    state["active_writers"].append({
+        "work_id": "W2",
+        "writer": claim["writer"],
+        "paths": ["docs/BRANCHES.md"],
+    })
+    assert inspect_custody(state, claim) == ("structurally_prepared", [])
