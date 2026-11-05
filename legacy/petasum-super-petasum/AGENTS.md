@@ -1,0 +1,20 @@
+<!-- ORGANVM:AUTO:START -->
+## Agent Context (auto-generated — do not edit)
+
+This repo participates in the **ORGAN-IV (Orchestration)** swarm.
+
+### Active Subscriptions
+- Event: `registry.updated` → Action: Re-validate dependency graph
+
+### Production Responsibilities
+- **Produce** `governance-policy` for unspecified
+
+### External Dependencies
+- **Consume** `registry` from `META-ORGANVM`
+
+### Governance Constraints
+- Adhere to unidirectional flow: I→II→III
+- Never commit secrets or credentials
+
+*Last synced: 2026-04-14T21:31:59Z*
+<!-- ORGANVM:AUTO:END -->

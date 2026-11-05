@@ -1,0 +1,85 @@
+name: Org-wide initiative
+description: Propose and track an initiative impacting multiple repositories/teams.
+title: "[Org-wide] <short summary>"
+labels: [org-wide, initiative, epic, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: "Use this template for cross-repo, cross-team initiatives."
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      placeholder: One sentence summary
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      placeholder: What problem are we solving and why now?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      placeholder: In-scope and out-of-scope items
+    validations:
+      required: true
+  - type: textarea
+    id: repos
+    attributes:
+      label: Impacted repositories
+      description: One per line as owner/repo
+      placeholder: |
+        your-org/service-a
+        your-org/service-b
+    validations:
+      required: true
+  - type: input
+    id: owners
+    attributes:
+      label: Primary owner(s)
+      description: GitHub usernames or team slugs (e.g., @your-org/triage-team)
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Success criteria / exit
+      placeholder: Clear, testable outcomes
+    validations:
+      required: true
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline and milestones
+      placeholder: Key dates and phases
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and dependencies
+      placeholder: Blocking factors, external dependencies, fallback
+  - type: textarea
+    id: comms
+    attributes:
+      label: Comms plan
+      placeholder: Who needs to know, when, and how
+  - type: checkboxes
+    id: reviews
+    attributes:
+      label: Reviews required
+      options:
+        - label: Security/Privacy
+        - label: Legal/Compliance
+        - label: Infra/Capacity
+        - label: Change management
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tracking tasks
+      description: Link or list tasks, e.g., "- [ ] owner/repo#123"
+      placeholder: "- [ ] your-org/service-a#456"
