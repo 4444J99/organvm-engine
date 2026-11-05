@@ -1,0 +1,6 @@
+# Format: <rule> <path-glob> <line-regex>  # reason (required)
+# Rules: denylist | email | home-path | domain | *
+home-path scripts/identity-lint.py (HOME_RE|home path|Users/)  # the lint's own pattern and docs, not a real path
+home-path tests/test_identity_lint.py .  # test fixtures exercise the home-path rule
+email tests/test_identity_lint.py .  # test fixtures exercise the email rule
+home-path .identity-allow .  # this file quotes the patterns it allows
