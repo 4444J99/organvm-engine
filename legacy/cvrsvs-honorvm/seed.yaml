@@ -1,0 +1,57 @@
+# seed.yaml — Automation Contract for meta-organvm/cvrsvs-honorvm
+# Schema: seed/v1.0
+
+schema_version: "1.0"
+organ: Meta
+organ_name: Meta
+repo: cvrsvs-honorvm
+org: meta-organvm
+
+metadata:
+  implementation_status: INCUBATOR
+  tier: standard
+  promotion_status: INCUBATOR
+  last_validated: "2026-03-25"
+  generated: "2026-03-25"
+  language: python
+  license: Apache-2.0
+  note: >-
+    Extracted governance engine — promotion state machines, dependency
+    DAG validation, seed contract parsing. Standalone pip-installable
+    package decoupled from organvm-engine. Named after the Roman
+    cursus honorum (sequential order of public offices). ORGANVM
+    orthography: V for U. NLnet NGI0 Commons Fund application pending
+    (EUR 37,080, 11 milestones, 6 months).
+
+agents:
+  - name: ci
+    trigger: on_push
+    workflow: .github/workflows/ci.yml
+    description: "Run tests and type checks"
+
+produces:
+  - type: governance-library
+    description: "Standalone promotion state machine, dependency DAG validator, seed contract parser"
+    consumers: [ALL]
+  - type: seed-specification
+    description: "seed.yaml contract format published as versioned open specification (CC-BY-4.0)"
+    consumers: [ALL]
+  - type: schema-package
+    description: "JSON Schema definitions for seed-v1, governance-rules formats"
+    consumers: [ALL]
+  - type: interop-adapters
+    description: "Import/export adapters for publiccode.yml and Backstage catalog-info.yaml"
+    consumers: [ALL]
+
+consumes:
+  - type: governance-source
+    source: META-ORGANVM
+    description: "Extracts governance primitives from organvm-engine"
+  - type: schema
+    source: META-ORGANVM
+    description: "Uses JSON Schema definitions from schema-definitions"
+
+subscriptions:
+  - event: governance.promotion_changed
+    source: META-ORGANVM
+    action: "Validate extracted state machine matches source engine behavior"
