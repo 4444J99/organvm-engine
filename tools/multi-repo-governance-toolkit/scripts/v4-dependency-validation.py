@@ -16,19 +16,17 @@ REGISTRY_PATH = os.environ.get(
     "REGISTRY_PATH", os.path.join(os.path.dirname(os.path.dirname(__file__)), "repo-registry.json"))
 
 # Organ ordering for back-edge detection
-# Flow is I->II->III. IV orchestrates, V documents, VI/VII amplify.
-# Back-edges: III cannot depend on II; II cannot depend on I (wait, that's wrong)
-# Actually: I->II->III means I feeds into II, II feeds into III
-# Back-edge: III->II or III->I or II->I
+# Use registry organ identities: GitHub owners can change or host several organs.
+# IV orchestrates, V documents, VI/VII amplify.
 ORGAN_LEVELS = {
-    'organvm-i-theoria': 1,
-    'organvm-ii-poiesis': 2,
-    'organvm-iii-ergon': 3,
-    'organvm-iv-taxis': 4,  # Orchestration - can reference anything
-    'organvm-v-logos': 5,   # Documentation - can reference anything
-    'organvm-vi-koinonia': 6,
-    'organvm-vii-kerygma': 7,
-    'meta-organvm': 8,
+    'ORGAN-I': 1,
+    'ORGAN-II': 2,
+    'ORGAN-III': 3,
+    'ORGAN-IV': 4,  # Orchestration - can reference anything
+    'ORGAN-V': 5,   # Documentation - can reference anything
+    'ORGAN-VI': 6,
+    'ORGAN-VII': 7,
+    'META-ORGANVM': 8,
 }
 
 # Only the I->II->III chain has back-edge restrictions
@@ -58,12 +56,14 @@ def main():
 
     # Build repo map and dependency graph
     all_repos = {}  # "org/name" -> repo_data
+    repo_organs = {}  # "org/name" -> stable registry organ key
     deps = []  # list of (from_key, to_key)
 
     for organ_key, organ_data in registry.get("organs", {}).items():
         for repo in organ_data.get("repositories", []):
             key = f"{repo['org']}/{repo['name']}"
             all_repos[key] = repo
+            repo_organs[key] = organ_key
 
             for dep in repo.get("dependencies", []):
                 deps.append((key, dep))
@@ -103,8 +103,8 @@ def main():
     print("\n── Check 3: No back-edges (I->II->III direction) ──")
     back_edges = []
     for from_key, to_key in deps:
-        from_org = from_key.split('/')[0]
-        to_org = to_key.split('/')[0]
+        from_org = repo_organs[from_key]
+        to_org = repo_organs.get(to_key)
 
         from_level = ORGAN_LEVELS.get(from_org)
         to_level = ORGAN_LEVELS.get(to_org)
@@ -113,25 +113,12 @@ def main():
             continue
 
         # Only check back-edges within the I-II-III chain
-        if from_level in RESTRICTED_LEVELS and to_level in RESTRICTED_LEVELS:
-            if from_level > to_level:
-                # This is OK: higher organs CAN depend on lower organs
-                # I(1) feeds II(2) feeds III(3)
-                # So III depending on II is a back-edge
-                # But wait - III CAN depend on II's output? No.
-                # The constitution says: "ORGAN-III cannot depend on ORGAN-II"
-                # So any III->II or III->I or II->I is a violation
-                pass
-            elif from_level < to_level:
-                # Lower depending on higher — this IS a back-edge
-                # Wait, actually: I->II->III means data flows from I to II to III
-                # So II depends on I (ok), III depends on II (ok), III depends on I (ok)
-                # But I depending on II (back-edge), I depending on III (back-edge),
-                # II depending on III (back-edge)
-                back_edges.append((from_key, to_key, from_org, to_org))
+        if (from_level in RESTRICTED_LEVELS and to_level in RESTRICTED_LEVELS
+                and from_level < to_level):
+            back_edges.append((from_key, to_key, from_org, to_org))
 
         # Check explicit constitution rule: III cannot depend on II
-        if from_org == 'organvm-iii-ergon' and to_org == 'organvm-ii-poiesis':
+        if from_org == 'ORGAN-III' and to_org == 'ORGAN-II':
             if (from_key, to_key, from_org, to_org) not in back_edges:
                 back_edges.append((from_key, to_key, from_org, to_org))
 

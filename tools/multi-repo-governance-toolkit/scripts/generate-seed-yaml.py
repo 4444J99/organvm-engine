@@ -275,29 +275,45 @@ def generate_seed_yaml(repo_data: dict, organ_key: str, organ_num: str, organ_na
 # ── Push helpers ────────────────────────────────────────────
 
 def push_local(repo_path: Path, content: str) -> tuple[bool, str]:
-    """Write seed.yaml locally, git add + commit + push."""
-    seed_file = repo_path / "seed.yaml"
-    seed_file.write_text(content)
+    """Add only seed.yaml, preserving unrelated checkout and index state."""
+    result = subprocess.run(
+        ["git", "-C", str(repo_path), "status", "--porcelain", "--untracked-files=all"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0 or result.stdout.strip():
+        return False, "local push requires a clean checkout and index"
 
     # Detect default branch
     result = subprocess.run(
         ["git", "-C", str(repo_path), "branch", "--show-current"],
         capture_output=True, text=True,
     )
-    branch = result.stdout.strip() or "main"
+    branch = result.stdout.strip()
+    if result.returncode != 0 or not branch:
+        return False, "cannot determine the current branch (detached HEAD is not supported)"
 
     # Pull to reconcile any remote-only commits (from previous gh api pushes)
-    subprocess.run(
-        ["git", "-C", str(repo_path), "pull", "--rebase", "origin", branch],
+    result = subprocess.run(
+        ["git", "-C", str(repo_path), "pull", "--ff-only", "origin", branch],
         capture_output=True, text=True, timeout=30,
     )
+    if result.returncode != 0:
+        return False, f"pull failed: {result.stderr.strip()}"
+
+    seed_file = repo_path / "seed.yaml"
+    if seed_file.exists():
+        return True, "seed.yaml already present after pull"
+    seed_file.write_text(content)
 
     # Git add + commit + push
-    subprocess.run(["git", "-C", str(repo_path), "add", "seed.yaml"],
-                    capture_output=True, text=True)
+    result = subprocess.run(["git", "-C", str(repo_path), "add", "--", "seed.yaml"],
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        return False, f"git add failed: {result.stderr.strip()}"
 
     result = subprocess.run(
-        ["git", "-C", str(repo_path), "commit", "-m", "feat: add seed.yaml (SENSORIA sprint)"],
+        ["git", "-C", str(repo_path), "commit", "-m", "feat: add seed.yaml (SENSORIA sprint)",
+         "--only", "--", "seed.yaml"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -363,14 +379,14 @@ def main():
     parser.add_argument("--push", action="store_true",
                         help="Also git push after writing (implies --write)")
     parser.add_argument("--remote-only", action="store_true",
-                        help="Push via gh api even for repos without local clones")
+                        help="Push via gh api for repos without local clones (implies --write)")
     parser.add_argument("--organ", type=str, default=None,
                         help="Only process this organ (e.g. ORGAN-I)")
     parser.add_argument("--repo", type=str, default=None,
                         help="Only process this specific repo name")
     args = parser.parse_args()
 
-    if args.push:
+    if args.push or args.remote_only:
         args.write = True
 
     # Load registry
@@ -446,10 +462,6 @@ def main():
             continue
 
         if has_local:
-            seed_file = local_path / "seed.yaml"
-            seed_file.write_text(content)
-            print(f"  [WROTE] {org}/{name} (lang={language})")
-
             if args.push:
                 ok, msg = push_local(local_path, content)
                 if ok:
@@ -459,6 +471,9 @@ def main():
                     print(f"    ✗ {msg}")
                     results["failed"] += 1
             else:
+                seed_file = local_path / "seed.yaml"
+                seed_file.write_text(content)
+                print(f"  [WROTE] {org}/{name} (lang={language})")
                 results["success"] += 1
         elif args.remote_only:
             ok, msg = push_remote(org, name, content)
@@ -473,7 +488,8 @@ def main():
             results["skipped"] += 1
 
     print(f"\nDone: {results['success']} ok, {results['failed']} failed, {results['skipped']} skipped")
+    return 1 if results["failed"] else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

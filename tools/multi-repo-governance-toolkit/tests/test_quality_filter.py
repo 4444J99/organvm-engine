@@ -26,7 +26,7 @@ class QualityFilterTests(unittest.TestCase):
     def test_extract_extension(self) -> None:
         """Verify file extension extraction handling anchors and clean paths."""
         self.assertEqual(quality_filter.extract_extension("foo/bar/baz.py"), "py")
-        self.assertEqual(quality_filter.extract_extension("types/index.d.ts#L10-L20"), "ts")
+        self.assertEqual(quality_filter.extract_extension("types/index.d.ts#L10-L20"), "d.ts")
         self.assertEqual(quality_filter.extract_extension("README"), "")
         self.assertEqual(quality_filter.extract_extension("archive.tar.gz"), "gz")
 

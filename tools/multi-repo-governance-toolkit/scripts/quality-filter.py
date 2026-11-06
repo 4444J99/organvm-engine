@@ -7,7 +7,7 @@ Separates signal from noise in N/A-detection atom files. Noise categories:
   - Job posting boilerplate: supervisory responsibilities, EEO, duties
   - Shell artifacts: /dev/null redirects, 2>/dev/null patterns
   - Too short: context under 30 chars with no actionable content
-  - Near-duplicates: context strings that match within edit distance
+  - Duplicates: context strings with identical content hashes
 
 Outputs two JSONL files: *-signal.jsonl and *-noise.jsonl, plus a stats report.
 """
@@ -170,9 +170,13 @@ class FilterStats:
 
 
 def extract_extension(source_file: str) -> str:
-    """Extract file extension from a source_file path, ignoring anchors."""
+    """Extract configured artifact suffixes before the final extension."""
     clean = source_file.split("#")[0]
     path = Path(clean)
+    name = path.name.lower()
+    for extension in sorted(CODE_ARTIFACT_EXTENSIONS, key=len, reverse=True):
+        if name.endswith(f".{extension}"):
+            return extension
     return path.suffix.lstrip(".").lower() if path.suffix else ""
 
 
@@ -250,7 +254,7 @@ def classify_atom(atom: dict[str, object], seen_hashes: dict[str, str]) -> Noise
     if word_count < 5 and len(context) < 40:
         reasons.append("too_short")
 
-    # ---- Near-duplicate detection (exact context hash) ----
+    # ---- Duplicate detection (exact context hash) ----
     context_hash = sha256(context.encode("utf-8")).hexdigest()[:16]
     if context_hash in seen_hashes:
         reasons.append(f"duplicate_of:{seen_hashes[context_hash]}")

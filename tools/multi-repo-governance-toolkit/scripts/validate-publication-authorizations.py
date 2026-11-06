@@ -23,6 +23,10 @@ def parse_time(value: str) -> dt.datetime:
         raise ValueError("timestamp must include a timezone")
     return parsed
 
+def is_normalized_relative_path(value: str) -> bool:
+    """Keep path checks within a repository without normalizing away escapes."""
+    return "\\" not in value and all(part not in {"", ".", ".."} for part in value.split("/"))
+
 def load_ledger(path: Path) -> dict:
     with path.open(encoding="utf-8") as handle:
         data = json.load(handle)
@@ -54,7 +58,7 @@ def validate_record(record: dict, seen: set[str]) -> list[str]:
     paths = record["paths"]
     if not isinstance(paths, list) or not paths or any(not isinstance(p, str) or not p.strip() for p in paths):
         errors.append("paths must be a non-empty string list")
-    elif any(p in {"*", "**", "/"} for p in paths):
+    elif any(not is_normalized_relative_path(p) or p[0] in "*?[" for p in paths):
         errors.append("unbounded path authorization is forbidden")
     if record["surface"] not in SURFACES:
         errors.append(f"unsupported surface: {record['surface']}")
@@ -73,6 +77,8 @@ def validate_record(record: dict, seen: set[str]) -> list[str]:
     return errors
 
 def authorize(records: list[dict], args: argparse.Namespace) -> bool:
+    if any(not is_normalized_relative_path(path) for path in args.path):
+        return False
     now = dt.datetime.now(dt.timezone.utc)
     for record in records:
         if record["status"] != "approved":
@@ -81,7 +87,7 @@ def authorize(records: list[dict], args: argparse.Namespace) -> bool:
             continue
         if record["revision"] != args.revision or record["surface"] != args.surface:
             continue
-        if parse_time(record["expires_at"]) <= now:
+        if not parse_time(record["approved_at"]) <= now < parse_time(record["expires_at"]):
             continue
         if all(any(fnmatch.fnmatch(path, pattern) for pattern in record["paths"]) for path in args.path):
             return True

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Generate per-organ template-config.yml and profile README files from organvm.config.json.
 
-Reads the unified organvm.config.json and produces 7 per-organ
-template-config.yml files + 8 profile-README.md files (7 organ + 1 meta).
+Reads the unified organvm.config.json and produces per-organ
+template-config.yml and profile-README.md files.
 The YAML configs are consumed by the .github repo's setup_template.py.
 The profile READMEs are fully-resolved copies of .github-template/profile/README.md.
+The shared meta profile remains owned by the corpus renderer and its source data;
+this portable toolkit does not generate or overwrite that projection.
 
 Usage:
     python scripts/generate-github-configs.py                        # Generate all 7 (YAML + profile READMEs)
@@ -18,7 +20,6 @@ or pass --prefix and --account directly.
 """
 
 import argparse
-import importlib.util
 import json
 import os
 import re
@@ -31,7 +32,6 @@ REPO_ROOT = SCRIPT_DIR.parent
 CONFIG_PATH = REPO_ROOT / ".config" / "organvm.config.json"
 ENV_LOCAL_PATH = REPO_ROOT / ".config" / "organvm.env.local"
 PROFILE_TEMPLATE_PATH = REPO_ROOT / ".github-template" / "profile" / "README.md"
-META_RENDERER_PATH = SCRIPT_DIR / "generate-meta-profile.py"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / ".github-template" / "generated"
 
 
@@ -226,24 +226,6 @@ def generate_profile_readme(organ_key: str, organ: dict, all_orgs: dict, prefix:
     return result
 
 
-def generate_meta_profile_readme(config: dict, prefix: str) -> str:
-    """Use the owning renderer and current sources for the shared meta projection.
-
-    This command writes the same file as generate-meta-profile.py. A separate
-    config-only renderer would overwrite its sourced metrics and editorial copy.
-    """
-    spec = importlib.util.spec_from_file_location("organvm_meta_profile", META_RENDERER_PATH)
-    renderer = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(renderer)
-    return renderer.render(
-        config,
-        renderer.load_json(renderer.REGISTRY_PATH),
-        renderer.load_json(renderer.METRICS_PATH),
-        renderer.load_json(renderer.SNAPSHOT_PATH),
-        prefix=prefix,
-    )
-
-
 def main():
     parser = argparse.ArgumentParser(description="Generate per-organ template-config.yml files.")
     parser.add_argument("--organ", help="Generate for a single organ (e.g., ORGAN-I)")
@@ -308,30 +290,12 @@ def main():
                 print(f"  Generated: {readme_path}")
             profile_count += 1
 
-    # Generate meta-org profile README
-    meta_generated = False
     if not args.no_profile_readmes and not args.organ:
-        meta_content = generate_meta_profile_readme(config, prefix)
-        if meta_content:
-            meta_org = resolve_vars(
-                shared.get("cross_refs", {}).get("meta_org", f"meta-{prefix}"),
-                prefix, "",
-            )
-            meta_filename = f"{meta_org}.profile-README.md"
-            if args.dry_run:
-                print(f"--- {meta_filename} ---")
-                print(meta_content)
-            else:
-                meta_path = args.output_dir / meta_filename
-                meta_path.write_text(meta_content)
-                print(f"  Generated: {meta_path}")
-            profile_count += 1
-            meta_generated = True
+        print("Meta profile not generated: use the owning corpus renderer with its "
+              "registry, metrics, and snapshot inputs.")
 
     if not args.dry_run:
-        len(targets) + profile_count
-        meta_note = " (includes meta-org)" if meta_generated else ""
-        print(f"\nGenerated {len(targets)} config(s) + {profile_count} profile README(s){meta_note} in {args.output_dir}/")
+        print(f"\nGenerated {len(targets)} config(s) + {profile_count} profile README(s) in {args.output_dir}/")
         print("Next: copy each config to the target .github repo as .config/template-config.yml")
         print("      copy each profile README to the target .github repo as profile/README.md")
         print("Then: python src/automation/scripts/setup_template.py")

@@ -6,20 +6,19 @@ Prevents the 5th collision incident by enforcing:
 2. No duplicate DONE-NNN assignments (same ID, different content)
 3. Counter must be incremented BEFORE IRF additions
 
-Usage: python3 scripts/check-done-id.py [--staged]
+Usage: python3 scripts/check-done-id.py [--repo-root /path/to/corpus] [--staged]
+  --repo-root: checkout containing the counter and IRF (default: current directory)
   --staged: only check git staged changes (for pre-commit hook)
   (no flag): check entire IRF file (for manual audit)
 """
 
+import argparse
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).parent.parent
-COUNTER_FILE = REPO_ROOT / "data" / "done-id-counter.json"
-IRF_FILE = REPO_ROOT / "INST-INDEX-RERUM-FACIENDARUM.md"
 # Match counter-sequenced numeric IDs (DONE-566) but NOT date-form IDs
 # (DONE-2026-04-30, a separate scheme used e.g. by IRF-OPS-019). The trailing
 # negative lookahead (?![\d-]) rejects any DONE-number followed by another digit
@@ -27,16 +26,16 @@ IRF_FILE = REPO_ROOT / "INST-INDEX-RERUM-FACIENDARUM.md"
 DONE_PATTERN = re.compile(r"DONE-(\d{1,4})(?![\d-])")
 
 
-def load_counter() -> dict:
-    with open(COUNTER_FILE) as f:
+def load_counter(counter_file: Path) -> dict:
+    with counter_file.open() as f:
         return json.load(f)
 
 
-def get_staged_irf_additions() -> list[str]:
+def get_staged_irf_additions(repo_root: Path, irf_file: Path) -> list[str]:
     """Get only the added lines in the staged IRF diff."""
     result = subprocess.run(
-        ["git", "diff", "--cached", "--unified=0", str(IRF_FILE)],
-        capture_output=True, text=True, cwd=REPO_ROOT
+        ["git", "diff", "--cached", "--unified=0", "--", str(irf_file)],
+        capture_output=True, text=True, cwd=repo_root, check=True,
     )
     return [
         line[1:]  # strip leading +
@@ -50,20 +49,31 @@ def get_all_done_ids(text: str) -> list[int]:
 
 
 def main():
-    staged_only = "--staged" in sys.argv
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo-root", type=Path, default=Path.cwd(),
+                        help="Corpus checkout containing data/done-id-counter.json and the IRF")
+    parser.add_argument("--staged", action="store_true", help="Check staged IRF additions")
+    args = parser.parse_args()
+    repo_root = args.repo_root.resolve()
+    irf_file = repo_root / "INST-INDEX-RERUM-FACIENDARUM.md"
+    staged_only = args.staged
 
-    counter = load_counter()
-    next_id = counter["next_id"]
-
-    if staged_only:
-        lines = get_staged_irf_additions()
-        if not lines:
-            sys.exit(0)  # no IRF changes staged
-        text = "\n".join(lines)
-        source = "staged changes"
-    else:
-        text = IRF_FILE.read_text()
-        source = "full IRF file"
+    try:
+        counter = load_counter(repo_root / "data" / "done-id-counter.json")
+        next_id = counter["next_id"]
+        if staged_only:
+            lines = get_staged_irf_additions(repo_root, irf_file)
+            if not lines:
+                sys.exit(0)  # no IRF changes staged
+            text = "\n".join(lines)
+            source = "staged changes"
+        else:
+            text = irf_file.read_text()
+            source = "full IRF file"
+    except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
+        print(f"DONE-ID inputs unavailable: {exc}. Select the corpus checkout with --repo-root.",
+              file=sys.stderr)
+        sys.exit(2)
 
     done_ids = get_all_done_ids(text)
     if not done_ids:

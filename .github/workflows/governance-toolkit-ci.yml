@@ -1,0 +1,47 @@
+name: Governance toolkit CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/multi-repo-governance-toolkit/**"
+      - ".github/workflows/governance-toolkit-ci.yml"
+  pull_request:
+    paths:
+      - "tools/multi-repo-governance-toolkit/**"
+      - ".github/workflows/governance-toolkit-ci.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: tools/multi-repo-governance-toolkit
+
+jobs:
+  toolkit-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pytest -r requirements-test.txt
+      - run: python -m pytest -v
+
+  toolkit-identity-lint:
+    # Preserve the imported toolkit's warning-only identity check.
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Run identity lint
+        env:
+          IDENTITY_SALT: ${{ secrets.IDENTITY_SALT }}
+          IDENTITY_DENYLIST: ${{ secrets.IDENTITY_DENYLIST }}
+          IDENTITY_OWN_NAMES: ${{ secrets.IDENTITY_OWN_NAMES }}
+        run: |
+          python scripts/identity-lint.py || echo "::warning title=identity-lint::findings present (warning-only)"

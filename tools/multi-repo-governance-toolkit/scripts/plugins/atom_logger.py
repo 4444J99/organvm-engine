@@ -5,6 +5,7 @@ Appends one JSON line to `data/atoms/atomized-tasks.jsonl` describing a
 work unit just performed. The format mirrors the existing atom shape:
 
     {
+      "id": "<sha1[:12]>",
       "atom_id": "<sha1[:12]>",
       "irf_id": "...",
       "session_id": "...",
@@ -35,7 +36,7 @@ ATOMS_FILE = ROOT / "data" / "atoms" / "atomized-tasks.jsonl"
 
 def _atom_id(payload: dict) -> str:
     canonical = json.dumps(
-        {k: payload[k] for k in sorted(payload) if k != "atom_id"},
+        {k: payload[k] for k in sorted(payload) if k not in {"id", "atom_id"}},
         sort_keys=True,
         separators=(",", ":"),
     )
@@ -65,7 +66,8 @@ def run(argv: list[str] | None = None) -> int:
         "tags": args.tags,
         "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-    payload["atom_id"] = _atom_id(payload)
+    payload["id"] = _atom_id(payload)
+    payload["atom_id"] = payload["id"]  # Retain the work-log field for existing readers.
 
     target = Path(args.target)
     line = json.dumps(payload, separators=(",", ":"))

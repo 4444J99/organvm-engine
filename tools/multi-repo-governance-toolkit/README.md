@@ -1,6 +1,6 @@
 # multi-repo-governance-toolkit
 
-[![CI](https://github.com/4444J99/multi-repo-governance-toolkit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/4444J99/multi-repo-governance-toolkit/actions/workflows/ci.yml)
+[![CI](https://github.com/4444J99/organvm-engine/actions/workflows/governance-toolkit-ci.yml/badge.svg?branch=main)](https://github.com/4444J99/organvm-engine/actions/workflows/governance-toolkit-ci.yml)
 
 When one owner runs dozens of separate GitHub repos, the registry, community-health files and metadata drift apart, and personal details leak into public code. This toolkit keeps them consistent with scripts that validate the registry, generate GitHub config, report PR status and lint every file for names, emails and home paths.
 
@@ -58,12 +58,25 @@ $ echo $?
 
 Scripts that scan a local workspace read its root from the `ORGANVM_WORKSPACE` environment variable (default: current directory).
 
+GitHub configuration generation accepts the owning configuration with `--config`.
+It generates per-organ configs and profile READMEs. The shared meta profile needs
+the corpus renderer and its registry, metrics, and snapshot inputs; it is not
+generated or overwritten by this toolkit.
+
+The DONE-ID validator reads `data/done-id-counter.json` and
+`INST-INDEX-RERUM-FACIENDARUM.md` from the current directory, or from the corpus
+checkout selected with `--repo-root /path/to/corpus`. Add `--staged` to validate
+that checkout's staged IRF additions.
+
 ## Running the tests
 
 ```bash
 python -m pip install pytest pyyaml
 python -m pytest
 ```
+
+The host repository runs this suite through its root
+`.github/workflows/governance-toolkit-ci.yml` workflow.
 
 ## License
 

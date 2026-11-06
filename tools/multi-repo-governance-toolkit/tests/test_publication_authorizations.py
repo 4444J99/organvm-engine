@@ -43,7 +43,23 @@ class PublicationAuthorizationTests(unittest.TestCase):
         expired = record(expires_at=(dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=1)).isoformat())
         self.assertEqual(self.invoke([expired], "--repository-id", "123", "--revision", REVISION, "--surface", "documentation", "--path", "docs/public/index.md").returncode, 3)
     def test_unbounded_authorization_is_invalid(self):
-        self.assertEqual(self.invoke([record(paths=["**"])]).returncode, 2)
+        for pattern in ("*", "**", "/", "?*", "[a-z]*", "**/*", "./?*", "docs/../**"):
+            with self.subTest(pattern=pattern):
+                self.assertEqual(self.invoke([record(paths=[pattern])]).returncode, 2)
+
+    def test_future_approval_is_not_current_authorization(self):
+        now = dt.datetime.now(dt.timezone.utc)
+        future = record(approved_at=(now + dt.timedelta(days=1)).isoformat(),
+                        expires_at=(now + dt.timedelta(days=2)).isoformat())
+        self.assertEqual(self.invoke([future]).returncode, 0)
+        self.assertEqual(self.invoke([future], "--repository-id", "123", "--revision", REVISION,
+                                     "--surface", "documentation", "--path", "docs/public/index.md").returncode, 3)
+
+    def test_requested_path_cannot_escape_the_authorized_subtree(self):
+        for path in ("docs/public/../private.md", "docs/public/../../secret.txt", "/docs/public/index.md"):
+            with self.subTest(path=path):
+                self.assertEqual(self.invoke([record()], "--repository-id", "123", "--revision", REVISION,
+                                             "--surface", "documentation", "--path", path).returncode, 3)
 
 if __name__ == "__main__":
     unittest.main()
