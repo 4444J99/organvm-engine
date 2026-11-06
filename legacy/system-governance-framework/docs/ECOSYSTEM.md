@@ -1,38 +1,3 @@
-<!--
-╔════════════════════════════════════════════════════════════════════════════╗
-║                        AI AGENT HANDOFF METADATA                           ║
-╚════════════════════════════════════════════════════════════════════════════╝
-
-Document: ECOSYSTEM.md
-Version: 1.0.0
-Last Updated: 2025-10-28
-Primary Maintainer: System Governance Framework Team
-AI Context Level: Architecture & Integration
-
-═══════════════════════════════════════════════════════════════════════════
-
-PURPOSE & SCOPE
-────────────────────────────────────────────────────────────────────────────
-This document provides a comprehensive overview of the System Governance
-Framework ecosystem, including architecture, integrations, workflows,
-community practices, and extension mechanisms.
-
-DEPENDENCIES & RELATIONSHIPS
-────────────────────────────────────────────────────────────────────────────
-Related Documents:
-  • README.md - Project overview
-  • ROADMAP.md - Strategic planning
-  • CONTRIBUTING.md - Contribution guidelines
-  • ARCHITECTURE.md - Technical architecture details
-
-Critical Context:
-  • Ecosystem is designed for modularity and extensibility
-  • All components support multiple deployment models
-  • Integration patterns follow industry best practices
-
-═══════════════════════════════════════════════════════════════════════════
--->
-
 # System Governance Framework - Ecosystem Documentation
 
 ## Table of Contents
@@ -252,6 +217,8 @@ Metrics & Analytics
 ```
 
 ### 6. AI Agent Orchestration
+
+The configuration below describes the private source layout. Agent configuration and handoff templates are omitted from this published snapshot; the design discussion remains for reference.
 
 **Components**:
 - **Agent Coordination**: Task distribution among AI agents
@@ -869,56 +836,3 @@ The System Governance Framework ecosystem is designed as a comprehensive, extens
 - [Rust RFCs](https://github.com/rust-lang/rfcs)
 - [Apache Software Foundation](https://www.apache.org/)
 - [Linux Kernel Development](https://www.kernel.org/doc/html/latest/process/)
-
-<!--
-╔════════════════════════════════════════════════════════════════════════════╗
-║                     AI AGENT HANDOFF FOOTER - CHANGELOG                    ║
-╚════════════════════════════════════════════════════════════════════════════╝
-
-RECENT MODIFICATIONS
-────────────────────────────────────────────────────────────────────────────
-[2025-10-28] - GitHub Copilot Agent
-  Action: Initial Creation
-  Changes:
-    • Created comprehensive ecosystem documentation
-    • Documented architecture and components
-    • Added automation workflows
-    • Included integration patterns
-    • Referenced best practices from successful projects
-  Impact: Provides complete ecosystem understanding
-  Verification: Structure validated, content reviewed
-
-VALIDATION CHECKLIST
-────────────────────────────────────────────────────────────────────────────
-☑ Formatting is consistent
-☑ No sensitive information exposed
-☑ Related documents referenced
-☑ Architecture diagrams included (ASCII art)
-
-HANDOFF INSTRUCTIONS
-────────────────────────────────────────────────────────────────────────────
-For Next Agent/Maintainer:
-1. Update architecture diagrams as components evolve
-2. Add new integration patterns as they emerge
-3. Keep best practices section current
-4. Document new deployment models
-5. Update metrics as monitoring improves
-
-CRITICAL NOTES
-────────────────────────────────────────────────────────────────────────────
-⚠️  Important Considerations:
-  • Ecosystem must remain flexible for different use cases
-  • Integration patterns should be platform-agnostic where possible
-  • Best practices should be regularly reviewed and updated
-
-📌 Pending Items:
-  • Create actual architecture diagrams (beyond ASCII)
-  • Add more detailed integration examples
-  • Document plugin architecture when implemented
-
-═══════════════════════════════════════════════════════════════════════════
-Document Processing Status: COMPLETE
-Last Validated: 2025-10-28
-Next Review Due: 2026-01-28
-═══════════════════════════════════════════════════════════════════════════
--->

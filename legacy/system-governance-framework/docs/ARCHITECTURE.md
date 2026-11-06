@@ -1,36 +1,3 @@
-<!--
-╔════════════════════════════════════════════════════════════════════════════╗
-║                        AI AGENT HANDOFF METADATA                           ║
-╚════════════════════════════════════════════════════════════════════════════╝
-
-Document: ARCHITECTURE.md
-Version: 1.0.0
-Last Updated: 2025-10-28
-Primary Maintainer: System Governance Framework Team
-AI Context Level: Technical Architecture
-
-═══════════════════════════════════════════════════════════════════════════
-
-PURPOSE & SCOPE
-────────────────────────────────────────────────────────────────────────────
-Technical architecture documentation describing the design, components,
-patterns, and implementation details of the System Governance Framework.
-
-DEPENDENCIES & RELATIONSHIPS
-────────────────────────────────────────────────────────────────────────────
-Related Documents:
-  • ECOSYSTEM.md - Ecosystem overview and integration patterns
-  • README.md - Project overview and getting started
-  • CONTRIBUTING.md - Development guidelines
-
-Critical Context:
-  • Architecture is GitHub-centric but extensible
-  • Designed for zero-infrastructure deployment
-  • Automation-first approach with minimal manual intervention
-
-═══════════════════════════════════════════════════════════════════════════
--->
-
 # System Governance Framework - Technical Architecture
 
 ## Executive Summary
@@ -311,7 +278,7 @@ Action: Alert and block push (if enabled)
 
 ### 5. AI Agent Orchestration
 
-**Location**: `.github/agents/`
+**Historical source location**: `.github/agents/`. Agent configuration and handoff templates are omitted from this snapshot; this section preserves the design description.
 
 **Purpose**: Coordinate AI agent collaboration
 
@@ -340,7 +307,7 @@ Validator Agent
 Task Complete
 ```
 
-**Key Files**:
+**Source files omitted from this snapshot**:
 - `coordinator.yml`: Orchestration rules
 - `task-templates/`: Reusable task definitions
 - `handoff-protocols/`: Transfer procedures
@@ -589,7 +556,7 @@ Layer 5: Monitoring
 ### Logging
 - **Workflow Logs**: Automatically retained
 - **Audit Logs**: GitHub audit log (organization level)
-- **Agent Logs**: `.github/agents/logs/` (future)
+- **Agent Logs**: a historical design proposal; no agent log directory is shipped in this snapshot.
 
 ## Testing Strategy
 
@@ -667,47 +634,3 @@ This architecture enables rapid adoption while maintaining enterprise-grade gove
 - [Pre-commit Framework](https://pre-commit.com/)
 - [Semantic Versioning](https://semver.org/)
 - [The Twelve-Factor App](https://12factor.net/)
-
-<!--
-╔════════════════════════════════════════════════════════════════════════════╗
-║                     AI AGENT HANDOFF FOOTER - CHANGELOG                    ║
-╚════════════════════════════════════════════════════════════════════════════╝
-
-RECENT MODIFICATIONS
-────────────────────────────────────────────────────────────────────────────
-[2025-10-28] - GitHub Copilot Agent
-  Action: Initial Creation
-  Changes:
-    • Created comprehensive architecture documentation
-    • Documented system design and components
-    • Added data flow diagrams
-    • Included security architecture
-    • Covered scalability and performance
-  Impact: Provides complete technical understanding
-  Verification: Document structure validated
-
-VALIDATION CHECKLIST
-────────────────────────────────────────────────────────────────────────────
-☑ Formatting is consistent
-☑ No sensitive information exposed
-☑ Related documents referenced
-☑ Architecture diagrams included
-
-CRITICAL NOTES
-────────────────────────────────────────────────────────────────────────────
-⚠️  Important Considerations:
-  • Architecture must evolve with GitHub platform changes
-  • Security architecture requires regular review
-  • Performance limits should be monitored
-
-📌 Pending Items:
-  • Add actual visual diagrams (beyond ASCII)
-  • Document multi-platform architecture when implemented
-  • Add performance benchmarks
-
-═══════════════════════════════════════════════════════════════════════════
-Document Processing Status: COMPLETE
-Last Validated: 2025-10-28
-Next Review Due: 2026-01-28
-═══════════════════════════════════════════════════════════════════════════
--->

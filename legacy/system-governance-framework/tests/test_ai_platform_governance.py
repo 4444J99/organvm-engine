@@ -14,8 +14,8 @@ INVENTORY_PATH = ROOT / "config" / "ai-platform-governance.inventory.json"
 def test_bundled_inventory_is_valid():
     inventory = load_inventory(INVENTORY_PATH)
     assert len(inventory["controls"]) == 16
-    assert len(inventory["scope"]["organizations"]) == 10
-    assert inventory["scope"]["user_accounts"] == ["4444J99"]
+    assert len(inventory["scope"]["organizations"]) == 1
+    assert inventory["scope"]["user_accounts"] == ["example-user"]
 
 
 def test_duplicate_control_ids_are_rejected():

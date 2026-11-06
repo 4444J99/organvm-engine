@@ -22,7 +22,7 @@ def inventory() -> dict:
 def test_bundled_inventory_is_complete_and_valid():
     ledger = inventory()
     assert MODULE.validate(ledger) == []
-    assert ledger["coverage"] == {"repositories": 323, "public": 239, "private": 84}
+    assert ledger["coverage"] == {"repositories": 8, "public": 3, "private": 5}
 
 
 def test_duplicate_repository_is_rejected():

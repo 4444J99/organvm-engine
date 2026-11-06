@@ -6,7 +6,7 @@ This control pack turns GitHub AI and repository-platform settings into an evide
 operating record. It does not infer that a setting is disabled, enabled, or compliant merely
 because a repository integration cannot see it.
 
-The machine-readable record is
+The bundled machine-readable example is
 [`config/ai-platform-governance.inventory.json`](../config/ai-platform-governance.inventory.json).
 Validate it with:
 
@@ -29,29 +29,23 @@ python scripts/validate_ai_platform_governance.py
 `partial`, `announcement_only`, `needs_admin_verification`, and `blocked` are unresolved states.
 Every unresolved control must name an owner role, next action, evidence source, and review date.
 
-## Initial findings on 2026-08-31
+## Synthetic example boundary
 
-- Organization-level controls cover all ten organization installations: `a-organvm`,
-  `organvm-i-theoria`, `organvm-ii-poiesis`, `organvm-iii-ergon`, `organvm-iv-taxis`,
-  `organvm-v-logos`, `organvm-vi-koinonia`, `organvm-vii-kerygma`, `meta-organvm`, and
-  `organvm`.
-- `4444J99` is a personal account installation, not an organization. Its plan, model,
-  retention, review, and spend boundaries are tracked separately under `GH-PERSONAL-*`; personal
-  settings must not be treated as organization policy.
-- The repository ruleset endpoints for `system-governance-framework`,
-  `orchestration-start-here`, and `organvm-engine` each returned an empty array. This is a
-  narrow API observation, not evidence that organization-level rules are absent.
-- The GitHub App received `403 Resource not accessible by integration` for all three
-  main-branch protection reads. Those controls remain blocked pending an organization-owner
-  export.
-- Copilot seat, model, retention, review-default, and spend facts require organization-admin
-  verification. Vendor announcements are recorded as announcements, not as effective policy.
+The bundled JSON is a synthetic schema fixture. It names `example-org` and `example-user`,
+uses placeholder dates in 2000, and includes three example repositories. All 16 controls remain
+unresolved. Its self-referencing `repository_file` evidence demonstrates required fields only;
+it is not an API read, administrator export, vendor announcement, account setting or compliance
+finding.
+
+The private source retains the historical estate inventory. Before using this framework for
+a real assessment, supply a separate inventory with independently authenticated observations.
+Personal-account controls and organization controls remain separate scopes.
 
 ## Admin verification packet
 
-Complete one packet for each of the ten organizations in scope. Complete the separate
-`GH-PERSONAL-*` owner-verification packet for `4444J99`; do not fold personal subscription or
-usage facts into organization totals.
+For a real assessment, complete one packet for each organization actually in scope. Complete
+separate `GH-PERSONAL-*` owner-verification packets for personal accounts; do not fold personal
+subscription or usage facts into organization totals.
 
 1. Export aggregate seat counts: assigned, active in the last 30 days, inactive, pending
    cancellation, and unassigned capacity.
@@ -93,11 +87,13 @@ budgets, rulesets, or branch protection requires a dated inventory update throug
   `GH-AI-003` has a documented data-class rule and deletion path.
 - Do not apply a fleet-wide review default until `GH-AI-004` has a ten-pull-request quality and
   usage sample.
-- Coordinate branch-protection expansion with
-  [`organvm-engine#61`](https://github.com/organvm/organvm-engine/issues/61); do not treat a 403
-  read as proof of either protection or exposure.
+- Coordinate branch-protection changes through the relevant repository owner and current
+  review process; do not treat a 403 read as proof of either protection or exposure.
 
-## Source changes tracked
+## Historical source references
+
+These links were recorded in the source snapshot; their current platform claims were not
+revalidated for this publication cleanup.
 
 - [Copilot policies and billing announcement, 2026-08-28](https://github.blog/changelog/2026-08-28-upcoming-changes-to-github-copilot-policies-and-billing/)
 - [Global model policy generally available, 2026-08-26](https://github.blog/changelog/2026-08-26-global-model-policy-generally-available/)

@@ -19,7 +19,9 @@ governance, and release history from the split forward. The private companion ow
 partner records, operator notes, deployment state, evidence receipts, incident material, and
 pre-split history.
 
-`organvm/hospes` and `organvm/hospes-operations-private` are the reference implementation.
+The bundled fixture uses `example-org/sample-product` and
+`example-org/sample-product-operations-private` as synthetic coordinates. They are not a
+verified split, a real repository inventory or an authorization to publish.
 
 ## Dispositions
 
@@ -95,6 +97,9 @@ limits of history rewriting and downstream clones.
 4. Verify anonymously accessible clones, licenses, tests, and private-companion boundaries.
 5. Record public/private commit hashes and close the tranche.
 
-The machine-readable starting ledger is
+The bundled synthetic fixture is
 [`config/repository-exposure.inventory.json`](../config/repository-exposure.inventory.json).
 
+
+It exercises five disposition categories using invented coordinates, counts and dates.
+Original estate records remain in the private source identified by [PROVENANCE.md](../PROVENANCE.md).

@@ -2,9 +2,16 @@
 
 # System Governance Framework
 
-> Repository exposure is governed by the
-> [public/private boundary](docs/REPOSITORY_EXPOSURE_BOUNDARY.md) and its
-> [machine-readable disposition ledger](config/repository-exposure.inventory.json).
+> **Historical snapshot.** This directory preserves retired source material for reference.
+> The remaining workflows, actions, issue/community templates and governance catalogues are
+> inert examples under `legacy/`; they do not configure `organvm-engine` or establish current
+> deployment, maintenance, contact-channel or account-policy status. See [PROVENANCE.md](PROVENANCE.md)
+> for source identity, publication exclusions and review limits.
+
+> This historical snapshot illustrates a
+> [public/private boundary](docs/REPOSITORY_EXPOSURE_BOUNDARY.md) using a
+> [synthetic disposition fixture](config/repository-exposure.inventory.json).
+> The fixture supplies example data only.
 
 [![CI](https://github.com/organvm-i-theoria/system-governance-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/organvm-i-theoria/system-governance-framework/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-pending-lightgrey)](https://github.com/organvm-i-theoria/system-governance-framework)
@@ -122,7 +129,7 @@ The configuration is declared in a single `governance.yml` file. Feature toggles
 
 ### 5. AI-Conductor Orchestration
 
-The `.github/agents/` directory contains an AI agent coordination framework: a coordinator configuration, task templates, and handoff protocols that enable multiple AI agents to collaborate on governance tasks (documentation generation, review automation, validation passes) without conflicting modifications.
+The source described an AI agent coordination framework with a coordinator configuration, task templates and handoff protocols. Its repository-specific agent instructions and handoff metadata are omitted from this published snapshot; the following discussion is retained as historical design context.
 
 This is not a theoretical curiosity. The eight-organ system operates on an AI-conductor model where AI generates volume and humans review for accuracy. The agent orchestration layer ensures that when multiple AI sessions work on the same repository -- common during sprint-based documentation pushes -- their work is traceable, non-overlapping, and auditable through standardised handoff headers and footers.
 

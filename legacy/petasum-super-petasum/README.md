@@ -3,6 +3,12 @@
 
 # Petasum Super Petasum
 
+> **Historical snapshot.** This directory preserves retired source material for reference.
+> The remaining workflows, actions, issue/community templates and governance catalogues are
+> inert examples under `legacy/`; they do not configure `organvm-engine` or establish current
+> deployment, maintenance, contact-channel or account-policy status. See [PROVENANCE.md](PROVENANCE.md)
+> for source identity, publication exclusions and review limits.
+
 [![CI](https://github.com/organvm-iv-taxis/petasum-super-petasum/actions/workflows/ci.yml/badge.svg)](https://github.com/organvm-iv-taxis/petasum-super-petasum/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-pending-lightgrey)](https://github.com/organvm-iv-taxis/petasum-super-petasum)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/organvm-iv-taxis/petasum-super-petasum/blob/main/LICENSE)
