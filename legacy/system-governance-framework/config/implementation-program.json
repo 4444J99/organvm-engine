@@ -1,0 +1,260 @@
+{
+  "schema_version": "organvm-implementation-program/v1",
+  "as_of": "2000-01-01",
+  "program_complete": false,
+  "scope": {
+    "canonical_repositories": 3,
+    "exposure_candidates": 1,
+    "historical_estate_denominators": [],
+    "current_estate_census": false
+  },
+  "revision_evidence": {},
+  "owners": {
+    "example-governance": "https://example.invalid/governance-owner",
+    "example-relay": "https://example.invalid/relay-owner",
+    "example-execution": "https://example.invalid/execution-owner"
+  },
+  "gates": [
+    {
+      "id": "0",
+      "title": "Exact-state and coverage baseline",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "A1",
+      "title": "Enforced governance and eligible human authorization",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "A2",
+      "title": "Revision-bound authorization semantics",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "B1",
+      "title": "Relay parser/trust-boundary repair",
+      "state": "unresolved",
+      "owner": "example-relay",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "B2",
+      "title": "Relay current-tree receipts and evidence",
+      "state": "unresolved",
+      "owner": "example-relay",
+      "depends_on": [
+        "B1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "B3",
+      "title": "Relay bootstrap and hosted adversarial canaries",
+      "state": "unresolved",
+      "owner": "example-relay",
+      "depends_on": [
+        "A1",
+        "B2"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "C1",
+      "title": "Governor reserve/run/result convergence",
+      "state": "unresolved",
+      "owner": "example-execution",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "C2",
+      "title": "Data-retention/tool/destination eligibility before ranking",
+      "state": "unresolved",
+      "owner": "example-execution",
+      "depends_on": [
+        "C1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "C3",
+      "title": "Verified result settlement",
+      "state": "unresolved",
+      "owner": "example-execution",
+      "depends_on": [
+        "C1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "D1",
+      "title": "Defining workflow and publication provenance",
+      "state": "unresolved",
+      "owner": "example-relay",
+      "depends_on": [
+        "B1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "D2",
+      "title": "Immutable actions and narrow permissions",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "E1",
+      "title": "Deterministic defect fixtures",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "E2",
+      "title": "Read-only receipt auditor",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "E1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "E3",
+      "title": "Live eligible model comparison",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "A1",
+        "C2",
+        "E2"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "F1",
+      "title": "Current exposure classification reconciliation",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "F2",
+      "title": "Companion-repository extractions",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "F1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "F3",
+      "title": "Private/public access and release proof",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "F1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "G1",
+      "title": "Copilot entitlement and effective exclusions",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "F1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "G2",
+      "title": "Client/mode synthetic exclusion canaries",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "G1"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "G3",
+      "title": "Compensating review coverage",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "H1",
+      "title": "Provider-neutral manifest integration",
+      "state": "unresolved",
+      "owner": "example-execution",
+      "depends_on": [
+        "C2"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "H2",
+      "title": "Fail-closed ant apply deployment wrapper",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "A1",
+        "B3",
+        "C2",
+        "E3"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "H3",
+      "title": "Private provider state custody",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "F2",
+        "H2"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "I1",
+      "title": "npm active-package and authority inventory",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    },
+    {
+      "id": "I2",
+      "title": "OIDC staging and obsolete authority retirement",
+      "state": "unresolved",
+      "owner": "example-governance",
+      "depends_on": [
+        "I1",
+        "F3"
+      ],
+      "disposition": "Synthetic coverage example; this gate requires a scoped owner decision and independently authenticated evidence before any real completion claim."
+    }
+  ],
+  "verification_boundary": "Synthetic data validates the coverage/dependency structure only. It is not an authority token, historical receipt, live census, completed implementation, merge, hosted verification, activation or publication approval.",
+  "example_data": true,
+  "purpose": "Synthetic coverage/dependency fixture. Gate definitions are retained for reuse; no historical repository, PR, run, commit, verification or authority claim is represented."
+}

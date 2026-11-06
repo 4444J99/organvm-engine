@@ -1,0 +1,58 @@
+name: Security Concern
+description: Report a security issue affecting multiple repositories or the organization
+title: "[SECURITY] "
+labels: ["security", "org-wide", "urgent"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Security Issues**: If this is a critical security vulnerability, please report it privately through GitHub Security Advisories or contact the security team directly.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Security Concern Description
+      description: Provide details about the security concern (avoid sensitive details in public issues)
+      placeholder: Describe the security concern...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this security concern?
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      description: What is affected?
+      options:
+        - label: All repositories
+        - label: Multiple repositories
+        - label: Organization infrastructure
+        - label: Dependencies
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+      description: Describe the potential impact if this security concern is not addressed
+      placeholder: What could happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Proposed Mitigation
+      description: If you have ideas for mitigation, describe them here
+      placeholder: How can this be addressed?

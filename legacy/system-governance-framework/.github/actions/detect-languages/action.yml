@@ -1,0 +1,57 @@
+name: Detect Project Languages
+description: Detect caller manifests or validate a data-only language override
+author: 4-b100m
+
+inputs:
+  source-root:
+    description: Caller source directory inside GITHUB_WORKSPACE
+    required: false
+    default: '.'
+  override:
+    description: Unique JSON list of supported language names, or auto
+    required: false
+    default: auto
+
+outputs:
+  languages:
+    description: Validated languages
+    value: ${{ steps.detect.outputs.languages }}
+  has-python:
+    description: Validated has-python
+    value: ${{ steps.detect.outputs.has-python }}
+  has-javascript:
+    description: Validated has-javascript
+    value: ${{ steps.detect.outputs.has-javascript }}
+  has-go:
+    description: Validated has-go
+    value: ${{ steps.detect.outputs.has-go }}
+  has-java:
+    description: Validated has-java
+    value: ${{ steps.detect.outputs.has-java }}
+  has-rust:
+    description: Validated has-rust
+    value: ${{ steps.detect.outputs.has-rust }}
+  has-ruby:
+    description: Validated has-ruby
+    value: ${{ steps.detect.outputs.has-ruby }}
+  has-php:
+    description: Validated has-php
+    value: ${{ steps.detect.outputs.has-php }}
+  has-csharp:
+    description: Validated has-csharp
+    value: ${{ steps.detect.outputs.has-csharp }}
+  summary:
+    description: Validated summary
+    value: ${{ steps.detect.outputs.summary }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate override and detect manifests
+      id: detect
+      shell: bash
+      env:
+        GOVERNANCE_ACTION_PATH: ${{ github.action_path }}
+        GOVERNANCE_SOURCE_ROOT: ${{ inputs.source-root }}
+        GOVERNANCE_LANGUAGES: ${{ inputs.override }}
+      run: python -I "$GOVERNANCE_ACTION_PATH/../../../src/workflow_inputs.py" detect-languages

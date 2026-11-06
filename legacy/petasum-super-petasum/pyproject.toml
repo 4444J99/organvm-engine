@@ -1,0 +1,32 @@
+[project]
+name = "petasum-super-petasum"
+version = "0.1.0"
+description = "Cross-organ governance tracking and reporting — monitors promotion obligations, dependency health, and system-wide compliance"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = ["governance", "tracking", "reporting", "cross-organ"]
+
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+reportMissingImports = "warning"

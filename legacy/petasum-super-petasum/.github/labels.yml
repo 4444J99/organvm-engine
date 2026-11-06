@@ -1,0 +1,97 @@
+# Organization-Wide Issue Labels
+# This file defines labels for categorizing organization-wide issues
+# Labels can be synced using tools like github-label-sync
+
+labels:
+  # Type Labels
+  - name: "org-wide"
+    color: "d73a4a"
+    description: "Issues affecting multiple repositories or the entire organization"
+
+  - name: "security"
+    color: "b60205"
+    description: "Security-related concerns"
+
+  - name: "process"
+    color: "0075ca"
+    description: "Process and workflow improvements"
+
+  - name: "infrastructure"
+    color: "1d76db"
+    description: "Infrastructure and tooling issues"
+
+  - name: "documentation"
+    color: "0e8a16"
+    description: "Documentation improvements needed"
+
+  - name: "dependency"
+    color: "fbca04"
+    description: "Dependency management and updates"
+
+  # Priority Labels
+  - name: "urgent"
+    color: "d93f0b"
+    description: "Requires immediate attention"
+
+  - name: "high-priority"
+    color: "ff6b6b"
+    description: "High priority issue"
+
+  - name: "medium-priority"
+    color: "ffa502"
+    description: "Medium priority issue"
+
+  - name: "low-priority"
+    color: "7bed9f"
+    description: "Low priority issue"
+
+  # Status Labels
+  - name: "needs-triage"
+    color: "ededed"
+    description: "Needs initial review and categorization"
+
+  - name: "in-progress"
+    color: "f9ca24"
+    description: "Work is in progress"
+
+  - name: "blocked"
+    color: "ff6348"
+    description: "Progress is blocked"
+
+  - name: "waiting-feedback"
+    color: "ffbe76"
+    description: "Waiting for feedback from stakeholders"
+
+  - name: "ready-to-implement"
+    color: "2ecc71"
+    description: "Ready to be implemented"
+
+  # Category Labels
+  - name: "bug"
+    color: "ee0701"
+    description: "Something isn't working correctly"
+
+  - name: "enhancement"
+    color: "84b6eb"
+    description: "New feature or improvement request"
+
+  - name: "question"
+    color: "cc317c"
+    description: "Further information is requested"
+
+  - name: "discussion"
+    color: "e99695"
+    description: "Topic for discussion"
+
+  # Impact Labels
+  - name: "breaking-change"
+    color: "d73a4a"
+    description: "Change that breaks existing functionality"
+
+  - name: "cross-repo"
+    color: "5319e7"
+    description: "Affects multiple repositories"
+
+  - name: "all-repos"
+    color: "0052cc"
+    description: "Affects all repositories in the organization"
