@@ -66,7 +66,17 @@ generated or overwritten by this toolkit.
 The DONE-ID validator reads `data/done-id-counter.json` and
 `INST-INDEX-RERUM-FACIENDARUM.md` from the current directory, or from the corpus
 checkout selected with `--repo-root /path/to/corpus`. Add `--staged` to validate
-that checkout's staged IRF additions.
+that checkout's staged IRF additions against the staged counter and the complete
+staged assignment set.
+
+The polish utility consumes the owning CI template through `--ci-template`:
+
+```bash
+python scripts/platinum-polish-vi-vii.py --ci-template /path/to/ci-minimal.yml
+```
+
+This previews the configured targets. Add `--write` to apply the changes after
+checking the template and target list.
 
 ## Running the tests
 

@@ -23,7 +23,7 @@ from pathlib import Path
 # (DONE-2026-04-30, a separate scheme used e.g. by IRF-OPS-019). The trailing
 # negative lookahead (?![\d-]) rejects any DONE-number followed by another digit
 # or a hyphen, so "DONE-2026-04-30" yields no match instead of a spurious 2026.
-DONE_PATTERN = re.compile(r"DONE-(\d{1,4})(?![\d-])")
+DONE_PATTERN = re.compile(r"DONE-(\d+)(?![\d-])")
 
 
 def load_counter(counter_file: Path) -> dict:
@@ -44,6 +44,16 @@ def get_staged_irf_additions(repo_root: Path, irf_file: Path) -> list[str]:
     ]
 
 
+def read_staged_file(repo_root: Path, path: Path) -> str:
+    """Read exactly the file version that the next commit will contain."""
+    relative_path = path.relative_to(repo_root).as_posix()
+    result = subprocess.run(
+        ["git", "show", f":{relative_path}"],
+        cwd=repo_root, capture_output=True, text=True, check=True,
+    )
+    return result.stdout
+
+
 def get_all_done_ids(text: str) -> list[int]:
     return [int(m) for m in DONE_PATTERN.findall(text)]
 
@@ -56,21 +66,27 @@ def main():
     args = parser.parse_args()
     repo_root = args.repo_root.resolve()
     irf_file = repo_root / "INST-INDEX-RERUM-FACIENDARUM.md"
+    counter_file = repo_root / "data" / "done-id-counter.json"
     staged_only = args.staged
 
     try:
-        counter = load_counter(repo_root / "data" / "done-id-counter.json")
-        next_id = counter["next_id"]
         if staged_only:
             lines = get_staged_irf_additions(repo_root, irf_file)
             if not lines:
                 sys.exit(0)  # no IRF changes staged
             text = "\n".join(lines)
+            assignment_lines = read_staged_file(repo_root, irf_file).splitlines()
+            counter = json.loads(read_staged_file(repo_root, counter_file))
             source = "staged changes"
         else:
             text = irf_file.read_text()
+            assignment_lines = text.splitlines()
+            counter = load_counter(counter_file)
             source = "full IRF file"
-    except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
+        next_id = counter["next_id"]
+        if type(next_id) is not int or next_id < 1:
+            raise ValueError("counter next_id must be a positive integer")
+    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as exc:
         print(f"DONE-ID inputs unavailable: {exc}. Select the corpus checkout with --repo-root.",
               file=sys.stderr)
         sys.exit(2)
@@ -92,19 +108,20 @@ def main():
     # Check 2: No duplicate DONE-IDs in assignment rows only
     # Cross-references (e.g. "advances DONE-408") are allowed — only flag
     # rows starting with | DONE-NNN | (actual assignment table entries)
-    if staged_only:
-        assign_re = re.compile(r"^\|\s*DONE-(\d+)\s*\|")
-        assign_ids = [int(assign_re.match(l).group(1)) for l in lines if assign_re.match(l)]
-        seen = set()
-        dupes = set()
-        for d in assign_ids:
-            if d in seen:
-                dupes.add(d)
-            seen.add(d)
-        if dupes:
-            errors.append(
-                f"Duplicate DONE-ID assignment(s) in {source}: {sorted(dupes)}"
-            )
+    assign_re = re.compile(r"^\|\s*DONE-(\d+)\s*\|")
+    assign_ids = [int(match.group(1)) for line in assignment_lines
+                  if (match := assign_re.match(line))]
+    seen = set()
+    dupes = set()
+    for d in assign_ids:
+        if d in seen:
+            dupes.add(d)
+        seen.add(d)
+    if dupes:
+        assignment_source = "complete staged IRF" if staged_only else source
+        errors.append(
+            f"Duplicate DONE-ID assignment(s) in {assignment_source}: {sorted(dupes)}"
+        )
 
     if errors:
         print("=" * 60, file=sys.stderr)

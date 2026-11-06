@@ -212,6 +212,7 @@ def main():
                 fetch_errors.append((org, repo, err))
 
     print(f"\n  Fetched {len(readmes)} READMEs, {len(fetch_errors)} errors")
+    readme_coverage_complete = not fetch_errors and len(readmes) == len(repos)
 
     if fetch_errors:
         print("\n  FETCH ERRORS:")
@@ -246,8 +247,11 @@ def main():
         print(f"\n  FOUND {len(tbd_findings)} TBD/placeholder markers:")
         for f in tbd_findings:
             print(f"    [{f['org']}/{f['repo']}:{f['line_num']}] {f['line'][:120]}")
-    else:
+    elif readme_coverage_complete:
         print(f"\n  PASS: Zero TBD/placeholder markers found across {len(readmes)} READMEs")
+    else:
+        print(f"\n  INCOMPLETE: No markers found in the {len(readmes)} available READMEs; "
+              f"{len(repos) - len(readmes)} READMEs remain unchecked")
 
     # ── V1: Link Extraction ────────────────────────────────────────────
     print(f"\n{'=' * 80}")
@@ -386,11 +390,13 @@ def main():
     print("\n  V2 TBD Scan:")
     print(f"    TBD markers found: {len(tbd_findings)}")
 
-    v1_pass = len(github_broken) == 0 and len(ext_broken) == 0
-    v2_pass = len(tbd_findings) == 0
+    v1_pass = readme_coverage_complete and len(github_broken) == 0 and len(ext_broken) == 0
+    v2_pass = readme_coverage_complete and len(tbd_findings) == 0
+    v1_status = "INCOMPLETE" if not readme_coverage_complete else ("PASS" if v1_pass else "ISSUES FOUND")
+    v2_status = "INCOMPLETE" if not readme_coverage_complete else ("PASS" if v2_pass else "ISSUES FOUND")
 
-    print(f"\n  V1 RESULT: {'PASS' if v1_pass else 'ISSUES FOUND'}")
-    print(f"  V2 RESULT: {'PASS' if v2_pass else 'ISSUES FOUND'}")
+    print(f"\n  V1 RESULT: {v1_status}")
+    print(f"  V2 RESULT: {v2_status}")
 
     # Write JSON report
     report = {
@@ -402,23 +408,27 @@ def main():
             "external_broken": [{"org": l["org"], "repo": l["repo"], "text": l["text"], "url": l["url"]} for l in ext_broken],
             "external_unknown": ext_unknown,
             "relative_links": len(relative_links),
-            "pass": v1_pass
+            "pass": v1_pass,
+            "status": v1_status,
         },
         "v2_tbd_scan": {
             "total_markers": len(tbd_findings),
             "findings": tbd_findings,
-            "pass": v2_pass
+            "pass": v2_pass,
+            "status": v2_status,
         },
         "fetch_errors": [{"org": o, "repo": r, "error": e} for o, r, e in fetch_errors],
         "readmes_fetched": len(readmes),
-        "readmes_expected": len(repos)
+        "readmes_expected": len(repos),
+        "readme_coverage_complete": readme_coverage_complete,
     }
 
     report_path = os.path.join(os.path.dirname(__file__), "v1-v2-report.json")
     with open(report_path, 'w') as f:
         json.dump(report, f, indent=2)
     print(f"\n  Report written to {report_path}")
+    return 0 if v1_pass and v2_pass else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
