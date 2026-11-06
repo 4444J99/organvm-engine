@@ -7,7 +7,7 @@
 *.tsx text diff=typescript
 *.js text diff=javascript
 *.jsx text diff=javascript
-*.go text diff=go
+*.go text diff=golang
 *.rs text diff=rust
 *.rb text diff=ruby
 *.sh text eol=lf diff=bash
