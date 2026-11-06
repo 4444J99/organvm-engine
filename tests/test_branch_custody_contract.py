@@ -98,6 +98,7 @@ def inspect_custody(snapshot: dict, candidate: dict) -> tuple[str, list[str]]:
             if not isinstance(approval, dict) or (
                 approval.get("disposition") != "approved"
                 or approval.get("policy_sha") != snapshot.get("policy_sha")
+                or approval.get("writer") != candidate.get("writer")
                 or approval.get("default_sha") != snapshot.get("default_sha")
                 or approval.get("approver") in (None, "", candidate.get("writer"))
                 or not isinstance(approval.get("paths"), list)
@@ -154,6 +155,7 @@ def inspect_custody(snapshot: dict, candidate: dict) -> tuple[str, list[str]]:
             or grant.get("approver") in (None, "", candidate.get("writer"))
             or grant.get("default_sha") != snapshot.get("default_sha")
             or grant.get("policy_sha") != snapshot.get("policy_sha")
+            or grant.get("writer") != candidate.get("writer")
             or not isinstance(grant.get("effects"), list)
         ):
             failures.append("unverified_effect_approval")
@@ -321,6 +323,7 @@ def test_revision_bound_independent_scope_is_structurally_prepared() -> None:
     claim["paths"] = [".github/workflows/ci.yml"]
     state["protected_write_approvals"]["W2"] = {
         "disposition": "approved", "approver": "owner",
+        "writer": claim["writer"],
         "default_sha": "a" * 40, "policy_sha": "b" * 40,
         "paths": [".github/workflows/ci.yml"],
     }
@@ -336,6 +339,7 @@ def _authorized_effect_case() -> tuple[dict, dict]:
     state["terminal_work_ids"] = []
     state["effect_approvals"] = {"W2": {
         "disposition": "approved", "approver": "independent-owner",
+        "writer": claim["writer"],
         "default_sha": "a" * 40, "policy_sha": "b" * 40,
         "effects": [{"operation": "get_issue", "target": "github:engine/187"}],
     }}
@@ -414,3 +418,37 @@ def test_same_writer_resuming_own_work_identity_remains_structurally_prepared() 
         "paths": ["docs/BRANCHES.md"],
     })
     assert inspect_custody(state, claim) == ("structurally_prepared", [])
+
+def test_protected_approval_cannot_be_replayed_by_new_writer() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = [".github/workflows/ci.yml"]
+    state["protected_write_approvals"]["W2"] = {
+        "disposition": "approved", "approver": "independent-owner",
+        "writer": "previous-agent",
+        "default_sha": state["default_sha"], "policy_sha": state["policy_sha"],
+        "paths": [".github/workflows/ci.yml"],
+    }
+    assert "unapproved_protected_scope" in inspect_custody(state, claim)[1]
+
+
+def test_protected_approval_without_grantee_is_held() -> None:
+    state, claim = deepcopy(_case())
+    claim["paths"] = [".github/workflows/ci.yml"]
+    state["protected_write_approvals"]["W2"] = {
+        "disposition": "approved", "approver": "independent-owner",
+        "default_sha": state["default_sha"], "policy_sha": state["policy_sha"],
+        "paths": [".github/workflows/ci.yml"],
+    }
+    assert "unapproved_protected_scope" in inspect_custody(state, claim)[1]
+
+
+def test_effect_grant_cannot_be_replayed_by_new_writer() -> None:
+    state, claim = _authorized_effect_case()
+    state["effect_approvals"]["W2"]["writer"] = "previous-agent"
+    assert "unverified_effect_approval" in inspect_custody(state, claim)[1]
+
+
+def test_effect_grant_without_grantee_is_held() -> None:
+    state, claim = _authorized_effect_case()
+    del state["effect_approvals"]["W2"]["writer"]
+    assert "unverified_effect_approval" in inspect_custody(state, claim)[1]
