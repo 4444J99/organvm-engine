@@ -326,3 +326,149 @@ class TestPipelineReconcile:
         assert "reconcile_partial" in counts
         assert counts["reconcile_completed"] == 0
         assert counts["reconcile_partial"] == 0
+
+
+def test_duplicate_write_does_not_activate_research(tmp_path, monkeypatch):
+    import pytest
+
+    from organvm_engine.atoms.pipeline import run_pipeline
+    from organvm_engine.plans.atomizer import AtomizeResult, DuplicateTaskIdError
+
+    research = tmp_path / 'research'
+    research.mkdir()
+    doc = research / 'doc.md'
+    original = '---\nstatus: reference\n---\n# Research\n\n- [ ] Implement an example feature with useful details\n'
+    doc.write_text(original)
+    monkeypatch.setattr('organvm_engine.plans.atomizer.atomize_all', lambda **kw: AtomizeResult(
+        tasks=[{'id': 'same'}, {'id': 'same'}], plans_parsed=1, errors=[],
+        archetype_counts={}, status_counts={},
+    ))
+    with pytest.raises(DuplicateTaskIdError):
+        run_pipeline(output_dir=tmp_path / 'output', research_dir=research,
+                     skip_narrate=True, skip_link=True, dry_run=False)
+    assert doc.read_text() == original
+
+
+def test_cli_reports_duplicate_without_traceback(tmp_path, monkeypatch, capsys):
+    import argparse
+
+    from organvm_engine.cli.atoms import cmd_atoms_pipeline
+    from organvm_engine.plans.atomizer import DuplicateTaskIdError
+
+    def fail(**kwargs):
+        raise DuplicateTaskIdError('duplicate task ID: a')
+    monkeypatch.setattr('organvm_engine.atoms.pipeline.run_pipeline', fail)
+    assert cmd_atoms_pipeline(argparse.Namespace(write=True)) != 0
+    assert 'duplicate task ID' in capsys.readouterr().err
+
+
+def test_missing_task_file_removes_stale_manifest_hash(tmp_path, monkeypatch):
+    from organvm_engine.atoms import pipeline
+    from organvm_engine.plans.atomizer import AtomizeResult
+
+    monkeypatch.setattr('organvm_engine.plans.atomizer.atomize_all', lambda **kw: AtomizeResult(
+        tasks=[{'id': 'a'}], plans_parsed=1, errors=[], archetype_counts={}, status_counts={},
+    ))
+    monkeypatch.setattr('organvm_engine.plans.index.build_plan_index', lambda **kw: MagicMock(total_plans=0))
+    monkeypatch.setattr('organvm_engine.plans.index.index_to_json', lambda index: '{}')
+    real_hash = pipeline._sha256
+    def remove_after_hash(path):
+        value = real_hash(path)
+        if path.name == 'atomized-tasks.jsonl':
+            path.unlink()
+        return value
+    monkeypatch.setattr(pipeline, '_sha256', remove_after_hash)
+    result = pipeline.run_pipeline(output_dir=tmp_path, skip_narrate=True, skip_link=True,
+                                   skip_reconcile=True, skip_research=True, dry_run=False)
+    assert 'sha256' not in result.manifest['files']['atomized-tasks.jsonl']
+    assert any(stage == 'hash-tasks' for stage, error in result.errors)
+
+
+def test_skip_link_refuses_changed_linked_task(tmp_path, monkeypatch):
+    import pytest
+
+    from organvm_engine.atoms.pipeline import run_pipeline
+    from organvm_engine.plans.atomizer import AtomizeResult
+
+    monkeypatch.setattr('organvm_engine.plans.index.build_plan_index', lambda **kw: MagicMock(total_plans=0))
+    monkeypatch.setattr('organvm_engine.plans.index.index_to_json', lambda index: '{}')
+
+    old = {'id': 'a', 'source': {'file': 'p.md', 'line_start': 3}, 'raw_text': 'old'}
+    new = {'id': 'a', 'source': {'file': 'p.md', 'line_start': 4}, 'raw_text': 'new'}
+    task_path = tmp_path / 'atomized-tasks.jsonl'
+    task_path.write_text(json.dumps(old) + '\n')
+    (tmp_path / 'atom-links.jsonl').write_text(json.dumps({'task_id': 'a'}) + '\n')
+    monkeypatch.setattr('organvm_engine.plans.atomizer.atomize_all', lambda **kw: AtomizeResult(
+        tasks=[new], plans_parsed=1, errors=[], archetype_counts={}, status_counts={},
+    ))
+    with pytest.raises(ValueError, match='links'):
+        run_pipeline(output_dir=tmp_path, skip_narrate=True, skip_link=True,
+                     skip_research=True, dry_run=False)
+    assert json.loads(task_path.read_text()) == old
+
+
+def test_skip_link_rejects_ambiguous_repeated_tasks(tmp_path, monkeypatch):
+    import hashlib
+
+    import pytest
+
+    from organvm_engine.atoms.pipeline import run_pipeline
+    from organvm_engine.plans.atomizer import AtomizeResult
+
+    source = {'file': 'p.md', 'line_start': 3}
+    hierarchy = {'breadcrumb': 'Repeat'}
+    base = hashlib.sha256(b'p.md|Repeat|Repeat').hexdigest()[:12]
+    first = {'id': base, 'title': 'Repeat', 'source': source, 'hierarchy': hierarchy, 'raw_text': 'same'}
+    second = dict(first, id='other', source={'file': 'p.md', 'line_start': 4})
+    (tmp_path / 'atomized-tasks.jsonl').write_text(json.dumps(first) + '\n' + json.dumps(second) + '\n')
+    (tmp_path / 'atom-links.jsonl').write_text(json.dumps({'task_id': base}) + '\n')
+    monkeypatch.setattr('organvm_engine.plans.atomizer.atomize_all', lambda **kw: AtomizeResult(
+        tasks=[first, second], plans_parsed=1, errors=[], archetype_counts={}, status_counts={},
+    ))
+    monkeypatch.setattr('organvm_engine.plans.index.build_plan_index', lambda **kw: MagicMock(total_plans=0))
+    monkeypatch.setattr('organvm_engine.plans.index.index_to_json', lambda index: '{}')
+    with pytest.raises(ValueError, match='links'):
+        run_pipeline(output_dir=tmp_path, skip_narrate=True, skip_link=True,
+                     skip_research=True, dry_run=False)
+
+
+def test_successful_task_write_activates_research(tmp_path, monkeypatch):
+    from organvm_engine.atoms.pipeline import run_pipeline
+    from organvm_engine.plans.atomizer import AtomizeResult
+
+    research = tmp_path / 'research'
+    research.mkdir()
+    doc = research / 'doc.md'
+    doc.write_text('---\nstatus: reference\n---\n# Research\n\n- [ ] Implement an example feature with useful details\n')
+    monkeypatch.setattr('organvm_engine.plans.atomizer.atomize_all', lambda **kw: AtomizeResult(
+        tasks=[], plans_parsed=0, errors=[], archetype_counts={}, status_counts={},
+    ))
+    monkeypatch.setattr('organvm_engine.plans.index.build_plan_index', lambda **kw: MagicMock(total_plans=0))
+    monkeypatch.setattr('organvm_engine.plans.index.index_to_json', lambda index: '{}')
+    result = run_pipeline(output_dir=tmp_path / 'output', research_dir=research,
+                          skip_narrate=True, skip_link=True, skip_reconcile=True, dry_run=False)
+    assert not result.errors
+    assert 'reference-activated' in doc.read_text()
+    assert (tmp_path / 'output/atomized-tasks.jsonl').is_file()
+
+
+def test_skip_link_rejects_ambiguous_existing_ids(tmp_path, monkeypatch):
+    import pytest
+
+    from organvm_engine.atoms.pipeline import run_pipeline
+    from organvm_engine.plans.atomizer import AtomizeResult
+
+    first = {'id': 'a', 'title': 'one'}
+    second = {'id': 'a', 'title': 'two'}
+    task_file = tmp_path / 'atomized-tasks.jsonl'
+    task_file.write_text(json.dumps(first) + '\n' + json.dumps(second) + '\n')
+    (tmp_path / 'atom-links.jsonl').write_text(json.dumps({'task_id': 'a'}) + '\n')
+    monkeypatch.setattr('organvm_engine.plans.atomizer.atomize_all', lambda **kw: AtomizeResult(
+        tasks=[second], plans_parsed=1, errors=[], archetype_counts={}, status_counts={},
+    ))
+    monkeypatch.setattr('organvm_engine.plans.index.build_plan_index', lambda **kw: MagicMock(total_plans=0))
+    monkeypatch.setattr('organvm_engine.plans.index.index_to_json', lambda index: '{}')
+    with pytest.raises(ValueError, match='links'):
+        run_pipeline(output_dir=tmp_path, skip_narrate=True, skip_link=True,
+                     skip_research=True, dry_run=False)
+    assert len(task_file.read_text().splitlines()) == 2

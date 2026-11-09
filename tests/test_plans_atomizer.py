@@ -403,3 +403,40 @@ class TestAtomizePlans:
         result = atomize_plans(tmp_path)
         assert result.plans_parsed >= 1
         assert len(result.tasks) >= 1
+
+
+def test_global_plans_with_same_name_have_distinct_ids(tmp_path):
+    from types import SimpleNamespace
+
+    from organvm_engine.plans.atomizer import atomize_plans
+
+    first = tmp_path / 'one' / 'same.md'
+    second = tmp_path / 'two' / 'same.md'
+    for path in (first, second):
+        path.parent.mkdir()
+        path.write_text('# Plan\n\n- [ ] Implement the same useful task\n')
+    files = [SimpleNamespace(path=p, agent='codex', organ=None, repo=None) for p in (first, second)]
+    result = atomize_plans(tmp_path / 'workspace', plan_files_override=files)
+    assert not result.errors
+    assert len(result.tasks) == 2
+    assert len({task['id'] for task in result.tasks}) == 2
+    reverse = atomize_plans(tmp_path / 'workspace', plan_files_override=list(reversed(files)))
+    assert {task['id'] for task in result.tasks} == {task['id'] for task in reverse.tasks}
+
+
+def test_writer_preserves_previous_tasks_if_serialization_fails(tmp_path, monkeypatch):
+    import pytest
+
+    from organvm_engine.plans import atomizer
+
+    output = tmp_path / 'tasks.jsonl'
+    output.write_text('previous\n')
+    original = atomizer.json.dumps
+    def fail_on_second(item, **kwargs):
+        if item['id'] == 'b':
+            raise ValueError('serialization failed')
+        return original(item, **kwargs)
+    monkeypatch.setattr(atomizer.json, 'dumps', fail_on_second)
+    with pytest.raises(ValueError, match='serialization failed'):
+        atomizer.write_jsonl([{'id': 'a'}, {'id': 'b'}], output)
+    assert output.read_text() == 'previous\n'

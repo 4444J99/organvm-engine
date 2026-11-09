@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -803,6 +805,7 @@ def atomize_plans(
 
     if plan_files_override is not None:
         # Use PlanFile objects from unified discovery
+        parsed_plans = []
         for pf in plan_files_override:
             try:
                 text = pf.path.read_text(encoding="utf-8", errors="replace")
@@ -823,14 +826,28 @@ def atomize_plans(
                     repo=pf.repo,
                 )
                 tasks = parser.parse()
+                parsed_plans.append((pf.path, tasks))
                 archetype_counts[parser.archetype] = (
                     archetype_counts.get(parser.archetype, 0) + 1
                 )
-
-                for task in tasks:
-                    all_tasks.append(task.to_dict())
             except Exception as e:
                 errors.append((str(pf.path), str(e)))
+
+        id_counts: dict[str, int] = {}
+        for _, tasks in parsed_plans:
+            for task in tasks:
+                id_counts[task.id] = id_counts.get(task.id, 0) + 1
+        for plan_path, tasks in parsed_plans:
+            remapped: dict[str, str] = {}
+            for task in tasks:
+                if id_counts[task.id] > 1:
+                    old_id = task.id
+                    task.id = hashlib.sha256(f"{old_id}|{plan_path}".encode()).hexdigest()[:12]
+                    remapped[old_id] = task.id
+            for task in tasks:
+                task.depends_on = [remapped.get(item, item) for item in task.depends_on]
+                task.blocks = [remapped.get(item, item) for item in task.blocks]
+                all_tasks.append(task.to_dict())
 
         plans_parsed = len(plan_files_override)
     else:
@@ -896,9 +913,20 @@ def write_jsonl(tasks: list[dict], output_path: Path) -> None:
     ids: set[str] = set()
     for task in tasks:
         task_id = task.get("id")
+        if not isinstance(task_id, str) or not task_id:
+            raise ValueError("task ID must be a nonempty string")
         if task_id in ids:
             raise DuplicateTaskIdError(f"duplicate task ID: {task_id}")
         ids.add(task_id)
-    with output_path.open("w", encoding="utf-8") as f:
-        for task in tasks:
-            f.write(json.dumps(task, ensure_ascii=False) + "\n")
+    target = output_path.resolve()
+    fd, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            if target.exists():
+                os.fchmod(f.fileno(), target.stat().st_mode & 0o777)
+            for task in tasks:
+                f.write(json.dumps(task, ensure_ascii=False) + "\n")
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)

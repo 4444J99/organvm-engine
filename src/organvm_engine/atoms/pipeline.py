@@ -103,6 +103,7 @@ def run_pipeline(
         result.errors.append(("atomize", str(e)))
 
     # Step 1b: Research activation (optional)
+    research_result = None
     if not skip_research:
         try:
             from organvm_engine.atoms.research import activate_research
@@ -115,7 +116,7 @@ def run_pipeline(
             if r_dir.is_dir():
                 research_result = activate_research(
                     r_dir,
-                    mark_activated=not dry_run,
+                    mark_activated=False,
                 )
                 result.research_docs_scanned = research_result.docs_scanned
                 result.research_directives = research_result.total_directives
@@ -128,11 +129,52 @@ def run_pipeline(
 
     # Write combined task output (plans + research directives)
     result.atomize_count = len(all_tasks)
+    if not dry_run and (skip_link or skip_narrate):
+        links_path = output_dir / "atom-links.jsonl"
+        tasks_path = output_dir / "atomized-tasks.jsonl"
+        if links_path.exists():
+            if not tasks_path.exists():
+                raise ValueError("Cannot retain links without their original task file")
+            with links_path.open(encoding="utf-8") as f:
+                linked_ids = {json.loads(line)["task_id"] for line in f if line.strip()}
+            old_tasks = {}
+            with tasks_path.open(encoding="utf-8") as f:
+                for task in map(json.loads, f):
+                    task_id = task["id"]
+                    if task_id in linked_ids:
+                        if task_id in old_tasks:
+                            raise ValueError("Cannot retain links for duplicate existing task IDs")
+                        old_tasks[task_id] = task
+            new_tasks = {task["id"]: task for task in all_tasks if task["id"] in linked_ids}
+            base_ids: dict[str, list[str]] = {}
+            for task in all_tasks:
+                source = task.get("source", {}).get("file")
+                title = task.get("title")
+                breadcrumb = task.get("hierarchy", {}).get("breadcrumb")
+                if source and title and breadcrumb:
+                    base = hashlib.sha256(f"{source}|{breadcrumb}|{title}".encode()).hexdigest()[:12]
+                    base_ids.setdefault(base, []).append(task["id"])
+            if any(len(ids) > 1 and linked_ids.intersection(ids) for ids in base_ids.values()):
+                raise ValueError("Cannot retain links for ambiguous repeated tasks")
+            fields = ("title", "source", "hierarchy", "raw_text", "agent")
+            if old_tasks.keys() != new_tasks.keys() or any(
+                any(old_tasks[key].get(field) != new_tasks[key].get(field) for field in fields)
+                for key in old_tasks
+            ):
+                raise ValueError("Cannot retain links when linked task identities have changed")
     try:
         if not dry_run:
             output_dir.mkdir(parents=True, exist_ok=True)
             tasks_path = output_dir / "atomized-tasks.jsonl"
             write_tasks_jsonl(all_tasks, tasks_path)
+            if research_result is not None:
+                from organvm_engine.atoms.research import mark_doc_activated
+
+                for path in research_result.activation_candidates:
+                    try:
+                        mark_doc_activated(path)
+                    except Exception as e:
+                        result.errors.append(("research-activate", f"{path}: {e}"))
             manifest["files"]["atomized-tasks.jsonl"] = {
                 "count": len(all_tasks),
                 "sha256": _sha256(tasks_path),
@@ -271,9 +313,13 @@ def run_pipeline(
 
     # Reconciliation may have rewritten task statuses after the first hash.
     if not dry_run and "atomized-tasks.jsonl" in manifest["files"]:
-        manifest["files"]["atomized-tasks.jsonl"]["sha256"] = _sha256(
-            output_dir / "atomized-tasks.jsonl",
-        )
+        try:
+            manifest["files"]["atomized-tasks.jsonl"]["sha256"] = _sha256(
+                output_dir / "atomized-tasks.jsonl",
+            )
+        except OSError as e:
+            manifest["files"]["atomized-tasks.jsonl"].pop("sha256", None)
+            result.errors.append(("hash-tasks", str(e)))
 
     # Step 6: Write manifest
     manifest["counts"] = {
