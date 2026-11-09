@@ -75,7 +75,7 @@ def run_pipeline(
     """
     from organvm_engine.atoms.summary import generate_link_summary
     from organvm_engine.paths import atoms_dir
-    from organvm_engine.plans.atomizer import atomize_all
+    from organvm_engine.plans.atomizer import DuplicateTaskIdError, atomize_all
     from organvm_engine.plans.atomizer import write_jsonl as write_tasks_jsonl
     from organvm_engine.plans.summary import generate_summary
     from organvm_engine.prompts.summary import generate_narrative_summary
@@ -141,6 +141,8 @@ def run_pipeline(
             summary = generate_summary(all_tasks, result.plans_parsed)
             summary_path = output_dir / "ATOMIZED-SUMMARY.md"
             summary_path.write_text(summary, encoding="utf-8")
+    except DuplicateTaskIdError:
+        raise
     except Exception as e:
         result.errors.append(("write-tasks", str(e)))
 
@@ -266,6 +268,12 @@ def run_pipeline(
         "empty_fingerprint_prompts": empty_fp_prompts,
         "link_threshold": link_threshold,
     }
+
+    # Reconciliation may have rewritten task statuses after the first hash.
+    if not dry_run and "atomized-tasks.jsonl" in manifest["files"]:
+        manifest["files"]["atomized-tasks.jsonl"]["sha256"] = _sha256(
+            output_dir / "atomized-tasks.jsonl",
+        )
 
     # Step 6: Write manifest
     manifest["counts"] = {

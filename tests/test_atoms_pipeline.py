@@ -61,6 +61,39 @@ class TestPipelineDryRun:
 class TestPipelineWrite:
     """Pipeline in write mode creates expected files."""
 
+    @patch("organvm_engine.atoms.reconciler.reconcile_tasks")
+    @patch("organvm_engine.atoms.reconciler.apply_verdicts")
+    @patch("organvm_engine.plans.atomizer.atomize_all")
+    def test_manifest_hashes_tasks_after_reconciliation(
+        self, atomize, apply, reconcile, tmp_path, monkeypatch,
+    ):
+        import hashlib
+
+        from organvm_engine.atoms.pipeline import run_pipeline
+        from organvm_engine.plans.atomizer import AtomizeResult
+        monkeypatch.setattr(
+            "organvm_engine.plans.index.build_plan_index",
+            lambda **kw: MagicMock(total_plans=0),
+        )
+        monkeypatch.setattr("organvm_engine.plans.index.index_to_json", lambda index: "{}")
+
+        atomize.return_value = AtomizeResult(
+            tasks=[{"id": "a", "status": "pending"}], plans_parsed=1,
+            errors=[], archetype_counts={}, status_counts={},
+        )
+        reconcile.return_value = MagicMock(
+            verdicts=[object()], likely_completed=1, partially_done=0,
+        )
+        apply.side_effect = lambda path, verdicts: path.write_text(
+            '{"id":"a","status":"completed"}\n',
+        )
+        result = run_pipeline(
+            output_dir=tmp_path, skip_narrate=True, skip_link=True,
+            skip_research=True, dry_run=False,
+        )
+        actual = hashlib.sha256((tmp_path / "atomized-tasks.jsonl").read_bytes()).hexdigest()
+        assert result.manifest["files"]["atomized-tasks.jsonl"]["sha256"] == actual
+
     @patch("organvm_engine.plans.atomizer.atomize_all")
     def test_write_creates_files(self, mock_atomize, tmp_path):
         from organvm_engine.atoms.pipeline import run_pipeline

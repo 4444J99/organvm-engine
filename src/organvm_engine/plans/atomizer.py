@@ -445,6 +445,7 @@ class PlanParser:
         self.organ = organ
         self.repo = repo
         self.tasks: list[AtomicTask] = []
+        self.used_task_ids: set[str] = set()
 
         self.project_slug, self.archived = infer_project_slug(filepath, plans_dir)
         self.is_agent, self.parent_plan = detect_agent_subplan(filepath)
@@ -711,6 +712,13 @@ class PlanParser:
         task.actionable = is_actionable(title, body, self.archetype)
         task.phase_order = phase_index
         task.compute_id()
+        base_id = task.id
+        suffix = 0
+        while task.id in self.used_task_ids:
+            key = f"{base_id}|{line_start}|{suffix}"
+            task.id = hashlib.sha256(key.encode()).hexdigest()[:12]
+            suffix += 1
+        self.used_task_ids.add(task.id)
 
         from organvm_engine.domain import domain_fingerprint as _dfp
         task.domain_fingerprint = _dfp(
@@ -879,8 +887,18 @@ def atomize_all(
     return atomize_plans(base, plan_files_override=plan_files)
 
 
+class DuplicateTaskIdError(ValueError):
+    """A task collection has ambiguous IDs."""
+
+
 def write_jsonl(tasks: list[dict], output_path: Path) -> None:
     """Write tasks as JSONL."""
+    ids: set[str] = set()
+    for task in tasks:
+        task_id = task.get("id")
+        if task_id in ids:
+            raise DuplicateTaskIdError(f"duplicate task ID: {task_id}")
+        ids.add(task_id)
     with output_path.open("w", encoding="utf-8") as f:
         for task in tasks:
             f.write(json.dumps(task, ensure_ascii=False) + "\n")

@@ -265,6 +265,26 @@ class TestClassifyArchetype:
 
 
 class TestPlanParser:
+    def test_duplicate_titles_keep_distinct_stable_ids(self, tmp_path):
+        filepath = tmp_path / "plan.md"
+        parser = PlanParser([], filepath, tmp_path)
+        first = parser._make_task("Repeat", "first", 10, 10)
+        second = parser._make_task("Repeat", "second", 12, 12)
+        assert first.id != second.id
+        again = PlanParser([], filepath, tmp_path)
+        assert first.id == again._make_task("Repeat", "first", 10, 10).id
+        assert second.id == again._make_task("Repeat", "second", 12, 12).id
+
+    def test_writer_rejects_duplicate_ids_before_replacing_file(self, tmp_path):
+        import pytest
+
+        from organvm_engine.plans.atomizer import write_jsonl
+        output = tmp_path / "tasks.jsonl"
+        output.write_text("preserved\n")
+        with pytest.raises(ValueError, match="duplicate"):
+            write_jsonl([{"id": "same"}, {"id": "same"}], output)
+        assert output.read_text() == "preserved\n"
+
     """Test the stateful plan parser."""
 
     def _parse(self, lines: list[str], tmp_path: Path) -> list[AtomicTask]:
