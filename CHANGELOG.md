@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Tests are host-independent: `ORGANVM_*`/`LIMEN_GOV_*` env vars and the host's global
+  git config/ignore no longer leak into the suite, and the exit-interview tests
+  use a temp workspace pointing at the checkout under test instead of `~/Workspace`.
 - `organvm governance promotion-queue`: read-only fleet view of every repo's next
   promotion step (ready / unverified / blocked), with blockers (invalid
   transition, missing `functional_class`, failing infrastructure mechanisms) and

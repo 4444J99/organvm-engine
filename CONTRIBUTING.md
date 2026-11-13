@@ -29,6 +29,18 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+The full suite needs two packages a bare checkout does not have: the private
+`organvm-ontologia` dependency (CI pins a commit in `.github/workflows/ci.yml`;
+install it from a checkout of that commit) and the `dev` extra
+(`pip install -e ".[dev]"`, which provides `nbformat`). Without them the
+ontologia bridge tests and the reader-mode audit tests fail at import, not on
+behavior.
+
+The suite is host-independent: `tests/conftest.py` clears `ORGANVM_*` /
+`LIMEN_GOV_*` environment variables and the host's global git config and ignore
+file for every test. A test that needs an override sets it with
+`monkeypatch.setenv`.
+
 ## How to Contribute
 
 ### Reporting Issues

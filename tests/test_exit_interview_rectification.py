@@ -1,6 +1,5 @@
 """Tests for exit interview Phase 3: Rectification."""
 
-from pathlib import Path
 
 import pytest
 
@@ -58,11 +57,9 @@ def aligned_pair():
 
 
 @pytest.fixture
-def workspace_root():
-    ws = Path.home() / "Workspace"
-    if not ws.is_dir():
-        pytest.skip("Workspace not found")
-    return ws
+def workspace_root(engine_workspace):
+    """Temp workspace whose engine repo is the checkout under test."""
+    return engine_workspace
 
 
 class TestRectifyModule:
