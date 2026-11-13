@@ -6,7 +6,8 @@ variables when available, falls back to conventional defaults.
 Environment variables:
     ORGANVM_WORKSPACE_DIR — workspace root (default: ~/Workspace)
     ORGANVM_CORPUS_DIR — corpus repo (default: probe of
-        <workspace>/meta-organvm/organvm-corpvs-testamentvm then
+        <workspace>/meta-organvm/organvm-corpvs-testamentvm, the managed
+        library shelf, then
         ~/Code/organvm/organvm-corpvs-testamentvm; a candidate qualifies
         only if it contains the repo registry)
     ORGANVM_ADDITIONAL_WORKSPACE_ROOTS — colon-separated flat workspace roots
@@ -59,7 +60,8 @@ class PathConfig:
         if env:
             return _coerce_path(env)
         legacy = self.workspace_root() / _DEFAULT_CORPUS_SUBPATH
-        for candidate in (legacy, _DEFAULT_CODE_ROOT / _CORPUS_REPO_NAME):
+        managed = self.workspace_root() / "library/shelves/meta-organvm" / _CORPUS_REPO_NAME
+        for candidate in (legacy, managed, _DEFAULT_CODE_ROOT / _CORPUS_REPO_NAME):
             if _holds_registry(candidate):
                 return candidate
         return legacy

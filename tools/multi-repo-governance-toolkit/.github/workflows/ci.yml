@@ -1,0 +1,41 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip pytest pyyaml
+      - run: python -m pytest -v
+  identity-lint:
+    # Warning-only for now: reports findings in the job summary, never blocks.
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run identity lint
+        env:
+          IDENTITY_SALT: ${{ secrets.IDENTITY_SALT }}
+          IDENTITY_DENYLIST: ${{ secrets.IDENTITY_DENYLIST }}
+          IDENTITY_OWN_NAMES: ${{ secrets.IDENTITY_OWN_NAMES }}
+        run: |
+          set +e
+          python scripts/identity-lint.py > identity-lint.txt
+          rc=$?
+          cat identity-lint.txt
+          {
+            echo "## Identity lint"
+            if [ $rc -eq 0 ]; then echo "No findings."; else echo "::warning::identity-lint found issues"; fi
+            echo '```'; cat identity-lint.txt; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ $rc -eq 0 ] || echo "::warning title=identity-lint::findings present (warning-only)"
+          exit 0

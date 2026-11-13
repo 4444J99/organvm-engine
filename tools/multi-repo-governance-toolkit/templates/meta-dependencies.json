@@ -1,0 +1,13 @@
+{
+  "_comment": "Template for .meta/dependencies.json — copy to each repo and fill in values",
+  "repo_name": "REPO_NAME",
+  "organ": "ORGAN-N",
+  "org": "organvm-X-suffix",
+  "status": "ACTIVE",
+  "dependencies": {
+    "internal": {
+      "depends_on": [],
+      "consumed_by": []
+    }
+  }
+}

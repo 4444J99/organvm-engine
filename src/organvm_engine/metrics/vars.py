@@ -174,9 +174,8 @@ def resolve_targets(
                 result.details.append(
                     f"{path.name}:{r.line} {r.key}: {r.old_value!r} -> {r.new_value!r}",
                 )
-            elif r.key not in variables:
-                if r.key not in result.unknown_keys:
-                    result.unknown_keys.append(r.key)
+            elif r.key not in variables and r.key not in result.unknown_keys:
+                result.unknown_keys.append(r.key)
 
     return result
 

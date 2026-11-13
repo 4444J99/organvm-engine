@@ -250,26 +250,27 @@ def transition_completed(poll_results: list[PollResult]) -> list[dict[str, str]]
                 "Intent %s (packet %s): all dispatches returned, ready for FORTIFY",
                 intent.id, intent.packet_id,
             )
-        elif current_phase == RelayPhase.HANDOFF:
+        elif current_phase == RelayPhase.HANDOFF and valid_transition(
+            RelayPhase.HANDOFF, RelayPhase.FORTIFY,
+        ):
             # Transition HANDOFF -> FORTIFY since dispatches are done
-            if valid_transition(RelayPhase.HANDOFF, RelayPhase.FORTIFY):
-                log_transition(
-                    intent.packet_id,
-                    RelayPhase.HANDOFF,
-                    RelayPhase.FORTIFY,
-                    reason="heartbeat: all dispatches returned",
-                )
-                transition_note = {
-                    "intent_id": intent.id,
-                    "packet_id": intent.packet_id,
-                    "event": "handoff_to_fortify",
-                    "message": "Heartbeat advanced HANDOFF -> FORTIFY",
-                }
-                transitions.append(transition_note)
-                logger.info(
-                    "Intent %s: heartbeat advanced HANDOFF -> FORTIFY",
-                    intent.id,
-                )
+            log_transition(
+                intent.packet_id,
+                RelayPhase.HANDOFF,
+                RelayPhase.FORTIFY,
+                reason="heartbeat: all dispatches returned",
+            )
+            transition_note = {
+                "intent_id": intent.id,
+                "packet_id": intent.packet_id,
+                "event": "handoff_to_fortify",
+                "message": "Heartbeat advanced HANDOFF -> FORTIFY",
+            }
+            transitions.append(transition_note)
+            logger.info(
+                "Intent %s: heartbeat advanced HANDOFF -> FORTIFY",
+                intent.id,
+            )
 
     return transitions
 

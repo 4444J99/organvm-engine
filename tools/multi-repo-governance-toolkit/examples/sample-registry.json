@@ -1,0 +1,11 @@
+{
+  "organs": {
+    "core": {
+      "repositories": [
+        {"org": "example-org", "name": "api", "dependencies": ["example-org/schema"]},
+        {"org": "example-org", "name": "schema", "dependencies": []},
+        {"org": "example-org", "name": "web", "dependencies": ["example-org/api", "example-org/auth"]}
+      ]
+    }
+  }
+}
