@@ -117,6 +117,14 @@ def assess_repo(
     )
 
 
+def _has_checkout(path: Path) -> bool:
+    """True when ``path`` is a directory holding at least one entry."""
+    try:
+        return path.is_dir() and any(path.iterdir())
+    except OSError:
+        return False
+
+
 def build_queue(
     registry: dict,
     *,
@@ -144,6 +152,8 @@ def build_queue(
         path = _resolve_repo_path(
             entry.get("org", ""), entry.get("name", ""), organ_key, ws, key_to_dir,
         )
+        if path is not None and not _has_checkout(path):
+            path = None  # empty dir (e.g. uninitialized submodule) is no checkout
         assessment = assess_repo(organ_key, entry, repo_path=path, rules_path=rules_path)
         if assessment is not None:
             queue.append(assessment)

@@ -96,6 +96,7 @@ def _registry():
 
 
 def test_build_queue_orders_and_filters(infra, monkeypatch, tmp_path):
+    (tmp_path / "marker").write_text("x")
     monkeypatch.setattr(
         "organvm_engine.ci.mandate._resolve_repo_path",
         lambda org, name, organ, ws, key_to_dir: None if name == "other" else tmp_path,
@@ -109,6 +110,7 @@ def test_build_queue_orders_and_filters(infra, monkeypatch, tmp_path):
 
 
 def test_summary_and_format(infra, monkeypatch, tmp_path):
+    (tmp_path / "marker").write_text("x")
     monkeypatch.setattr(
         "organvm_engine.ci.mandate._resolve_repo_path",
         lambda *a, **k: tmp_path,
@@ -155,3 +157,25 @@ def test_dry_run_still_rejects_invalid_transition():
     ok, msg = execute_transition("x", "LOCAL", "GRADUATED", dry_run=True)
     assert not ok
     assert "Cannot transition" in msg
+
+
+def test_empty_checkout_directory_is_unverified(infra, tmp_path):
+    """Real path resolver: an empty repo dir (uninitialized submodule) is no checkout."""
+    from organvm_engine.organ_config import registry_key_to_dir
+
+    organ_dir = registry_key_to_dir()["ORGAN-I"]
+    (tmp_path / organ_dir / "empty-one").mkdir(parents=True)
+    full = tmp_path / organ_dir / "full-one"
+    full.mkdir(parents=True)
+    (full / "README.md").write_text("x")
+    registry = {
+        "organs": {
+            "ORGAN-I": {
+                "repositories": [_entry("empty-one", "LOCAL"), _entry("full-one", "LOCAL")],
+            },
+        },
+    }
+    by_name = {a.repo: a for a in pq.build_queue(registry, workspace=tmp_path)}
+    assert by_name["empty-one"].status == pq.STATUS_UNVERIFIED
+    assert by_name["empty-one"].checkout is None
+    assert by_name["full-one"].status == pq.STATUS_READY
