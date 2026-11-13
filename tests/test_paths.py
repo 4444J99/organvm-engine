@@ -9,6 +9,17 @@ from organvm_engine import paths
 
 
 class TestPaths:
+    def test_corpus_dir_probes_managed_shelf(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("ORGANVM_CORPUS_DIR", raising=False)
+        monkeypatch.delenv("ORGANVM_WORKSPACE_DIR", raising=False)
+        workspace = tmp_path / "ws"
+        corpus = workspace / "library/shelves/meta-organvm/organvm-corpvs-testamentvm"
+        corpus.mkdir(parents=True)
+        (corpus / "repo-registry.json").write_text("{}")
+        monkeypatch.setattr(paths, "_DEFAULT_WORKSPACE", workspace)
+        monkeypatch.setattr(paths, "_DEFAULT_CODE_ROOT", tmp_path / "empty")
+        assert paths.corpus_dir() == corpus
+
     def test_workspace_root_uses_blocked_default(self, monkeypatch):
         # autouse fixture sets _DEFAULT_WORKSPACE to /nonexistent/...
         # Clear env var so the blocked default is actually used

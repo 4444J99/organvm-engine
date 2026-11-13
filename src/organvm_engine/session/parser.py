@@ -1352,23 +1352,22 @@ def render_codex_transcript(jsonl_path: Path, unabridged: bool = False) -> str:
                         lines.append("---")
                         lines.append("")
 
-                elif ptype == "reasoning":
-                    if unabridged:
-                        msg_num += 1
-                        lines.append(f"## [{msg_num}] Reasoning — {ts_short}")
-                        lines.append("")
-                        summary = payload.get("summary", [])
-                        if summary:
-                            for s in summary:
-                                if isinstance(s, dict):
-                                    lines.append(f"- {s.get('text', str(s))}")
-                                else:
-                                    lines.append(f"- {s}")
-                        else:
-                            lines.append("*Reasoning content encrypted — summary not available*")
-                        lines.append("")
-                        lines.append("---")
-                        lines.append("")
+                elif ptype == "reasoning" and unabridged:
+                    msg_num += 1
+                    lines.append(f"## [{msg_num}] Reasoning — {ts_short}")
+                    lines.append("")
+                    summary = payload.get("summary", [])
+                    if summary:
+                        for s in summary:
+                            if isinstance(s, dict):
+                                lines.append(f"- {s.get('text', str(s))}")
+                            else:
+                                lines.append(f"- {s}")
+                    else:
+                        lines.append("*Reasoning content encrypted — summary not available*")
+                    lines.append("")
+                    lines.append("---")
+                    lines.append("")
 
     return "\n".join(lines)
 
