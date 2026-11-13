@@ -566,6 +566,8 @@ def _quick_parse_codex(
                     entry = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+                if not isinstance(entry, dict):
+                    continue
 
                 ts_str = entry.get("timestamp")
                 if ts_str:
@@ -575,6 +577,8 @@ def _quick_parse_codex(
 
                 if entry.get("type") == "session_meta":
                     payload = entry.get("payload", {})
+                    if not isinstance(payload, dict):
+                        continue
                     session_id = payload.get("id", jsonl_path.stem)
                     cwd = payload.get("cwd", "")
                     ts_str2 = payload.get("timestamp")
@@ -609,6 +613,38 @@ def _quick_parse_codex(
         ended=max(timestamps) if timestamps else None,
         size_bytes=size,
     )
+
+
+def codex_payload_session_id(jsonl_path: Path, *, max_lines: int = 20) -> str:
+    """Read only the leading ``session_meta`` record's payload id, cheaply.
+
+    Rollouts begin with their ``session_meta`` record, so lookup never needs
+    to decode a whole (potentially huge) rollout. Malformed, non-object or
+    undecodable content yields an empty string instead of raising.
+    """
+    try:
+        with jsonl_path.open(encoding="utf-8") as f:
+            for _ in range(max_lines):
+                line = f.readline(_CODEX_META_LINE_LIMIT_BYTES)
+                if not line:
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(entry, dict) or entry.get("type") != "session_meta":
+                    continue
+                payload = entry.get("payload")
+                if isinstance(payload, dict):
+                    value = payload.get("id")
+                    return value if isinstance(value, str) else ""
+                return ""
+    except (OSError, UnicodeDecodeError):
+        return ""
+    return ""
 
 
 def _recover_codex_cwd(jsonl_path: Path) -> str:

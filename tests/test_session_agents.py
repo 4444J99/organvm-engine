@@ -19,6 +19,7 @@ from organvm_engine.session.agents import (
 )
 from organvm_engine.session.parser import (
     detect_agent,
+    find_session,
     parse_any_session,
     parse_codex_session,
     parse_gemini_session,
@@ -561,6 +562,23 @@ class TestCodexRelocatedHome:
         sibling_file.touch()
 
         assert detect_agent(sibling_file) != "codex"
+
+    def test_detect_agent_ancestor_codex_home_keeps_other_agents(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("CODEX_HOME", str(tmp_path))
+        claude_file = tmp_path / ".claude" / "projects" / "p" / "s.jsonl"
+        claude_file.parent.mkdir(parents=True)
+        claude_file.touch()
+        assert detect_agent(claude_file) == "claude"
+
+    def test_find_session_by_payload_id_survives_malformed_rollout(self, tmp_path, monkeypatch):
+        relocated = tmp_path / "codex"
+        day = relocated / "sessions" / "2026" / "09" / "16"
+        day.mkdir(parents=True)
+        (day / "rollout-2026-09-16T10-00-00-broken.jsonl").write_text("null\n[1]\n")
+        wanted = _codex_jsonl(day, "rollout-2026-09-16T10-00-00-other.jsonl")
+        monkeypatch.setenv("CODEX_HOME", str(relocated))
+
+        assert find_session("abc123-codex") == wanted
 
 
 # ── Helpers ────────────────────────────────────────────────────────

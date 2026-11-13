@@ -1381,9 +1381,12 @@ def detect_agent(file_path: Path) -> str:
 
     try:
         resolved_file = file_path.expanduser().resolve()
-        codex_home = codex_home_dir().resolve()
-        if resolved_file.is_relative_to(codex_home):
-            return "codex"
+        codex_home = codex_home_dir()
+        # Only the Codex session stores count; CODEX_HOME may be an ancestor
+        # of other agents' storage (e.g. $HOME).
+        for sub in ("sessions", "archived_sessions"):
+            if resolved_file.is_relative_to(codex_home / sub):
+                return "codex"
     except (ValueError, OSError, RuntimeError):
         pass
 
@@ -1450,8 +1453,8 @@ def find_session(session_id: str) -> Path | None:
     """Find a session by full or partial ID across all agents."""
     from organvm_engine.session.agents import (
         GEMINI_TMP_DIR,
-        _quick_parse_codex,
         codex_archived_dir,
+        codex_payload_session_id,
         codex_sessions_dir,
     )
 
@@ -1476,12 +1479,8 @@ def find_session(session_id: str) -> Path | None:
                 if session_id in jsonl.stem:
                     candidates.append(jsonl)
                 else:
-                    meta = _quick_parse_codex(jsonl, project_filter=None)
-                    if meta and (
-                        session_id == meta.session_id
-                        or meta.session_id.startswith(session_id)
-                        or session_id in meta.session_id
-                    ):
+                    payload_id = codex_payload_session_id(jsonl)
+                    if payload_id and session_id in payload_id:
                         candidates.append(jsonl)
 
     # Deduplicate exact matches
