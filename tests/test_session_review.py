@@ -286,6 +286,11 @@ def test_review_latest_with_relocated_codex_home(tmp_path, monkeypatch, capsys):
             fh.write(json.dumps(e) + "\n")
 
     monkeypatch.setenv("CODEX_HOME", str(relocated))
+    # Isolate from the host's real Claude/Gemini/OpenCode corpora so the
+    # relocated Codex session is the newest one discovered.
+    monkeypatch.setattr(session_agents, "CLAUDE_PROJECTS_DIR", tmp_path / "no-claude")
+    monkeypatch.setattr(session_agents, "GEMINI_TMP_DIR", tmp_path / "no-gemini")
+    monkeypatch.setattr(session_agents, "OPENCODE_DB", tmp_path / "no-opencode.db")
 
     with patch("organvm_engine.cli.session.discover_plans", return_value=[]):
         args = _FakeArgs(latest=True)
