@@ -1,0 +1,44 @@
+name: Load Governance Configuration
+description: Parse strict YAML using the defining revision's schema and presets
+author: 4-b100m
+
+inputs:
+  source-root:
+    description: Caller source directory inside GITHUB_WORKSPACE
+    required: false
+    default: '.'
+  config-path:
+    description: Relative caller configuration path; traversal and symlinks are rejected
+    required: false
+    default: '.github/governance.yml'
+  validate:
+    description: Compatibility field; must be true because validation cannot be disabled
+    required: false
+    default: 'true'
+
+outputs:
+  config:
+    description: Validated config
+    value: ${{ steps.load.outputs.config }}
+  preset:
+    description: Validated preset
+    value: ${{ steps.load.outputs.preset }}
+  version:
+    description: Validated version
+    value: ${{ steps.load.outputs.version }}
+  valid:
+    description: Validated valid
+    value: ${{ steps.load.outputs.valid }}
+
+runs:
+  using: composite
+  steps:
+    - name: Parse and validate configuration data
+      id: load
+      shell: bash
+      env:
+        GOVERNANCE_ACTION_PATH: ${{ github.action_path }}
+        GOVERNANCE_SOURCE_ROOT: ${{ inputs.source-root }}
+        GOVERNANCE_CONFIG_PATH: ${{ inputs.config-path }}
+        GOVERNANCE_VALIDATE: ${{ inputs.validate }}
+      run: python -I "$GOVERNANCE_ACTION_PATH/../../../src/workflow_inputs.py" load-config
