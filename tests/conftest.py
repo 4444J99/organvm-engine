@@ -52,6 +52,8 @@ def _block_production_paths(monkeypatch):
     # touch production corpus/governance files.
     monkeypatch.delenv("ORGANVM_WORKSPACE_DIR", raising=False)
     monkeypatch.delenv("ORGANVM_CORPUS_DIR", raising=False)
+    # A relocated Codex corpus on the host must not leak into discovery tests.
+    monkeypatch.delenv("CODEX_HOME", raising=False)
 
 
 @pytest.fixture

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import codecs
 import json
+import os
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -21,6 +22,30 @@ GEMINI_PROJECTS_JSON = Path.home() / ".local" / "share" / "gemini" / "projects.j
 CODEX_SESSIONS_DIR = Path.home() / ".codex" / "sessions"
 CODEX_ARCHIVED_DIR = Path.home() / ".codex" / "archived_sessions"
 OPENCODE_DB = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
+
+
+def codex_home_dir() -> Path:
+    """Return resolved Codex root directory, honoring CODEX_HOME if set."""
+    val = os.environ.get("CODEX_HOME", "").strip()
+    if val:
+        return Path(val).expanduser().resolve()
+    return (Path.home() / ".codex").resolve()
+
+
+def codex_sessions_dir() -> Path:
+    """Return active Codex sessions directory."""
+    val = os.environ.get("CODEX_HOME", "").strip()
+    if val:
+        return codex_home_dir() / "sessions"
+    return CODEX_SESSIONS_DIR
+
+
+def codex_archived_dir() -> Path:
+    """Return archived Codex sessions directory."""
+    val = os.environ.get("CODEX_HOME", "").strip()
+    if val:
+        return codex_home_dir() / "archived_sessions"
+    return CODEX_ARCHIVED_DIR
 
 _UTF8_SCAN_CHUNK_BYTES = 64 * 1024
 _CODEX_META_LINE_LIMIT_BYTES = 1024 * 1024
@@ -237,9 +262,12 @@ def discover_codex_sessions(
     """Find all Codex sessions (active + archived)."""
     results = []
 
-    # Active sessions: ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl
-    if CODEX_SESSIONS_DIR.exists():
-        for jsonl in CODEX_SESSIONS_DIR.rglob("rollout-*.jsonl"):
+    sessions_dir = codex_sessions_dir()
+    archived_dir = codex_archived_dir()
+
+    # Active sessions: <CODEX_HOME>/sessions/YYYY/MM/DD/rollout-*.jsonl
+    if sessions_dir.exists():
+        for jsonl in sessions_dir.rglob("rollout-*.jsonl"):
             meta = _quick_parse_codex(
                 jsonl,
                 project_filter,
@@ -249,9 +277,9 @@ def discover_codex_sessions(
             if meta:
                 results.append(meta)
 
-    # Archived: ~/.codex/archived_sessions/rollout-*.jsonl
-    if CODEX_ARCHIVED_DIR.exists():
-        for jsonl in CODEX_ARCHIVED_DIR.glob("rollout-*.jsonl"):
+    # Archived: <CODEX_HOME>/archived_sessions/rollout-*.jsonl
+    if archived_dir.exists():
+        for jsonl in archived_dir.rglob("rollout-*.jsonl"):
             meta = _quick_parse_codex(
                 jsonl,
                 project_filter,
@@ -538,6 +566,8 @@ def _quick_parse_codex(
                     entry = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+                if not isinstance(entry, dict):
+                    continue
 
                 ts_str = entry.get("timestamp")
                 if ts_str:
@@ -547,6 +577,8 @@ def _quick_parse_codex(
 
                 if entry.get("type") == "session_meta":
                     payload = entry.get("payload", {})
+                    if not isinstance(payload, dict):
+                        continue
                     session_id = payload.get("id", jsonl_path.stem)
                     cwd = payload.get("cwd", "")
                     ts_str2 = payload.get("timestamp")
@@ -581,6 +613,38 @@ def _quick_parse_codex(
         ended=max(timestamps) if timestamps else None,
         size_bytes=size,
     )
+
+
+def codex_payload_session_id(jsonl_path: Path, *, max_lines: int = 20) -> str:
+    """Read only the leading ``session_meta`` record's payload id, cheaply.
+
+    Rollouts begin with their ``session_meta`` record, so lookup never needs
+    to decode a whole (potentially huge) rollout. Malformed, non-object or
+    undecodable content yields an empty string instead of raising.
+    """
+    try:
+        with jsonl_path.open(encoding="utf-8") as f:
+            for _ in range(max_lines):
+                line = f.readline(_CODEX_META_LINE_LIMIT_BYTES)
+                if not line:
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(entry, dict) or entry.get("type") != "session_meta":
+                    continue
+                payload = entry.get("payload")
+                if isinstance(payload, dict):
+                    value = payload.get("id")
+                    return value if isinstance(value, str) else ""
+                return ""
+    except (OSError, UnicodeDecodeError):
+        return ""
+    return ""
 
 
 def _recover_codex_cwd(jsonl_path: Path) -> str:
