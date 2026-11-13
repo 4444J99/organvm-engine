@@ -201,12 +201,40 @@ def cmd_governance_promote(args: argparse.Namespace) -> int:
         tier=tier,
         registry_entry=repo,
         reason=reason,
+        dry_run=getattr(args, "dry_run", False),
     )
     print(f"  {msg}")
 
     if ok:
         print("  Transition is valid. Use 'organvm registry update' to apply.")
     return 0 if ok else 1
+
+
+def cmd_governance_promotion_queue(args: argparse.Namespace) -> int:
+    """Read-only fleet view of every repo's next promotion step and blockers."""
+    import json
+
+    from organvm_engine.governance.promotion_queue import (
+        build_queue,
+        format_queue,
+        summarize,
+    )
+
+    registry = load_registry(args.registry)
+    queue = build_queue(registry, organ=getattr(args, "organ", None))
+    status = getattr(args, "status", None)
+    if status:
+        queue = [a for a in queue if a.status == status]
+
+    if getattr(args, "json", False):
+        print(json.dumps(
+            {"summary": summarize(queue), "queue": [a.to_dict() for a in queue]},
+            indent=2,
+        ))
+    else:
+        limit = getattr(args, "limit", 25)
+        print(format_queue(queue, limit=limit or None))
+    return 0
 
 
 def cmd_governance_dictums(args: argparse.Namespace) -> int:
