@@ -185,18 +185,22 @@ def cmd_atoms_pipeline(args: argparse.Namespace) -> int:
     research_dir_raw = getattr(args, "research_dir", None)
     research_dir = Path(research_dir_raw) if research_dir_raw else None
 
-    result = run_pipeline(
-        output_dir=output_dir,
-        agent=getattr(args, "agent", None),
-        organ=getattr(args, "organ", None),
-        skip_narrate=getattr(args, "skip_narrate", False),
-        skip_link=getattr(args, "skip_link", False),
-        skip_reconcile=skip_reconcile,
-        skip_research=skip_research,
-        research_dir=research_dir,
-        link_threshold=getattr(args, "threshold", 0.30),
-        dry_run=dry_run,
-    )
+    try:
+        result = run_pipeline(
+            output_dir=output_dir,
+            agent=getattr(args, "agent", None),
+            organ=getattr(args, "organ", None),
+            skip_narrate=getattr(args, "skip_narrate", False),
+            skip_link=getattr(args, "skip_link", False),
+            skip_reconcile=skip_reconcile,
+            skip_research=skip_research,
+            research_dir=research_dir,
+            link_threshold=getattr(args, "threshold", 0.30),
+            dry_run=dry_run,
+        )
+    except ValueError as e:
+        print(f"Atom pipeline: {e}", file=sys.stderr)
+        return 1
 
     prefix = "[DRY RUN] " if dry_run else ""
     print(f"{prefix}[1/7] Atomize: {result.plans_parsed} plans → "
