@@ -12,6 +12,7 @@ Usage:
     organvm governance audit
     organvm governance check-deps
     organvm governance promote <repo> <target-state>
+    organvm governance promotion-queue [--organ X] [--status X] [--json]
     organvm seed discover
     organvm seed validate
     organvm seed graph
@@ -169,6 +170,7 @@ from organvm_engine.cli.governance import (
     cmd_governance_impact,
     cmd_governance_placement,
     cmd_governance_promote,
+    cmd_governance_promotion_queue,
 )
 from organvm_engine.cli.handoff import cmd_handoff_clean, cmd_handoff_list
 from organvm_engine.cli.indexer import (
@@ -514,6 +516,23 @@ def build_parser() -> argparse.ArgumentParser:
     prom.add_argument("repo")
     prom.add_argument("target", help="Target promotion state")
     prom.add_argument("--reason", default="", help="Reason for the promotion (recorded in history)")
+    prom.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate only: emit no event and record no promotion_history",
+    )
+
+    pq = gov_sub.add_parser(
+        "promotion-queue",
+        help="Read-only: every repo's next promotion step and what blocks it",
+    )
+    pq.add_argument("--organ", default=None, help="Limit to one organ (e.g. III, META)")
+    pq.add_argument(
+        "--status", choices=["ready", "unverified", "blocked"], default=None,
+        help="Only show assessments with this status",
+    )
+    pq.add_argument("--limit", type=int, default=25, help="Rows to print (0 = all)")
+    pq.add_argument("--json", action="store_true", help="JSON output")
 
     imp = gov_sub.add_parser(
         "impact",
@@ -3611,6 +3630,7 @@ def main() -> int:
         ("governance", "check-deps"): cmd_governance_checkdeps,
         ("governance", "graph-history"): cmd_governance_graph_history,
         ("governance", "promote"): cmd_governance_promote,
+        ("governance", "promotion-queue"): cmd_governance_promotion_queue,
         ("governance", "authorize"): cmd_governance_authorize,
         ("governance", "impact"): cmd_governance_impact,
         ("governance", "dictums"): cmd_governance_dictums,

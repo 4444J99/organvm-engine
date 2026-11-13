@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `organvm governance promotion-queue`: read-only fleet view of every repo's next
+  promotion step (ready / unverified / blocked), with blockers (invalid
+  transition, missing `functional_class`, failing infrastructure mechanisms) and
+  the most common causes. Repos without a local checkout are `unverified`, never
+  `ready`. `organvm governance promote --dry-run` validates without emitting an
+  EventSpine event or recording `promotion_history` (`execute_transition(dry_run=)`).
 - Reader-mode documentation engine: canonical `project-record.yml` integrity
   validation, class-aware audience-route checks, seven-dimension repository
   audits, workspace discovery, and table/JSON/Markdown CLI reporting.
