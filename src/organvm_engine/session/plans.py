@@ -162,7 +162,8 @@ def discover_plans(
         workspace: Workspace root (default ~/Workspace).
         project_filter: Substring filter on project path.
         since: Only include plans on or after this date (YYYY-MM-DD).
-        include_global: Include ~/.claude/plans/ and ~/.claude/projects/ plans.
+        include_global: Include ~/.claude/plans/, ~/.claude/projects/ and
+            <CODEX_HOME>/plans/ plans.
             Default True when workspace is None, False when explicit workspace given.
         agent: Filter to a specific agent (claude, gemini, codex, governance).
         organ: Filter to a specific organ key (I, II, ..., META).
@@ -227,6 +228,20 @@ def discover_plans(
             )
             if plan:
                 results.append(plan)
+
+    # 3b. Global Codex plans: <resolved CODEX_HOME>/plans/*.md
+    if include_global and agent in (None, "codex"):
+        from organvm_engine.session.agents import codex_home_dir
+
+        codex_plans = codex_home_dir() / "plans"
+        if codex_plans.is_dir():
+            for md in sorted(codex_plans.glob("*.md")):
+                plan = _parse_plan_file(
+                    md, "global", agent="codex", workspace=ws,
+                    location_tier="global",
+                )
+                if plan:
+                    results.append(plan)
 
     # 4. Governance plans: praxis-perpetua/sessions/*/plans/*.md
     if include_governance and agent in (None, "governance") and ws.is_dir():

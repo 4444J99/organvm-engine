@@ -343,6 +343,21 @@ def test_discover_codex_plans(tmp_path):
     assert results[0].agent == "codex"
 
 
+def test_discover_global_codex_plans_honors_codex_home(tmp_path, monkeypatch):
+    """Global Codex plans come from the resolved CODEX_HOME."""
+    relocated = tmp_path / "runtime" / "codex"
+    (relocated / "plans").mkdir(parents=True)
+    (relocated / "plans" / "2026-03-01-relocated.md").write_text("# Relocated\n")
+    monkeypatch.setenv("CODEX_HOME", str(relocated))
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PROJECTS_DIR", tmp_path / "none")
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PLANS_GLOBAL", tmp_path / "none")
+
+    results = discover_plans(workspace=tmp_path / "ws", include_global=True, agent="codex")
+    assert [(r.agent, r.slug, r.location_tier) for r in results] == [
+        ("codex", "relocated", "global"),
+    ]
+
+
 def test_discover_all_agents(tmp_path):
     """All three agents discovered together."""
     for agent_name, agent_dir in AGENT_PLAN_DIRS.items():
