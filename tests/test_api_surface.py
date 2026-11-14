@@ -38,7 +38,7 @@ def _toy_parser() -> argparse.ArgumentParser:
 class TestExtract:
     def test_nested_commands_and_arguments(self):
         s = extract_surface(_toy_parser())
-        assert set(s["commands"]) == {"run", "grp", "grp list"}  # no root args here
+        assert set(s["commands"]) == {"(root)", "run", "grp", "grp list"}
         run = s["commands"]["run"]["arguments"]
         assert run["target"] == {
             "required": True, "takes_value": True, "nargs": "1", "position": 0,
