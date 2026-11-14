@@ -75,7 +75,7 @@ def test_encode_message_round_trips_floats():
     address, args = _decode_message(packet)
     assert address == "/testament/env"
     assert len(args) == 4
-    for got, want in zip(args, [0.1, 0.5, 0.75, 2.0]):
+    for got, want in zip(args, [0.1, 0.5, 0.75, 2.0], strict=True):
         assert abs(got - want) < 1e-6
 
 
