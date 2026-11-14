@@ -160,15 +160,22 @@ def _match_arguments(
 
 
 def _compare_command(
-    result: SurfaceDiff, name: str, old: dict[str, Any], new: dict[str, Any],
+    result: SurfaceDiff,
+    name: str,
+    old: dict[str, Any],
+    new: dict[str, Any],
+    renames: dict[str, str],
 ) -> None:
+    # Express current group members in baseline names so an added alias (which
+    # changes the display key) does not look like a different member.
+    to_old = {new_key: old_key for old_key, new_key in renames.items()}
     if new.get("subcommand_required") and not old.get("subcommand_required"):
         result.breaking.append(f"subcommand became required: {name}")
     old_groups = [set(g["members"]) for g in old.get("exclusive_groups", [])]
     old_required = [set(g["members"]) for g in old.get("exclusive_groups", []) if g["required"]]
     for group in new.get("exclusive_groups", []):
-        members = set(group["members"])
-        label = " | ".join(group["members"])
+        members = {to_old.get(m, m) for m in group["members"]}
+        label = " | ".join(sorted(members))
         # A required group that gains optional members still demands what the old
         # one did, so only a group with no required ancestor is a new requirement.
         if group["required"] and not any(prior <= members for prior in old_required):
@@ -242,8 +249,8 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
     for name in sorted(set(base_cmds) & set(cur_cmds)):
         base_args = base_cmds[name].get("arguments", {})
         cur_args = cur_cmds[name].get("arguments", {})
-        _compare_command(result, name, base_cmds[name], cur_cmds[name])
         pairs, removed, added = _match_arguments(base_args, cur_args)
+        _compare_command(result, name, base_cmds[name], cur_cmds[name], dict(pairs))
         for key in removed:
             result.breaking.append(f"argument removed: {name} {key}")
         for key in added:

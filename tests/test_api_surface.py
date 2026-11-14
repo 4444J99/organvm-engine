@@ -267,6 +267,19 @@ class TestReviewedCounterexamples:
         assert d.breaking == []
         assert "argument added: list --c" in d.compatible
 
+    def test_group_member_alias_added_is_compatible(self):
+        def build(flags):
+            p = argparse.ArgumentParser(prog="toy")
+            ls = p.add_subparsers(dest="cmd").add_parser("list")
+            g = ls.add_mutually_exclusive_group(required=True)
+            g.add_argument(*flags, dest="a", action="store_true")
+            g.add_argument("--b", action="store_true")
+            return extract_surface(p)
+
+        d = diff_surfaces(build(["--a"]), build(["--a", "--archived"]))
+        assert d.breaking == []
+        assert "flag added: list --archived" in d.compatible
+
     def test_existing_exclusion_unchanged_is_empty(self):
         before = self._group_surface(["--a", "--b"], False)
         assert diff_surfaces(before, self._group_surface(["--a", "--b"], False)).is_empty
