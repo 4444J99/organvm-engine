@@ -38,9 +38,11 @@ def _toy_parser() -> argparse.ArgumentParser:
 class TestExtract:
     def test_nested_commands_and_arguments(self):
         s = extract_surface(_toy_parser())
-        assert set(s["commands"]) == {"run", "grp", "grp list"}
+        assert set(s["commands"]) == {"run", "grp", "grp list"}  # no root args here
         run = s["commands"]["run"]["arguments"]
-        assert run["target"] == {"required": True, "takes_value": True}
+        assert run["target"] == {
+            "required": True, "takes_value": True, "nargs": "1", "position": 0,
+        }
         assert run["--mode"]["choices"] == ["fast", "slow"]
         assert run["--mode"]["required"] is False
         assert run["--json"]["takes_value"] is False
@@ -113,6 +115,92 @@ class TestDiff:
         assert "argument value arity changed: run --json" in (
             diff_surfaces(self._base(), cur).breaking
         )
+
+
+class TestReviewedCounterexamples:
+    """Counterexamples raised in review of the first revision."""
+
+    @staticmethod
+    def _parser(builder):
+        p = argparse.ArgumentParser(prog="toy")
+        p.add_argument("--registry")
+        sub = p.add_subparsers(dest="cmd")
+        builder(sub)
+        return p
+
+    def test_root_level_option_removed_is_breaking(self):
+        base = extract_surface(self._parser(lambda sub: sub.add_parser("a")))
+        bare = argparse.ArgumentParser(prog="toy")
+        bare.add_subparsers(dest="cmd").add_parser("a")
+        cur = extract_surface(bare)
+        assert "--registry" in base["commands"]["(root)"]["arguments"]
+        assert "argument removed: (root) --registry" in diff_surfaces(base, cur).breaking
+
+    def test_root_option_made_required_is_breaking(self):
+        base = extract_surface(self._parser(lambda sub: sub.add_parser("a")))
+        p = argparse.ArgumentParser(prog="toy")
+        p.add_argument("--registry", required=True)
+        p.add_subparsers(dest="cmd").add_parser("a")
+        d = diff_surfaces(base, extract_surface(p))
+        assert "argument became required: (root) --registry" in d.breaking
+
+    def test_nargs_plus_to_single_is_breaking(self):
+        def many(sub):
+            sub.add_parser("merge").add_argument("sources", nargs="+")
+
+        def one(sub):
+            sub.add_parser("merge").add_argument("sources")
+
+        d = diff_surfaces(
+            extract_surface(self._parser(many)), extract_surface(self._parser(one)),
+        )
+        assert any(line.startswith("argument cardinality changed: merge sources") for line in d.breaking)
+
+    def test_adding_longer_alias_is_compatible(self):
+        def before(sub):
+            sub.add_parser("run").add_argument("--mode", dest="mode")
+
+        def after(sub):
+            sub.add_parser("run").add_argument("--mode", "--execution-mode", dest="mode")
+
+        d = diff_surfaces(
+            extract_surface(self._parser(before)), extract_surface(self._parser(after)),
+        )
+        assert not d.breaking, d.breaking
+        assert "flag added: run --execution-mode" in d.compatible
+
+    def test_removing_alias_keeps_argument_but_flags_break(self):
+        def before(sub):
+            sub.add_parser("run").add_argument("--mode", "--execution-mode", dest="mode")
+
+        def after(sub):
+            sub.add_parser("run").add_argument("--mode", dest="mode")
+
+        d = diff_surfaces(
+            extract_surface(self._parser(before)), extract_surface(self._parser(after)),
+        )
+        assert d.breaking == ["flag removed: run --execution-mode"]
+
+    def test_positional_reorder_is_breaking(self):
+        def before(sub):
+            c = sub.add_parser("update")
+            c.add_argument("field")
+            c.add_argument("value")
+
+        def after(sub):
+            c = sub.add_parser("update")
+            c.add_argument("value")
+            c.add_argument("field")
+
+        d = diff_surfaces(
+            extract_surface(self._parser(before)), extract_surface(self._parser(after)),
+        )
+        assert "positional order changed: update field 0 -> 1" in d.breaking
+        assert "positional order changed: update value 1 -> 0" in d.breaking
+
+    def test_live_parser_has_root_registry_option(self):
+        root = extract_surface(build_parser())["commands"]["(root)"]["arguments"]
+        assert "--registry" in root
 
 
 class TestBaselineContract:

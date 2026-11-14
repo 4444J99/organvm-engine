@@ -16,7 +16,10 @@ baselines, not against a past release.
 
 ## Classification of a CLI change
 
-- Breaking: command removed; argument or flag removed; argument became required or a new
+- Arguments are matched by shared flag, so adding an alias is compatible and removing one is
+  breaking. Root-level (global) options are part of the surface. Positionals carry their order.
+- Breaking: command removed; argument or flag removed; value cardinality (`nargs`) or positional
+  order changed; argument became required or a new
   required argument appeared; value arity changed; an accepted choice removed; choices
   newly restricted.
 - Compatible: command added; optional argument or flag added; choice added; choices

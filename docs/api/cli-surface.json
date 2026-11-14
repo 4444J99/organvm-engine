@@ -1,5 +1,17 @@
 {
   "commands": {
+    "(root)": {
+      "arguments": {
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
     "atoms": {
       "arguments": {}
     },
@@ -9,6 +21,7 @@
           "flags": [
             "--atoms-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -16,6 +29,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -23,6 +37,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -34,6 +49,7 @@
           "flags": [
             "--by-thread"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -41,6 +57,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -48,6 +65,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -55,6 +73,7 @@
           "flags": [
             "--prompts"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -62,6 +81,7 @@
           "flags": [
             "--tasks"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -69,6 +89,7 @@
           "flags": [
             "--threshold"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -85,6 +106,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -92,6 +114,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -99,6 +122,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -106,6 +130,7 @@
           "flags": [
             "--reconcile"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -113,6 +138,7 @@
           "flags": [
             "--research-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -120,6 +146,7 @@
           "flags": [
             "--skip-link"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -127,6 +154,7 @@
           "flags": [
             "--skip-narrate"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -134,6 +162,7 @@
           "flags": [
             "--skip-reconcile"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -141,6 +170,7 @@
           "flags": [
             "--skip-research"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -148,6 +178,7 @@
           "flags": [
             "--threshold"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -155,6 +186,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -166,6 +198,7 @@
           "flags": [
             "--since"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -173,6 +206,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -180,6 +214,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -191,6 +226,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -198,6 +234,7 @@
           "flags": [
             "--min-confidence"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -205,6 +242,7 @@
           "flags": [
             "--research-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -212,6 +250,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -223,6 +262,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -234,6 +274,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -241,6 +282,7 @@
           "flags": [
             "--verbose"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -252,6 +294,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -259,6 +302,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -266,6 +310,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -277,6 +322,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -284,6 +330,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -296,6 +343,8 @@
             "reconcile",
             "seeds"
           ],
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -307,10 +356,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "organ_key": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -322,10 +374,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -340,6 +395,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -347,6 +403,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -354,6 +411,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -365,6 +423,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -376,6 +435,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -383,6 +443,7 @@
           "flags": [
             "--execute"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -390,6 +451,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -397,6 +459,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -404,6 +467,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -415,6 +479,7 @@
           "flags": [
             "--all"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -422,6 +487,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -429,6 +495,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -436,6 +503,7 @@
           "flags": [
             "--lint"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -443,6 +511,7 @@
           "flags": [
             "--name"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -450,6 +519,7 @@
           "flags": [
             "--test"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -457,6 +527,7 @@
           "flags": [
             "--typecheck"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -464,10 +535,13 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "path": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -479,6 +553,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -492,6 +567,8 @@
             "fish",
             "zsh"
           ],
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -506,6 +583,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -513,6 +591,7 @@
           "flags": [
             "--status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -520,6 +599,7 @@
           "flags": [
             "--tag"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -531,6 +611,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -538,6 +619,7 @@
           "flags": [
             "--hook"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -545,6 +627,7 @@
           "flags": [
             "--session"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -552,10 +635,13 @@
           "flags": [
             "--title"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "slug": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -567,6 +653,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -578,6 +665,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -589,6 +677,7 @@
           "flags": [
             "--last"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -600,6 +689,7 @@
           "flags": [
             "--to"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         }
@@ -611,6 +701,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -618,6 +709,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -629,6 +721,7 @@
           "flags": [
             "--diff"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -636,6 +729,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -643,6 +737,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -650,6 +745,7 @@
           "flags": [
             "--receipt"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -657,6 +753,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -671,6 +768,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -691,6 +789,7 @@
           "flags": [
             "--corpus-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -698,6 +797,7 @@
           "flags": [
             "--graph-file"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -705,6 +805,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -713,6 +814,7 @@
             "--verbose",
             "-v"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -720,6 +822,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -731,6 +834,7 @@
           "flags": [
             "--corpus-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -738,6 +842,7 @@
           "flags": [
             "--graph-file"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -745,6 +850,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -753,6 +859,7 @@
             "--verbose",
             "-v"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -760,6 +867,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -771,6 +879,7 @@
           "flags": [
             "--corpus-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -778,6 +887,7 @@
           "flags": [
             "--graph-file"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -785,6 +895,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -792,10 +903,13 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -807,6 +921,7 @@
           "flags": [
             "--corpus-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -814,6 +929,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -822,6 +938,7 @@
             "--output",
             "-o"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -829,6 +946,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -840,6 +958,7 @@
           "flags": [
             "--corpus-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -847,6 +966,7 @@
           "flags": [
             "--graph-file"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -854,6 +974,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -861,6 +982,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -872,6 +994,7 @@
           "flags": [
             "--corpus-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -879,6 +1002,7 @@
           "flags": [
             "--graph-file"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -886,6 +1010,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -893,10 +1018,13 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "concept": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -908,6 +1036,7 @@
           "flags": [
             "--all"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -915,6 +1044,7 @@
           "flags": [
             "--days"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -929,6 +1059,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -936,6 +1067,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -943,6 +1075,7 @@
           "flags": [
             "--path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -954,6 +1087,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -961,6 +1095,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -968,6 +1103,7 @@
           "flags": [
             "--path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -979,6 +1115,8 @@
     "dispatch validate": {
       "arguments": {
         "file": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -998,6 +1136,7 @@
           "flags": [
             "--format"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1005,6 +1144,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1012,6 +1152,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1019,6 +1160,7 @@
           "flags": [
             "--strict"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1026,10 +1168,13 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "paths": {
+          "nargs": "*",
+          "position": 0,
           "required": false,
           "takes_value": true
         }
@@ -1041,6 +1186,7 @@
           "flags": [
             "--actual-repository"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1048,6 +1194,7 @@
           "flags": [
             "--assertion-schema"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1055,6 +1202,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1062,6 +1210,7 @@
           "flags": [
             "--require-git-tracked-evidence"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1069,6 +1218,7 @@
           "flags": [
             "--root"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1076,10 +1226,13 @@
           "flags": [
             "--schema"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "record": {
+          "nargs": "?",
+          "position": 0,
           "required": false,
           "takes_value": true
         }
@@ -1091,6 +1244,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1098,6 +1252,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1109,6 +1264,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1123,6 +1279,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1134,6 +1291,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1141,10 +1299,13 @@
           "flags": [
             "--pillar"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1156,10 +1317,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1174,6 +1338,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1181,6 +1346,7 @@
           "flags": [
             "--pillar"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         }
@@ -1192,6 +1358,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1199,10 +1366,13 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1214,6 +1384,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1221,10 +1392,13 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1236,10 +1410,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1251,6 +1428,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1262,6 +1440,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1269,6 +1448,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1280,6 +1460,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1287,6 +1468,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1298,6 +1480,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1312,6 +1495,7 @@
           "flags": [
             "--gate"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1319,6 +1503,7 @@
           "flags": [
             "--gate-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1330,6 +1515,7 @@
           "flags": [
             "--gate-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1337,6 +1523,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1348,6 +1535,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1355,6 +1543,7 @@
           "flags": [
             "--gate-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1362,6 +1551,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1373,6 +1563,7 @@
           "flags": [
             "--gate"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1380,6 +1571,7 @@
           "flags": [
             "--gate-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1391,6 +1583,7 @@
           "flags": [
             "--gate-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1407,6 +1600,7 @@
           "flags": [
             "--format"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1414,6 +1608,7 @@
           "flags": [
             "--gate"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1421,6 +1616,7 @@
           "flags": [
             "--gate-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1432,6 +1628,7 @@
           "flags": [
             "--gate"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1439,6 +1636,7 @@
           "flags": [
             "--gate-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1453,6 +1651,7 @@
           "flags": [
             "--agents"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1460,6 +1659,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1467,6 +1667,7 @@
           "flags": [
             "--list"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1474,6 +1675,7 @@
           "flags": [
             "--organs"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1481,6 +1683,7 @@
           "flags": [
             "--packet-id"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -1488,6 +1691,7 @@
           "flags": [
             "--scope"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1495,6 +1699,7 @@
           "flags": [
             "--select"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1502,6 +1707,7 @@
           "flags": [
             "--thesis"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1513,6 +1719,7 @@
           "flags": [
             "--check"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1520,6 +1727,7 @@
           "flags": [
             "--intent-id"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1527,6 +1735,7 @@
           "flags": [
             "--record-id"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1534,6 +1743,7 @@
           "flags": [
             "--verdict"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1545,6 +1755,7 @@
           "flags": [
             "--backend"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -1552,6 +1763,7 @@
           "flags": [
             "--body"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1559,6 +1771,7 @@
           "flags": [
             "--branch"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1566,6 +1779,7 @@
           "flags": [
             "--execute"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1573,6 +1787,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1580,6 +1795,7 @@
           "flags": [
             "--labels"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1587,6 +1803,7 @@
           "flags": [
             "--packet-id"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -1594,6 +1811,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -1601,6 +1819,7 @@
           "flags": [
             "--task-id"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1608,6 +1827,7 @@
           "flags": [
             "--title"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1619,6 +1839,7 @@
           "flags": [
             "--install"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1626,6 +1847,7 @@
           "flags": [
             "--interval"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1633,6 +1855,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1640,6 +1863,7 @@
           "flags": [
             "--uninstall"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1651,6 +1875,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1658,6 +1883,7 @@
           "flags": [
             "--packet-id"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1669,6 +1895,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1676,6 +1903,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1683,6 +1911,7 @@
           "flags": [
             "--source"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1690,6 +1919,7 @@
           "flags": [
             "--tags"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1697,6 +1927,7 @@
           "flags": [
             "--text"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         }
@@ -1708,6 +1939,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1715,6 +1947,7 @@
           "flags": [
             "--packet-id"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1729,6 +1962,7 @@
           "flags": [
             "--context"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1736,10 +1970,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "name": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1751,6 +1988,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1759,6 +1997,8 @@
     "formation show": {
       "arguments": {
         "name": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1773,6 +2013,7 @@
           "flags": [
             "--epoch"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1780,6 +2021,7 @@
           "flags": [
             "--regenerate"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1787,6 +2029,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1798,6 +2041,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1809,6 +2053,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1820,6 +2065,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1827,6 +2073,7 @@
           "flags": [
             "--since"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1834,6 +2081,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1841,6 +2089,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1852,6 +2101,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1859,6 +2109,7 @@
           "flags": [
             "--scan"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1866,6 +2117,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1877,6 +2129,7 @@
           "flags": [
             "--archetype"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1884,6 +2137,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1891,6 +2145,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1905,6 +2160,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1912,6 +2168,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1923,6 +2180,7 @@
           "flags": [
             "--fossil-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1930,6 +2188,7 @@
           "flags": [
             "--repo-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -1937,6 +2196,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1948,6 +2208,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -1955,6 +2216,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -1969,6 +2231,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -1980,10 +2243,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "key": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -1995,6 +2261,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2006,6 +2273,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -2013,6 +2281,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -2020,6 +2289,7 @@
           "flags": [
             "--url"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2031,6 +2301,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2042,6 +2313,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2049,6 +2321,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         }
@@ -2060,6 +2333,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2071,6 +2345,7 @@
           "flags": [
             "--manifest"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2078,6 +2353,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2085,6 +2361,7 @@
           "flags": [
             "--shallow"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2092,6 +2369,7 @@
           "flags": [
             "--target"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         }
@@ -2103,6 +2381,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2114,6 +2393,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2125,6 +2405,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2132,6 +2413,7 @@
           "flags": [
             "--message"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2139,6 +2421,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         }
@@ -2153,6 +2436,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2160,6 +2444,7 @@
           "flags": [
             "--rules"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2167,6 +2452,7 @@
           "flags": [
             "--self-knowledge"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2174,6 +2460,7 @@
           "flags": [
             "--signal-closure"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2181,6 +2468,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2192,18 +2480,25 @@
           "flags": [
             "--enforce"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "actor": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         },
         "repo": {
+          "nargs": "1",
+          "position": 1,
           "required": true,
           "takes_value": true
         },
         "target": {
+          "nargs": "1",
+          "position": 2,
           "required": true,
           "takes_value": true
         }
@@ -2218,6 +2513,7 @@
           "flags": [
             "--check"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2225,6 +2521,7 @@
           "flags": [
             "--id"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2232,6 +2529,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2244,6 +2542,7 @@
           "flags": [
             "--level"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2251,6 +2550,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2262,6 +2562,7 @@
           "flags": [
             "--families"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2269,6 +2570,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2276,6 +2578,7 @@
           "flags": [
             "--register"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2288,6 +2591,7 @@
           "flags": [
             "--severity"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2301,6 +2605,7 @@
           "flags": [
             "--type"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2308,6 +2613,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2319,6 +2625,7 @@
           "flags": [
             "--at"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2326,6 +2633,7 @@
           "flags": [
             "--data"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2333,6 +2641,7 @@
           "flags": [
             "--from"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2340,6 +2649,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2347,6 +2657,7 @@
           "flags": [
             "--snapshot"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2354,6 +2665,7 @@
           "flags": [
             "--to"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2362,6 +2674,8 @@
     "governance impact": {
       "arguments": {
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -2373,6 +2687,7 @@
           "flags": [
             "--audit"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2380,6 +2695,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2387,6 +2703,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2398,6 +2715,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2405,14 +2723,19 @@
           "flags": [
             "--reason"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         },
         "target": {
+          "nargs": "1",
+          "position": 1,
           "required": true,
           "takes_value": true
         }
@@ -2424,6 +2747,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2431,6 +2755,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2438,6 +2763,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2450,6 +2776,7 @@
           "flags": [
             "--status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2461,6 +2788,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2472,6 +2800,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2479,6 +2808,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2486,6 +2816,7 @@
           "flags": [
             "--older-than"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2493,6 +2824,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2500,6 +2832,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2511,6 +2844,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2518,6 +2852,7 @@
           "flags": [
             "--stale-after"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2525,6 +2860,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2536,6 +2872,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2547,6 +2884,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2554,6 +2892,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2561,6 +2900,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2572,6 +2912,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2579,6 +2920,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2586,6 +2928,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2593,6 +2936,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2604,6 +2948,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2611,10 +2956,13 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -2632,6 +2980,7 @@
           "flags": [
             "--action"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -2639,6 +2988,7 @@
           "flags": [
             "--blocker"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2646,6 +2996,7 @@
           "flags": [
             "--domain"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -2653,6 +3004,7 @@
           "flags": [
             "--id"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2660,6 +3012,7 @@
           "flags": [
             "--owner"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2667,6 +3020,7 @@
           "flags": [
             "--priority"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2674,6 +3028,7 @@
           "flags": [
             "--source"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2681,6 +3036,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2692,6 +3048,7 @@
           "flags": [
             "--done"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2699,6 +3056,7 @@
           "flags": [
             "--note"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -2706,6 +3064,7 @@
           "flags": [
             "--session"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -2713,10 +3072,13 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "item_id": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -2728,6 +3090,7 @@
           "flags": [
             "--domain"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2735,6 +3098,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2742,6 +3106,7 @@
           "flags": [
             "--owner"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2749,6 +3114,7 @@
           "flags": [
             "--priority"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2756,6 +3122,7 @@
           "flags": [
             "--status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2767,6 +3134,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2774,6 +3142,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2782,6 +3151,8 @@
     "irf status": {
       "arguments": {
         "item_id": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -2796,6 +3167,7 @@
           "flags": [
             "--chain-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2803,6 +3175,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2814,6 +3187,7 @@
           "flags": [
             "--chain-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2825,6 +3199,7 @@
           "flags": [
             "--chain-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2832,6 +3207,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2839,6 +3215,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2846,6 +3223,7 @@
           "flags": [
             "--tier"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2853,6 +3231,7 @@
           "flags": [
             "--type"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2864,6 +3243,7 @@
           "flags": [
             "--chain-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2871,6 +3251,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2882,6 +3263,7 @@
           "flags": [
             "--chain-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2889,6 +3271,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -2900,6 +3283,7 @@
           "flags": [
             "--chain-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -2907,6 +3291,7 @@
           "flags": [
             "--event"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2918,6 +3303,7 @@
           "flags": [
             "--strict"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2925,6 +3311,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2936,6 +3323,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2947,6 +3335,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2961,6 +3350,7 @@
           "flags": [
             "--cross-repo"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2968,6 +3358,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2975,6 +3366,7 @@
           "flags": [
             "--targets"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -2986,6 +3378,7 @@
           "flags": [
             "--cross-repo"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -2993,6 +3386,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3000,6 +3394,7 @@
           "flags": [
             "--targets"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3011,6 +3406,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3018,6 +3414,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3035,6 +3432,7 @@
           "flags": [
             "--action"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -3042,6 +3440,7 @@
           "flags": [
             "--detail"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -3054,6 +3453,7 @@
           "flags": [
             "--lens"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -3061,6 +3461,7 @@
           "flags": [
             "--outcome"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3068,6 +3469,7 @@
           "flags": [
             "--tags"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3075,14 +3477,19 @@
           "flags": [
             "--url"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "project": {
+          "nargs": "1",
+          "position": 1,
           "required": true,
           "takes_value": true
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3094,6 +3501,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3101,6 +3509,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3112,6 +3521,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3119,6 +3529,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3126,6 +3537,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3137,6 +3549,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3156,6 +3569,7 @@
           "flags": [
             "--period"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3163,6 +3577,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3183,6 +3598,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3190,6 +3606,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3204,6 +3621,7 @@
           "flags": [
             "--store-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3215,6 +3633,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3226,6 +3645,7 @@
           "flags": [
             "--entity"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3233,6 +3653,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3241,6 +3662,8 @@
     "ontologia history": {
       "arguments": {
         "entity": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3252,6 +3675,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3259,6 +3683,7 @@
           "flags": [
             "--type"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3270,6 +3695,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3277,10 +3703,13 @@
           "flags": [
             "--name"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
         "sources": {
+          "nargs": "+",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3292,6 +3721,7 @@
           "flags": [
             "--evaluate"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3299,6 +3729,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3306,6 +3737,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3317,14 +3749,19 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "entity": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         },
         "new_type": {
+          "nargs": "1",
+          "position": 1,
           "required": true,
           "takes_value": true
         }
@@ -3336,14 +3773,19 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "entity": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         },
         "new_parent": {
+          "nargs": "1",
+          "position": 1,
           "required": true,
           "takes_value": true
         }
@@ -3355,10 +3797,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "query": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3370,6 +3815,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3377,6 +3823,7 @@
           "flags": [
             "--status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3388,6 +3835,7 @@
           "flags": [
             "--generate"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3395,6 +3843,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3402,6 +3851,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3409,6 +3859,7 @@
           "flags": [
             "--verify"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3420,6 +3871,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3427,6 +3879,7 @@
           "flags": [
             "--sensor"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3438,6 +3891,7 @@
           "flags": [
             "--compare"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3445,6 +3899,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3456,6 +3911,7 @@
           "flags": [
             "--deprecate"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3463,6 +3919,7 @@
           "flags": [
             "--descendants"
           ],
+          "nargs": "+",
           "required": true,
           "takes_value": true
         },
@@ -3470,10 +3927,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "source": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3488,6 +3948,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3499,6 +3960,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3506,6 +3968,7 @@
           "flags": [
             "--omega"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3513,6 +3976,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3520,6 +3984,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3527,6 +3992,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3538,6 +4004,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3545,6 +4012,7 @@
           "flags": [
             "--omega"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3552,6 +4020,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3559,6 +4028,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3570,6 +4040,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3581,10 +4052,13 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3596,6 +4070,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3603,6 +4078,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3610,6 +4086,7 @@
           "flags": [
             "--tier"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3629,6 +4106,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3636,6 +4114,7 @@
           "flags": [
             "--all"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3643,6 +4122,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3650,6 +4130,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3657,6 +4138,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3664,6 +4146,7 @@
           "flags": [
             "--plans-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3671,6 +4154,7 @@
           "flags": [
             "--summary"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3682,6 +4166,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3689,6 +4174,7 @@
           "flags": [
             "--stale-days"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3705,6 +4191,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3712,6 +4199,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3719,6 +4207,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3726,6 +4215,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3737,6 +4227,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3749,6 +4240,7 @@
           "flags": [
             "--severity"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3765,6 +4257,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3772,6 +4265,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3779,6 +4273,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3786,6 +4281,7 @@
           "flags": [
             "--stale-days"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3802,6 +4298,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3809,6 +4306,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3816,6 +4314,7 @@
           "flags": [
             "--include-review"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3823,6 +4322,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3830,6 +4330,7 @@
           "flags": [
             "--stale-days"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3837,6 +4338,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3851,6 +4353,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3858,6 +4361,7 @@
           "flags": [
             "--out-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3870,6 +4374,7 @@
           "flags": [
             "--outcome"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3877,10 +4382,13 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "external": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3892,6 +4400,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3899,6 +4408,7 @@
           "flags": [
             "--kind"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -3906,6 +4416,7 @@
           "flags": [
             "--rationale"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -3913,6 +4424,7 @@
           "flags": [
             "--testability"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3920,10 +4432,13 @@
           "flags": [
             "--tractability"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "external": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -3935,6 +4450,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3942,6 +4458,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3949,6 +4466,7 @@
           "flags": [
             "--min-repos"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -3960,6 +4478,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3967,6 +4486,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -3978,6 +4498,7 @@
           "flags": [
             "--budget"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3985,6 +4506,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -3992,6 +4514,7 @@
           "flags": [
             "--no-absorb"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -3999,6 +4522,7 @@
           "flags": [
             "--out-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4006,6 +4530,7 @@
           "flags": [
             "--state-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4013,6 +4538,7 @@
           "flags": [
             "--threshold"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4024,6 +4550,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4031,10 +4558,13 @@
           "flags": [
             "--ref"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "external": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4046,6 +4576,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4053,10 +4584,13 @@
           "flags": [
             "--out-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "external": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4068,14 +4602,19 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "external": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         },
         "target": {
+          "nargs": "1",
+          "position": 1,
           "required": true,
           "takes_value": true
         }
@@ -4087,6 +4626,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4098,6 +4638,7 @@
           "flags": [
             "--approve"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4105,6 +4646,7 @@
           "flags": [
             "--checks-passing"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4112,6 +4654,7 @@
           "flags": [
             "--db"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4119,10 +4662,13 @@
           "flags": [
             "--execute"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "external": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4140,6 +4686,7 @@
           "flags": [
             "--alert-window"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4147,6 +4694,7 @@
           "flags": [
             "--category"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -4154,6 +4702,7 @@
           "flags": [
             "--description"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -4161,6 +4710,7 @@
           "flags": [
             "--direction"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4168,6 +4718,7 @@
           "flags": [
             "--threshold"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -4175,6 +4726,7 @@
           "flags": [
             "--watched-value"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4189,6 +4741,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4200,10 +4753,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "name": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4215,6 +4771,7 @@
           "flags": [
             "--context"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4222,6 +4779,7 @@
           "flags": [
             "--frame"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4229,6 +4787,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4236,10 +4795,13 @@
           "flags": [
             "--stakes"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "name": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4254,6 +4816,7 @@
           "flags": [
             "--category"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4261,6 +4824,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4272,6 +4836,7 @@
           "flags": [
             "--amount"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -4279,6 +4844,7 @@
           "flags": [
             "--category"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -4286,6 +4852,7 @@
           "flags": [
             "--counterparty"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4293,6 +4860,7 @@
           "flags": [
             "--description"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4300,6 +4868,7 @@
           "flags": [
             "--direction"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4307,6 +4876,7 @@
           "flags": [
             "--frequency"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4314,6 +4884,7 @@
           "flags": [
             "--recurring"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4325,6 +4896,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4336,6 +4908,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4350,6 +4923,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4357,6 +4931,7 @@
           "flags": [
             "--noise-only"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4364,6 +4939,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4375,6 +4951,7 @@
           "flags": [
             "--db-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4382,6 +4959,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4389,6 +4967,7 @@
           "flags": [
             "--json-only"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4396,6 +4975,7 @@
           "flags": [
             "--md-only"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4403,6 +4983,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4414,6 +4995,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4421,6 +5003,7 @@
           "flags": [
             "--input"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4428,6 +5011,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4435,6 +5019,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4442,6 +5027,7 @@
           "flags": [
             "--scaffold"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4449,6 +5035,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4465,6 +5052,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4472,6 +5060,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4479,6 +5068,7 @@
           "flags": [
             "--gap-hours"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4486,6 +5076,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4493,6 +5084,7 @@
           "flags": [
             "--project"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4500,6 +5092,7 @@
           "flags": [
             "--summary"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4514,6 +5107,7 @@
           "flags": [
             "--ack"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4521,6 +5115,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4528,6 +5123,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4535,6 +5131,7 @@
           "flags": [
             "--unacked"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4546,6 +5143,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4553,6 +5151,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4560,6 +5159,7 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4571,10 +5171,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "entity": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4586,6 +5189,7 @@
           "flags": [
             "--hours"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4593,6 +5197,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4604,6 +5209,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4615,6 +5221,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4626,6 +5233,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4633,6 +5241,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4644,6 +5253,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4655,6 +5265,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4666,6 +5277,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4673,6 +5285,7 @@
           "flags": [
             "--payload"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4680,10 +5293,13 @@
           "flags": [
             "--source"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "event_type": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4695,6 +5311,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4702,6 +5319,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4709,6 +5327,7 @@
           "flags": [
             "--no-continuity"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4716,6 +5335,7 @@
           "flags": [
             "--no-insights"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4723,6 +5343,7 @@
           "flags": [
             "--no-metrics"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4730,6 +5351,7 @@
           "flags": [
             "--no-ontologia"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4737,10 +5359,13 @@
           "flags": [
             "--no-pulse"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "entity": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4752,6 +5377,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4759,6 +5385,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4766,6 +5393,7 @@
           "flags": [
             "--since-days"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4773,6 +5401,7 @@
           "flags": [
             "--type"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -4784,6 +5413,7 @@
           "flags": [
             "--hours"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4791,6 +5421,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4802,6 +5433,7 @@
           "flags": [
             "--days"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4809,6 +5441,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4820,6 +5453,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4827,6 +5461,7 @@
           "flags": [
             "--category"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4834,6 +5469,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4841,6 +5477,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4848,6 +5485,7 @@
           "flags": [
             "--summary"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4859,6 +5497,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4870,6 +5509,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4881,6 +5521,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4888,6 +5529,7 @@
           "flags": [
             "--no-indexer"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4895,6 +5537,7 @@
           "flags": [
             "--no-ontologia"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4902,10 +5545,13 @@
           "flags": [
             "--no-seed"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "entity": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -4917,6 +5563,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4924,6 +5571,7 @@
           "flags": [
             "--no-sensors"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4935,6 +5583,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4946,6 +5595,7 @@
           "flags": [
             "--interval"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -4953,6 +5603,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4964,6 +5615,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4975,6 +5627,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -4986,6 +5639,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -4993,6 +5647,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5000,6 +5655,7 @@
           "flags": [
             "--window"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5011,6 +5667,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -5022,6 +5679,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5029,6 +5687,7 @@
           "flags": [
             "--skip-atoms"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5036,6 +5695,7 @@
           "flags": [
             "--skip-context"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5043,6 +5703,7 @@
           "flags": [
             "--skip-legacy"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5050,6 +5711,7 @@
           "flags": [
             "--skip-organism"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5057,6 +5719,7 @@
           "flags": [
             "--skip-plans"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5064,6 +5727,7 @@
           "flags": [
             "--skip-sop"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5071,6 +5735,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5085,6 +5750,7 @@
           "flags": [
             "--both"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5092,6 +5758,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5099,6 +5766,7 @@
           "flags": [
             "--max-depth"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5106,6 +5774,7 @@
           "flags": [
             "--reverse"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5113,10 +5782,13 @@
           "flags": [
             "--transitive"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5128,6 +5800,7 @@
           "flags": [
             "--archived"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5135,6 +5808,7 @@
           "flags": [
             "--dependency-of"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5142,6 +5816,7 @@
           "flags": [
             "--depends-on"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5149,6 +5824,7 @@
           "flags": [
             "--desc"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5160,6 +5836,7 @@
           "flags": [
             "--format"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5167,6 +5844,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5174,6 +5852,7 @@
           "flags": [
             "--name-contains"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5181,6 +5860,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5188,6 +5868,7 @@
           "flags": [
             "--platinum"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5195,6 +5876,7 @@
           "flags": [
             "--promotion-status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5202,6 +5884,7 @@
           "flags": [
             "--public"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5209,6 +5892,7 @@
           "flags": [
             "--sort-by"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5216,6 +5900,7 @@
           "flags": [
             "--status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5223,6 +5908,7 @@
           "flags": [
             "--tier"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5230,6 +5916,7 @@
           "flags": [
             "--unarchived"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -5241,10 +5928,13 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "input_dir": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5256,6 +5946,7 @@
           "flags": [
             "--case-sensitive"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5263,6 +5954,7 @@
           "flags": [
             "--desc"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5270,6 +5962,7 @@
           "flags": [
             "--exact"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5277,6 +5970,7 @@
           "flags": [
             "--field"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5284,6 +5978,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5291,6 +5986,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5298,6 +5994,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5305,6 +6002,7 @@
           "flags": [
             "--promotion-status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5312,6 +6010,7 @@
           "flags": [
             "--public"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5319,6 +6018,7 @@
           "flags": [
             "--sort-by"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5326,6 +6026,7 @@
           "flags": [
             "--status"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5333,10 +6034,13 @@
           "flags": [
             "--tier"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "query": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5345,6 +6049,8 @@
     "registry show": {
       "arguments": {
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5353,6 +6059,8 @@
     "registry split": {
       "arguments": {
         "output_dir": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5364,6 +6072,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -5375,18 +6084,25 @@
           "flags": [
             "--reason"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "field": {
+          "nargs": "1",
+          "position": 1,
           "required": true,
           "takes_value": true
         },
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         },
         "value": {
+          "nargs": "1",
+          "position": 2,
           "required": true,
           "takes_value": true
         }
@@ -5401,6 +6117,7 @@
           "flags": [
             "--all"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5408,6 +6125,7 @@
           "flags": [
             "--fallback"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5415,10 +6133,13 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "query": {
+          "nargs": "?",
+          "position": 0,
           "required": false,
           "takes_value": true
         }
@@ -5430,6 +6151,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5444,6 +6166,8 @@
     "seed ownership": {
       "arguments": {
         "repo": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5469,6 +6193,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5476,6 +6201,7 @@
           "flags": [
             "--full"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5483,6 +6209,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5499,6 +6226,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5506,6 +6234,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5513,6 +6242,7 @@
           "flags": [
             "--force"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5520,6 +6250,7 @@
           "flags": [
             "--no-raw"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5527,6 +6258,7 @@
           "flags": [
             "--project"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5534,10 +6266,13 @@
           "flags": [
             "--since"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "session_id": {
+          "nargs": "?",
+          "position": 0,
           "required": false,
           "takes_value": true
         }
@@ -5549,6 +6284,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5556,6 +6292,7 @@
           "flags": [
             "--latest"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5563,10 +6300,13 @@
           "flags": [
             "--project"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "session_id": {
+          "nargs": "?",
+          "position": 0,
           "required": false,
           "takes_value": true
         }
@@ -5578,6 +6318,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5585,6 +6326,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5592,10 +6334,13 @@
           "flags": [
             "--slug"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
         "session_id": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5613,6 +6358,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5620,6 +6366,7 @@
           "flags": [
             "--directory"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5627,6 +6374,7 @@
           "flags": [
             "--limit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5634,6 +6382,7 @@
           "flags": [
             "--project"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5651,6 +6400,7 @@
           "flags": [
             "--agent"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5658,6 +6408,7 @@
           "flags": [
             "--audit"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5665,6 +6416,7 @@
           "flags": [
             "--matrix"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5672,6 +6424,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5679,6 +6432,7 @@
           "flags": [
             "--project"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5686,6 +6440,7 @@
           "flags": [
             "--since"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5700,10 +6455,13 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "session_id": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5715,6 +6473,7 @@
           "flags": [
             "--latest"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5722,10 +6481,13 @@
           "flags": [
             "--project"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "session_id": {
+          "nargs": "?",
+          "position": 0,
           "required": false,
           "takes_value": true
         }
@@ -5734,6 +6496,8 @@
     "session show": {
       "arguments": {
         "session_id": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5745,6 +6509,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5752,10 +6517,13 @@
           "flags": [
             "--unabridged"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "session_id": {
+          "nargs": "1",
+          "position": 0,
           "required": true,
           "takes_value": true
         }
@@ -5767,6 +6535,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5774,6 +6543,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5785,6 +6555,7 @@
           "flags": [
             "--include-fresh"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5792,6 +6563,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5799,6 +6571,7 @@
           "flags": [
             "--mapping"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5806,6 +6579,7 @@
           "flags": [
             "--stale"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -5817,6 +6591,7 @@
           "flags": [
             "--strict"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -5828,6 +6603,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -5839,6 +6615,7 @@
           "flags": [
             "--name"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5850,6 +6627,7 @@
           "flags": [
             "--scope"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5869,6 +6647,7 @@
           "flags": [
             "--phase"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -5876,10 +6655,13 @@
           "flags": [
             "--repo"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
         "name": {
+          "nargs": "?",
+          "position": 0,
           "required": false,
           "takes_value": true
         }
@@ -5897,6 +6679,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5904,6 +6687,7 @@
           "flags": [
             "--output"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5915,6 +6699,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -5926,6 +6711,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5937,6 +6723,7 @@
           "flags": [
             "--polarity"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5951,6 +6738,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5958,6 +6746,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5969,6 +6758,7 @@
           "flags": [
             "--dry-run"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5976,6 +6766,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -5983,6 +6774,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -5997,6 +6789,7 @@
           "flags": [
             "--max-artifact-bytes"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6004,6 +6797,7 @@
           "flags": [
             "--max-input-bytes"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6011,6 +6805,7 @@
           "flags": [
             "--max-units"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6018,6 +6813,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6025,6 +6821,7 @@
           "flags": [
             "--snapshot-bundle"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6032,6 +6829,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6043,6 +6841,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6050,6 +6849,7 @@
           "flags": [
             "--registry"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6057,6 +6857,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6068,6 +6869,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6075,6 +6877,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -6086,6 +6889,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6093,6 +6897,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6104,6 +6909,7 @@
           "flags": [
             "--actor"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6111,6 +6917,7 @@
           "flags": [
             "--cursor"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6118,6 +6925,7 @@
           "flags": [
             "--event-spine"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6125,6 +6933,7 @@
           "flags": [
             "--max-artifact-bytes"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6132,6 +6941,7 @@
           "flags": [
             "--max-children"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6139,6 +6949,7 @@
           "flags": [
             "--max-input-bytes"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6146,6 +6957,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6153,6 +6965,7 @@
           "flags": [
             "--snapshot-bundle"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6160,6 +6973,7 @@
           "flags": [
             "--source-organ"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6167,6 +6981,7 @@
           "flags": [
             "--source-repo"
           ],
+          "nargs": "1",
           "required": true,
           "takes_value": true
         },
@@ -6174,6 +6989,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6185,6 +7001,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6192,6 +7009,7 @@
           "flags": [
             "--osc"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6199,6 +7017,7 @@
           "flags": [
             "--registry"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6206,6 +7025,7 @@
           "flags": [
             "--yaml"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6217,6 +7037,7 @@
           "flags": [
             "--from-commit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6224,6 +7045,7 @@
           "flags": [
             "--spine-path"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6231,6 +7053,7 @@
           "flags": [
             "--to-commit"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6238,6 +7061,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6249,6 +7073,7 @@
           "flags": [
             "--all-repos"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6256,6 +7081,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6263,6 +7089,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6270,6 +7097,7 @@
           "flags": [
             "--registry"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6277,6 +7105,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6288,6 +7117,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6302,6 +7132,7 @@
           "flags": [
             "--verbose"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6309,6 +7140,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6316,6 +7148,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6327,6 +7160,7 @@
           "flags": [
             "--registry"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -6338,6 +7172,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6349,6 +7184,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6356,6 +7192,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6369,6 +7206,7 @@
           "flags": [
             "--tier"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6376,6 +7214,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6387,6 +7226,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6394,6 +7234,7 @@
           "flags": [
             "--organ"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -6405,6 +7246,7 @@
           "flags": [
             "--all"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
@@ -6412,14 +7254,19 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         },
         "organ_a": {
+          "nargs": "?",
+          "position": 0,
           "required": false,
           "takes_value": true
         },
         "organ_b": {
+          "nargs": "?",
+          "position": 1,
           "required": false,
           "takes_value": true
         }
@@ -6431,6 +7278,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6442,6 +7290,7 @@
           "flags": [
             "--output-dir"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         },
@@ -6449,6 +7298,7 @@
           "flags": [
             "--write"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6460,6 +7310,7 @@
           "flags": [
             "--workspace"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -6471,6 +7322,7 @@
           "flags": [
             "--event"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
@@ -6482,6 +7334,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6493,6 +7346,7 @@
           "flags": [
             "--json"
           ],
+          "nargs": "0",
           "required": false,
           "takes_value": false
         }
@@ -6504,11 +7358,12 @@
           "flags": [
             "--event"
           ],
+          "nargs": "1",
           "required": false,
           "takes_value": true
         }
       }
     }
   },
-  "schema_version": 1
+  "schema_version": 2
 }

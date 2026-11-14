@@ -30,22 +30,30 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+# Name used for arguments declared on the root parser (global options).
+ROOT_COMMAND = "(root)"
 
 # Positional arguments are keyed by dest; options by their longest flag string.
 _BASELINE_RELATIVE = Path("docs") / "api" / "cli-surface.json"
 
 
-def _argument_entry(action: argparse.Action) -> dict[str, Any]:
+def _argument_entry(action: argparse.Action, position: int | None) -> dict[str, Any]:
     entry: dict[str, Any] = {
-        "required": bool(action.required) if action.option_strings else action.nargs
-        not in ("?", "*"),
+        "required": bool(action.required)
+        if action.option_strings
+        else action.nargs not in ("?", "*"),
+        # Value cardinality: None -> exactly one value, otherwise argparse's own spec.
+        "nargs": "1" if action.nargs is None else str(action.nargs),
+        "takes_value": action.nargs != 0,
     }
     if action.option_strings:
         entry["flags"] = sorted(action.option_strings)
+    else:
+        entry["position"] = position
     if action.choices is not None:
         entry["choices"] = sorted(str(c) for c in action.choices)
-    entry["takes_value"] = action.nargs != 0
     return entry
 
 
@@ -58,17 +66,22 @@ def _argument_key(action: argparse.Action) -> str:
 def _walk(parser: argparse.ArgumentParser, path: tuple[str, ...], out: dict[str, Any]) -> None:
     arguments: dict[str, Any] = {}
     children: list[tuple[str, argparse.ArgumentParser]] = []
+    position = 0
     for action in parser._actions:
         if isinstance(action, argparse._SubParsersAction):
             children.extend(action.choices.items())
             continue
         if isinstance(action, argparse._HelpAction):
             continue
-        arguments[_argument_key(action)] = _argument_entry(action)
-    if path:
-        out[" ".join(path)] = {"arguments": dict(sorted(arguments.items()))}
-    for name, child in children:
-        _walk(child, (*path, name), out)
+        if action.option_strings:
+            arguments[_argument_key(action)] = _argument_entry(action, None)
+        else:
+            arguments[_argument_key(action)] = _argument_entry(action, position)
+            position += 1
+    name = " ".join(path) if path else ROOT_COMMAND
+    out[name] = {"arguments": dict(sorted(arguments.items()))}
+    for child_name, child in children:
+        _walk(child, (*path, child_name), out)
 
 
 def extract_surface(parser: argparse.ArgumentParser) -> dict[str, Any]:
@@ -97,6 +110,73 @@ class SurfaceDiff:
         return not self.breaking and not self.compatible
 
 
+def _match_arguments(
+    base_args: dict[str, Any], cur_args: dict[str, Any],
+) -> tuple[list[tuple[str, str]], list[str], list[str]]:
+    """Pair baseline and current arguments, tolerating flag aliases.
+
+    Options match when they share any flag, so adding a longer alias (which
+    changes the display key) is not mistaken for a removal. Positionals match
+    by name.
+    """
+    flag_owner: dict[str, str] = {}
+    for key, entry in cur_args.items():
+        for flag in entry.get("flags", []):
+            flag_owner[flag] = key
+    pairs: list[tuple[str, str]] = []
+    claimed: set[str] = set()
+    removed: list[str] = []
+    for key, entry in sorted(base_args.items()):
+        flags = entry.get("flags")
+        if flags:
+            owner = next((flag_owner[f] for f in flags if f in flag_owner), None)
+        else:
+            owner = key if key in cur_args and not cur_args[key].get("flags") else None
+        if owner is None or owner in claimed:
+            removed.append(key)
+        else:
+            claimed.add(owner)
+            pairs.append((key, owner))
+    added = sorted(set(cur_args) - claimed)
+    return pairs, removed, added
+
+
+def _compare_argument(
+    result: SurfaceDiff, name: str, key: str, old: dict[str, Any], new: dict[str, Any],
+) -> None:
+    label = f"{name} {key}"
+    if new["required"] and not old["required"]:
+        result.breaking.append(f"argument became required: {label}")
+    if new["takes_value"] != old["takes_value"]:
+        result.breaking.append(f"argument value arity changed: {label}")
+    elif new.get("nargs") != old.get("nargs"):
+        result.breaking.append(
+            f"argument cardinality changed: {label} {old.get('nargs')} -> {new.get('nargs')}",
+        )
+    if old.get("position") != new.get("position"):
+        result.breaking.append(
+            f"positional order changed: {label} "
+            f"{old.get('position')} -> {new.get('position')}",
+        )
+    old_choices = set(old.get("choices", []))
+    new_choices = set(new.get("choices", []))
+    if old_choices and new_choices:
+        for choice in sorted(old_choices - new_choices):
+            result.breaking.append(f"choice removed: {label}={choice}")
+        for choice in sorted(new_choices - old_choices):
+            result.compatible.append(f"choice added: {label}={choice}")
+    elif old_choices and not new_choices:
+        result.compatible.append(f"choices unrestricted: {label}")
+    elif new_choices and not old_choices:
+        result.breaking.append(f"choices restricted: {label}")
+    old_flags = set(old.get("flags", []))
+    new_flags = set(new.get("flags", []))
+    for flag in sorted(old_flags - new_flags):
+        result.breaking.append(f"flag removed: {name} {flag}")
+    for flag in sorted(new_flags - old_flags):
+        result.compatible.append(f"flag added: {name} {flag}")
+
+
 def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceDiff:
     """Classify differences, treating the baseline as the consumer promise.
 
@@ -117,36 +197,16 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
     for name in sorted(set(base_cmds) & set(cur_cmds)):
         base_args = base_cmds[name].get("arguments", {})
         cur_args = cur_cmds[name].get("arguments", {})
-        for key in sorted(set(base_args) - set(cur_args)):
+        pairs, removed, added = _match_arguments(base_args, cur_args)
+        for key in removed:
             result.breaking.append(f"argument removed: {name} {key}")
-        for key in sorted(set(cur_args) - set(base_args)):
+        for key in added:
             if cur_args[key]["required"]:
                 result.breaking.append(f"required argument added: {name} {key}")
             else:
                 result.compatible.append(f"argument added: {name} {key}")
-        for key in sorted(set(base_args) & set(cur_args)):
-            old, new = base_args[key], cur_args[key]
-            if new["required"] and not old["required"]:
-                result.breaking.append(f"argument became required: {name} {key}")
-            if new["takes_value"] != old["takes_value"]:
-                result.breaking.append(f"argument value arity changed: {name} {key}")
-            old_choices = set(old.get("choices", []))
-            new_choices = set(new.get("choices", []))
-            if old_choices and new_choices:
-                for choice in sorted(old_choices - new_choices):
-                    result.breaking.append(f"choice removed: {name} {key}={choice}")
-                for choice in sorted(new_choices - old_choices):
-                    result.compatible.append(f"choice added: {name} {key}={choice}")
-            elif old_choices and not new_choices:
-                result.compatible.append(f"choices unrestricted: {name} {key}")
-            elif new_choices and not old_choices:
-                result.breaking.append(f"choices restricted: {name} {key}")
-            old_flags = set(old.get("flags", []))
-            new_flags = set(new.get("flags", []))
-            for flag in sorted(old_flags - new_flags):
-                result.breaking.append(f"flag removed: {name} {flag}")
-            for flag in sorted(new_flags - old_flags):
-                result.compatible.append(f"flag added: {name} {flag}")
+        for old_key, new_key in pairs:
+            _compare_argument(result, name, old_key, base_args[old_key], cur_args[new_key])
 
     return result
 
