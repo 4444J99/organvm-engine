@@ -6837,6 +6837,58 @@
       "arguments": {},
       "subcommand_required": false
     },
+    "testament bridge": {
+      "arguments": {
+        "--host": {
+          "flags": [
+            "--host"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--per-message": {
+          "flags": [
+            "--per-message"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--port": {
+          "flags": [
+            "--port"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--send": {
+          "flags": [
+            "--send"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
     "testament candidate-testament": {
       "arguments": {
         "--max-artifact-bytes": {
