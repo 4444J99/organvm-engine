@@ -284,6 +284,63 @@ def test_discover_plans_project_filter(tmp_path):
     assert results[0].slug == "a"
 
 
+def test_discover_plans_concrete_project_filter_is_not_prefix_match(tmp_path):
+    target = tmp_path / "project"
+    target_plans = target / ".claude" / "plans"
+    target_plans.mkdir(parents=True)
+    (target_plans / "2026-01-01-target.md").write_text("# Target\n")
+
+    sibling_plans = tmp_path / "project-other" / ".claude" / "plans"
+    sibling_plans.mkdir(parents=True)
+    (sibling_plans / "2026-01-01-sibling.md").write_text("# Sibling\n")
+
+    results = discover_plans(workspace=tmp_path, project_filter=str(target))
+    assert len(results) == 1
+    assert results[0].slug == "target"
+
+
+def test_discover_plans_dot_project_filter_scans_cwd(tmp_path, monkeypatch):
+    target = tmp_path / "project"
+    target_plans = target / ".claude" / "plans"
+    target_plans.mkdir(parents=True)
+    (target_plans / "2026-01-01-target.md").write_text("# Target\n")
+
+    sibling_plans = tmp_path / "project-other" / ".claude" / "plans"
+    sibling_plans.mkdir(parents=True)
+    (sibling_plans / "2026-01-01-sibling.md").write_text("# Sibling\n")
+
+    monkeypatch.chdir(target)
+    results = discover_plans(workspace=tmp_path, project_filter=".")
+    assert len(results) == 1
+    assert results[0].slug == "target"
+
+
+def test_discover_plans_absolute_project_filter_without_workspace(tmp_path):
+    target = tmp_path / "project"
+    target_plans = target / ".claude" / "plans"
+    target_plans.mkdir(parents=True)
+    (target_plans / "2026-01-01-target.md").write_text("# Target\n")
+
+    missing_workspace = tmp_path / "missing-workspace"
+    results = discover_plans(workspace=missing_workspace, project_filter=str(target))
+    assert len(results) == 1
+    assert results[0].slug == "target"
+
+
+def test_discover_plans_prunes_dependency_trees(tmp_path):
+    plans_dir = tmp_path / "project" / ".claude" / "plans"
+    plans_dir.mkdir(parents=True)
+    (plans_dir / "2026-01-01-plan.md").write_text("# Plan\n")
+
+    ignored = tmp_path / "project" / "node_modules" / "pkg" / ".claude" / "plans"
+    ignored.mkdir(parents=True)
+    (ignored / "2026-01-01-ignored.md").write_text("# Ignored\n")
+
+    results = discover_plans(workspace=tmp_path)
+    assert len(results) == 1
+    assert results[0].slug == "plan"
+
+
 def test_discover_plans_since_filter(tmp_path):
     plans_dir = tmp_path / "proj" / ".claude" / "plans"
     plans_dir.mkdir(parents=True)
@@ -842,3 +899,31 @@ def test_summary_no_organ_section_when_all_unknown():
     ]
     output = generate_summary(tasks, 1)
     assert "By Organ" not in output
+
+
+def test_resolve_organ_repo_with_relative_workspace(tmp_path, monkeypatch):
+    """A resolved plan path still attributes against a relative workspace."""
+    plans = tmp_path / "ws" / "organvm-iii-ergon" / "my-repo" / ".claude" / "plans"
+    plans.mkdir(parents=True)
+    plan = plans / "2026-01-01-x.md"
+    plan.write_text("# X\n")
+    monkeypatch.chdir(tmp_path)
+
+    organ, repo = _resolve_organ_repo(plan.resolve(), Path("ws"))
+    assert organ == "III"
+    assert repo == "my-repo"
+
+
+def test_project_filter_keeps_organ_with_symlinked_workspace(tmp_path):
+    real = tmp_path / "real"
+    plans = real / "organvm-iii-ergon" / "my-repo" / ".claude" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "2026-01-01-x.md").write_text("# X\n")
+    link = tmp_path / "link"
+    link.symlink_to(real)
+
+    results = discover_plans(
+        workspace=link, project_filter=str(link / "organvm-iii-ergon" / "my-repo"),
+    )
+    assert len(results) == 1
+    assert results[0].organ == "III"
