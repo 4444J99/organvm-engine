@@ -1,0 +1,6514 @@
+{
+  "commands": {
+    "atoms": {
+      "arguments": {}
+    },
+    "atoms fanout": {
+      "arguments": {
+        "--atoms-dir": {
+          "flags": [
+            "--atoms-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "atoms link": {
+      "arguments": {
+        "--by-thread": {
+          "flags": [
+            "--by-thread"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--prompts": {
+          "flags": [
+            "--prompts"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tasks": {
+          "flags": [
+            "--tasks"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "atoms pipeline": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--reconcile": {
+          "flags": [
+            "--reconcile"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--research-dir": {
+          "flags": [
+            "--research-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--skip-link": {
+          "flags": [
+            "--skip-link"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-narrate": {
+          "flags": [
+            "--skip-narrate"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-reconcile": {
+          "flags": [
+            "--skip-reconcile"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-research": {
+          "flags": [
+            "--skip-research"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "atoms reconcile": {
+      "arguments": {
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "atoms research": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--min-confidence": {
+          "flags": [
+            "--min-confidence"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--research-dir": {
+          "flags": [
+            "--research-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "audit": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "audit absorption": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--verbose": {
+          "flags": [
+            "--verbose"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "audit full": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "audit layer": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "layer": {
+          "choices": [
+            "absorption",
+            "content",
+            "edges",
+            "filesystem",
+            "reconcile",
+            "seeds"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "audit organ": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "organ_key": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "audit repo": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ci": {
+      "arguments": {}
+    },
+    "ci audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ci mandate": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ci protect": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--execute": {
+          "flags": [
+            "--execute"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ci scaffold": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--lint": {
+          "flags": [
+            "--lint"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--name": {
+          "flags": [
+            "--name"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--test": {
+          "flags": [
+            "--test"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--typecheck": {
+          "flags": [
+            "--typecheck"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "path": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ci triage": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "completion": {
+      "arguments": {
+        "shell": {
+          "choices": [
+            "bash",
+            "fish",
+            "zsh"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "content": {
+      "arguments": {}
+    },
+    "content list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tag": {
+          "flags": [
+            "--tag"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "content new": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--hook": {
+          "flags": [
+            "--hook"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--session": {
+          "flags": [
+            "--session"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--title": {
+          "flags": [
+            "--title"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "slug": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "content status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "context": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "context diff": {
+      "arguments": {
+        "--last": {
+          "flags": [
+            "--last"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "context rollback": {
+      "arguments": {
+        "--to": {
+          "flags": [
+            "--to"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "context surfaces": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "context sync": {
+      "arguments": {
+        "--diff": {
+          "flags": [
+            "--diff"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--receipt": {
+          "flags": [
+            "--receipt"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "contrib": {
+      "arguments": {}
+    },
+    "contrib backflow": {
+      "arguments": {
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "contrib list": {
+      "arguments": {}
+    },
+    "contrib status": {
+      "arguments": {}
+    },
+    "corpus": {
+      "arguments": {}
+    },
+    "corpus coverage": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--verbose": {
+          "flags": [
+            "--verbose",
+            "-v"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus gaps": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--verbose": {
+          "flags": [
+            "--verbose",
+            "-v"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus repo": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus scan": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output",
+            "-o"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus stats": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus trace": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "concept": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "deadlines": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--days": {
+          "flags": [
+            "--days"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "debt": {
+      "arguments": {}
+    },
+    "debt scan": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--path": {
+          "flags": [
+            "--path"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "debt stats": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--path": {
+          "flags": [
+            "--path"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "dispatch": {
+      "arguments": {}
+    },
+    "dispatch validate": {
+      "arguments": {
+        "file": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "docs": {
+      "arguments": {}
+    },
+    "docs audit": {
+      "arguments": {
+        "--format": {
+          "choices": [
+            "json",
+            "markdown",
+            "table"
+          ],
+          "flags": [
+            "--format"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--strict": {
+          "flags": [
+            "--strict"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "paths": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "docs validate": {
+      "arguments": {
+        "--actual-repository": {
+          "flags": [
+            "--actual-repository"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--assertion-schema": {
+          "flags": [
+            "--assertion-schema"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--require-git-tracked-evidence": {
+          "flags": [
+            "--require-git-tracked-evidence"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--root": {
+          "flags": [
+            "--root"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--schema": {
+          "flags": [
+            "--schema"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "record": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem actions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem audit": {
+      "arguments": {}
+    },
+    "ecosystem coverage": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem dna": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--pillar": {
+          "flags": [
+            "--pillar"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem lifecycle": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem list": {
+      "arguments": {}
+    },
+    "ecosystem matrix": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--pillar": {
+          "flags": [
+            "--pillar"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem scaffold": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem scaffold-dna": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem show": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem staleness": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem sync": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem sync-dna": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem validate": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "exit-interview": {
+      "arguments": {}
+    },
+    "exit-interview counter": {
+      "arguments": {
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview discover": {
+      "arguments": {
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "exit-interview full": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "exit-interview generate": {
+      "arguments": {
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview orphans": {
+      "arguments": {
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview plan": {
+      "arguments": {
+        "--format": {
+          "choices": [
+            "issues",
+            "plan",
+            "yaml"
+          ],
+          "flags": [
+            "--format"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview rectify": {
+      "arguments": {
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica": {
+      "arguments": {}
+    },
+    "fabrica catch": {
+      "arguments": {
+        "--agents": {
+          "flags": [
+            "--agents"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--list": {
+          "flags": [
+            "--list"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organs": {
+          "flags": [
+            "--organs"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--scope": {
+          "flags": [
+            "--scope"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--select": {
+          "flags": [
+            "--select"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--thesis": {
+          "flags": [
+            "--thesis"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica fortify": {
+      "arguments": {
+        "--check": {
+          "flags": [
+            "--check"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--intent-id": {
+          "flags": [
+            "--intent-id"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--record-id": {
+          "flags": [
+            "--record-id"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--verdict": {
+          "flags": [
+            "--verdict"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica handoff": {
+      "arguments": {
+        "--backend": {
+          "flags": [
+            "--backend"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--body": {
+          "flags": [
+            "--body"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--branch": {
+          "flags": [
+            "--branch"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--execute": {
+          "flags": [
+            "--execute"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--labels": {
+          "flags": [
+            "--labels"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--task-id": {
+          "flags": [
+            "--task-id"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--title": {
+          "flags": [
+            "--title"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica heartbeat": {
+      "arguments": {
+        "--install": {
+          "flags": [
+            "--install"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--interval": {
+          "flags": [
+            "--interval"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--uninstall": {
+          "flags": [
+            "--uninstall"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fabrica log": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica release": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--source": {
+          "flags": [
+            "--source"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tags": {
+          "flags": [
+            "--tags"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--text": {
+          "flags": [
+            "--text"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "formation": {
+      "arguments": {}
+    },
+    "formation invoke": {
+      "arguments": {
+        "--context": {
+          "flags": [
+            "--context"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "name": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "formation list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "formation show": {
+      "arguments": {
+        "name": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "fossil": {
+      "arguments": {}
+    },
+    "fossil chronicle": {
+      "arguments": {
+        "--epoch": {
+          "flags": [
+            "--epoch"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--regenerate": {
+          "flags": [
+            "--regenerate"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil drift": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil epochs": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil excavate": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil intentions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--scan": {
+          "flags": [
+            "--scan"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil stratum": {
+      "arguments": {
+        "--archetype": {
+          "flags": [
+            "--archetype"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fossil witness": {
+      "arguments": {}
+    },
+    "fossil witness install": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil witness record": {
+      "arguments": {
+        "--fossil-path": {
+          "flags": [
+            "--fossil-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo-path": {
+          "flags": [
+            "--repo-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fossil witness status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "functions": {
+      "arguments": {}
+    },
+    "functions list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "functions resolve": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "key": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "git": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git add-submodule": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--url": {
+          "flags": [
+            "--url"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git diff-pinned": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git init-superproject": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "git install-hooks": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git reproduce-workspace": {
+      "arguments": {
+        "--manifest": {
+          "flags": [
+            "--manifest"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--shallow": {
+          "flags": [
+            "--shallow"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--target": {
+          "flags": [
+            "--target"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "git status": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git sync-all": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "git sync-organ": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--message": {
+          "flags": [
+            "--message"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance": {
+      "arguments": {}
+    },
+    "governance audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--rules": {
+          "flags": [
+            "--rules"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--self-knowledge": {
+          "flags": [
+            "--self-knowledge"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--signal-closure": {
+          "flags": [
+            "--signal-closure"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance authorize": {
+      "arguments": {
+        "--enforce": {
+          "flags": [
+            "--enforce"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "actor": {
+          "required": true,
+          "takes_value": true
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        },
+        "target": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance check-deps": {
+      "arguments": {}
+    },
+    "governance dictums": {
+      "arguments": {
+        "--check": {
+          "flags": [
+            "--check"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--id": {
+          "flags": [
+            "--id"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--level": {
+          "choices": [
+            "axiom",
+            "organ",
+            "repo"
+          ],
+          "flags": [
+            "--level"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance excavate": {
+      "arguments": {
+        "--families": {
+          "flags": [
+            "--families"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--register": {
+          "flags": [
+            "--register"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--severity": {
+          "choices": [
+            "critical",
+            "info",
+            "warning"
+          ],
+          "flags": [
+            "--severity"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--type": {
+          "choices": [
+            "cross_organ_family",
+            "extractable_module",
+            "misplaced_governance",
+            "sub_package"
+          ],
+          "flags": [
+            "--type"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance graph-history": {
+      "arguments": {
+        "--at": {
+          "flags": [
+            "--at"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--data": {
+          "flags": [
+            "--data"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--from": {
+          "flags": [
+            "--from"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--snapshot": {
+          "flags": [
+            "--snapshot"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--to": {
+          "flags": [
+            "--to"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance impact": {
+      "arguments": {
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance placement": {
+      "arguments": {
+        "--audit": {
+          "flags": [
+            "--audit"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance promote": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--reason": {
+          "flags": [
+            "--reason"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        },
+        "target": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance promotion-queue": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "choices": [
+            "blocked",
+            "ready",
+            "unverified"
+          ],
+          "flags": [
+            "--status"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "handoff": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "handoff clean": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--older-than": {
+          "flags": [
+            "--older-than"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "handoff list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--stale-after": {
+          "flags": [
+            "--stale-after"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "index": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "index bridge": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "index scan": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "index show": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "index stats": {
+      "arguments": {}
+    },
+    "irf": {
+      "arguments": {}
+    },
+    "irf add": {
+      "arguments": {
+        "--action": {
+          "flags": [
+            "--action"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--blocker": {
+          "flags": [
+            "--blocker"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--domain": {
+          "flags": [
+            "--domain"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--id": {
+          "flags": [
+            "--id"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--owner": {
+          "flags": [
+            "--owner"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--priority": {
+          "flags": [
+            "--priority"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--source": {
+          "flags": [
+            "--source"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "irf complete": {
+      "arguments": {
+        "--done": {
+          "flags": [
+            "--done"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--note": {
+          "flags": [
+            "--note"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--session": {
+          "flags": [
+            "--session"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "item_id": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "irf list": {
+      "arguments": {
+        "--domain": {
+          "flags": [
+            "--domain"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--owner": {
+          "flags": [
+            "--owner"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--priority": {
+          "flags": [
+            "--priority"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "irf stats": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "irf status": {
+      "arguments": {
+        "item_id": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ledger": {
+      "arguments": {}
+    },
+    "ledger checkpoint": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ledger genesis": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ledger log": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--type": {
+          "flags": [
+            "--type"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ledger repair": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ledger status": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ledger verify": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--event": {
+          "flags": [
+            "--event"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "lint-vars": {
+      "arguments": {
+        "--strict": {
+          "flags": [
+            "--strict"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "metrics": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "metrics calculate": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "metrics count-words": {
+      "arguments": {}
+    },
+    "metrics propagate": {
+      "arguments": {
+        "--cross-repo": {
+          "flags": [
+            "--cross-repo"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--targets": {
+          "flags": [
+            "--targets"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "metrics refresh": {
+      "arguments": {
+        "--cross-repo": {
+          "flags": [
+            "--cross-repo"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--targets": {
+          "flags": [
+            "--targets"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "network": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "network log": {
+      "arguments": {
+        "--action": {
+          "choices": [
+            "contribution",
+            "dialogue",
+            "invitation",
+            "presence"
+          ],
+          "flags": [
+            "--action"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--detail": {
+          "flags": [
+            "--detail"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--lens": {
+          "choices": [
+            "kinship",
+            "parallel",
+            "technical"
+          ],
+          "flags": [
+            "--lens"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--outcome": {
+          "flags": [
+            "--outcome"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tags": {
+          "flags": [
+            "--tags"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--url": {
+          "flags": [
+            "--url"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "project": {
+          "required": true,
+          "takes_value": true
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "network map": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "network scan": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "network status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "network suggest": {
+      "arguments": {}
+    },
+    "network synthesize": {
+      "arguments": {
+        "--period": {
+          "choices": [
+            "all-time",
+            "monthly",
+            "weekly"
+          ],
+          "flags": [
+            "--period"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "omega": {
+      "arguments": {}
+    },
+    "omega check": {
+      "arguments": {}
+    },
+    "omega status": {
+      "arguments": {}
+    },
+    "omega update": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia": {
+      "arguments": {}
+    },
+    "ontologia bootstrap": {
+      "arguments": {
+        "--store-dir": {
+          "flags": [
+            "--store-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia events": {
+      "arguments": {
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia health": {
+      "arguments": {
+        "--entity": {
+          "flags": [
+            "--entity"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia history": {
+      "arguments": {
+        "entity": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--type": {
+          "flags": [
+            "--type"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia merge": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--name": {
+          "flags": [
+            "--name"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "sources": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia policies": {
+      "arguments": {
+        "--evaluate": {
+          "flags": [
+            "--evaluate"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia reclassify": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "required": true,
+          "takes_value": true
+        },
+        "new_type": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia relocate": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "required": true,
+          "takes_value": true
+        },
+        "new_parent": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia resolve": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "query": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia revisions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia runbooks": {
+      "arguments": {
+        "--generate": {
+          "flags": [
+            "--generate"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--verify": {
+          "flags": [
+            "--verify"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia sense": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--sensor": {
+          "flags": [
+            "--sensor"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia snapshot": {
+      "arguments": {
+        "--compare": {
+          "flags": [
+            "--compare"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia split": {
+      "arguments": {
+        "--deprecate": {
+          "flags": [
+            "--deprecate"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--descendants": {
+          "flags": [
+            "--descendants"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "source": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia status": {
+      "arguments": {}
+    },
+    "ontologia tensions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "organism": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--omega": {
+          "flags": [
+            "--omega"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "organism snapshot": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--omega": {
+          "flags": [
+            "--omega"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pitch": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pitch generate": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pitch sync": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans": {
+      "arguments": {}
+    },
+    "plans atomize": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--plans-dir": {
+          "flags": [
+            "--plans-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--summary": {
+          "flags": [
+            "--summary"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans audit": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--stale-days": {
+          "flags": [
+            "--stale-days"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans index": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "plans overlaps": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--severity": {
+          "choices": [
+            "conflict",
+            "info",
+            "warning"
+          ],
+          "flags": [
+            "--severity"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans sweep": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--stale-days": {
+          "flags": [
+            "--stale-days"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans tidy": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--include-review": {
+          "flags": [
+            "--include-review"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--stale-days": {
+          "flags": [
+            "--stale-days"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "portal": {
+      "arguments": {}
+    },
+    "portal backflow": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--out-dir": {
+          "flags": [
+            "--out-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--outcome": {
+          "choices": [
+            "declined",
+            "dormant",
+            "merged"
+          ],
+          "flags": [
+            "--outcome"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "external": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal candidate": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--kind": {
+          "flags": [
+            "--kind"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--rationale": {
+          "flags": [
+            "--rationale"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--testability": {
+          "flags": [
+            "--testability"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tractability": {
+          "flags": [
+            "--tractability"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal convergences": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--min-repos": {
+          "flags": [
+            "--min-repos"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "portal import-stars": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "portal metabolize": {
+      "arguments": {
+        "--budget": {
+          "flags": [
+            "--budget"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--no-absorb": {
+          "flags": [
+            "--no-absorb"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--out-dir": {
+          "flags": [
+            "--out-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--state-dir": {
+          "flags": [
+            "--state-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "portal package": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--ref": {
+          "flags": [
+            "--ref"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal prepare": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--out-dir": {
+          "flags": [
+            "--out-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal propose": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "required": true,
+          "takes_value": true
+        },
+        "target": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal status": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "portal submit": {
+      "arguments": {
+        "--approve": {
+          "flags": [
+            "--approve"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--checks-passing": {
+          "flags": [
+            "--checks-passing"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--execute": {
+          "flags": [
+            "--execute"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "external": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive": {
+      "arguments": {}
+    },
+    "primitive guardian": {
+      "arguments": {}
+    },
+    "primitive guardian add-watch": {
+      "arguments": {
+        "--alert-window": {
+          "flags": [
+            "--alert-window"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--description": {
+          "flags": [
+            "--description"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--direction": {
+          "flags": [
+            "--direction"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--watched-value": {
+          "flags": [
+            "--watched-value"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive guardian check": {
+      "arguments": {}
+    },
+    "primitive guardian watchlist": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive inspect": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "name": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive invoke": {
+      "arguments": {
+        "--context": {
+          "flags": [
+            "--context"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--frame": {
+          "flags": [
+            "--frame"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--stakes": {
+          "flags": [
+            "--stakes"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "name": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive ledger": {
+      "arguments": {}
+    },
+    "primitive ledger entries": {
+      "arguments": {
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive ledger record": {
+      "arguments": {
+        "--amount": {
+          "flags": [
+            "--amount"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--counterparty": {
+          "flags": [
+            "--counterparty"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--description": {
+          "flags": [
+            "--description"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--direction": {
+          "flags": [
+            "--direction"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--frequency": {
+          "flags": [
+            "--frequency"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--recurring": {
+          "flags": [
+            "--recurring"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive ledger snapshot": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "prompts": {
+      "arguments": {}
+    },
+    "prompts audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--noise-only": {
+          "flags": [
+            "--noise-only"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "prompts clipboard": {
+      "arguments": {
+        "--db-path": {
+          "flags": [
+            "--db-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json-only": {
+          "flags": [
+            "--json-only"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--md-only": {
+          "flags": [
+            "--md-only"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "prompts distill": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--input": {
+          "flags": [
+            "--input"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--scaffold": {
+          "flags": [
+            "--scaffold"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "prompts narrate": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--gap-hours": {
+          "flags": [
+            "--gap-hours"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--summary": {
+          "flags": [
+            "--summary"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse": {
+      "arguments": {}
+    },
+    "pulse advisories": {
+      "arguments": {
+        "--ack": {
+          "flags": [
+            "--ack"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--unacked": {
+          "flags": [
+            "--unacked"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse ammoi": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse blast": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse briefing": {
+      "arguments": {
+        "--hours": {
+          "flags": [
+            "--hours"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse clusters": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse density": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse ecosystem": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse edges": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse edges sync": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse emit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--payload": {
+          "flags": [
+            "--payload"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--source": {
+          "flags": [
+            "--source"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "event_type": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse entity-memory": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--no-continuity": {
+          "flags": [
+            "--no-continuity"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-insights": {
+          "flags": [
+            "--no-insights"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-metrics": {
+          "flags": [
+            "--no-metrics"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-ontologia": {
+          "flags": [
+            "--no-ontologia"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-pulse": {
+          "flags": [
+            "--no-pulse"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse events": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--since-days": {
+          "flags": [
+            "--since-days"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--type": {
+          "flags": [
+            "--type"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse flow": {
+      "arguments": {
+        "--hours": {
+          "flags": [
+            "--hours"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse history": {
+      "arguments": {
+        "--days": {
+          "flags": [
+            "--days"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse memory": {
+      "arguments": {
+        "--agent": {
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--summary": {
+          "flags": [
+            "--summary"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse mood": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse nerve": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse relations": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-indexer": {
+          "flags": [
+            "--no-indexer"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-ontologia": {
+          "flags": [
+            "--no-ontologia"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-seed": {
+          "flags": [
+            "--no-seed"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse scan": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-sensors": {
+          "flags": [
+            "--no-sensors"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse show": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse start": {
+      "arguments": {
+        "--interval": {
+          "flags": [
+            "--interval"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse stop": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse temporal": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--window": {
+          "flags": [
+            "--window"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse tensions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "refresh": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-atoms": {
+          "flags": [
+            "--skip-atoms"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-context": {
+          "flags": [
+            "--skip-context"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-legacy": {
+          "flags": [
+            "--skip-legacy"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-organism": {
+          "flags": [
+            "--skip-organism"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-plans": {
+          "flags": [
+            "--skip-plans"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-sop": {
+          "flags": [
+            "--skip-sop"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "registry": {
+      "arguments": {}
+    },
+    "registry deps": {
+      "arguments": {
+        "--both": {
+          "flags": [
+            "--both"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--max-depth": {
+          "flags": [
+            "--max-depth"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--reverse": {
+          "flags": [
+            "--reverse"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--transitive": {
+          "flags": [
+            "--transitive"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry list": {
+      "arguments": {
+        "--archived": {
+          "flags": [
+            "--archived"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--dependency-of": {
+          "flags": [
+            "--dependency-of"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--depends-on": {
+          "flags": [
+            "--depends-on"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--desc": {
+          "flags": [
+            "--desc"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--format": {
+          "choices": [
+            "json",
+            "table"
+          ],
+          "flags": [
+            "--format"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--name-contains": {
+          "flags": [
+            "--name-contains"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--platinum": {
+          "flags": [
+            "--platinum"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--promotion-status": {
+          "flags": [
+            "--promotion-status"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--public": {
+          "flags": [
+            "--public"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--sort-by": {
+          "flags": [
+            "--sort-by"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--unarchived": {
+          "flags": [
+            "--unarchived"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "registry merge": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "input_dir": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry search": {
+      "arguments": {
+        "--case-sensitive": {
+          "flags": [
+            "--case-sensitive"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--desc": {
+          "flags": [
+            "--desc"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--exact": {
+          "flags": [
+            "--exact"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--field": {
+          "flags": [
+            "--field"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--promotion-status": {
+          "flags": [
+            "--promotion-status"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--public": {
+          "flags": [
+            "--public"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--sort-by": {
+          "flags": [
+            "--sort-by"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "query": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry show": {
+      "arguments": {
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry split": {
+      "arguments": {
+        "output_dir": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry stats": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "registry update": {
+      "arguments": {
+        "--reason": {
+          "flags": [
+            "--reason"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "field": {
+          "required": true,
+          "takes_value": true
+        },
+        "repo": {
+          "required": true,
+          "takes_value": true
+        },
+        "value": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry validate": {
+      "arguments": {}
+    },
+    "resolve": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--fallback": {
+          "flags": [
+            "--fallback"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "query": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "seed": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "seed discover": {
+      "arguments": {}
+    },
+    "seed graph": {
+      "arguments": {}
+    },
+    "seed ownership": {
+      "arguments": {
+        "repo": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "seed validate": {
+      "arguments": {}
+    },
+    "session": {
+      "arguments": {}
+    },
+    "session agents": {
+      "arguments": {}
+    },
+    "session analyze": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--full": {
+          "flags": [
+            "--full"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session archive": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--force": {
+          "flags": [
+            "--force"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--no-raw": {
+          "flags": [
+            "--no-raw"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session debrief": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--latest": {
+          "flags": [
+            "--latest"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session export": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--slug": {
+          "flags": [
+            "--slug"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "session_id": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "session list": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini",
+            "opencode"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--directory": {
+          "flags": [
+            "--directory"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session plans": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini",
+            "governance"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--audit": {
+          "flags": [
+            "--audit"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--matrix": {
+          "flags": [
+            "--matrix"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session projects": {
+      "arguments": {}
+    },
+    "session prompts": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "session review": {
+      "arguments": {
+        "--latest": {
+          "flags": [
+            "--latest"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session show": {
+      "arguments": {
+        "session_id": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "session transcript": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--unabridged": {
+          "flags": [
+            "--unabridged"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "session_id": {
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "sop": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "sop audit": {
+      "arguments": {
+        "--include-fresh": {
+          "flags": [
+            "--include-fresh"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--mapping": {
+          "flags": [
+            "--mapping"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--stale": {
+          "flags": [
+            "--stale"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "sop check": {
+      "arguments": {
+        "--strict": {
+          "flags": [
+            "--strict"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "sop discover": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "sop init": {
+      "arguments": {
+        "--name": {
+          "flags": [
+            "--name"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--scope": {
+          "choices": [
+            "organ",
+            "repo"
+          ],
+          "flags": [
+            "--scope"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "sop resolve": {
+      "arguments": {
+        "--phase": {
+          "choices": [
+            "any",
+            "foundation",
+            "genesis",
+            "graduation",
+            "hardening",
+            "sustaining"
+          ],
+          "flags": [
+            "--phase"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "name": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "status": {
+      "arguments": {}
+    },
+    "study": {
+      "arguments": {}
+    },
+    "study audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "study consilience": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "study feedback": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--polarity": {
+          "choices": [
+            "negative",
+            "positive"
+          ],
+          "flags": [
+            "--polarity"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "taxonomy": {
+      "arguments": {}
+    },
+    "taxonomy audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "taxonomy classify": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "testament": {
+      "arguments": {}
+    },
+    "testament candidate-testament": {
+      "arguments": {
+        "--max-artifact-bytes": {
+          "flags": [
+            "--max-artifact-bytes"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--max-input-bytes": {
+          "flags": [
+            "--max-input-bytes"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--max-units": {
+          "flags": [
+            "--max-units"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--snapshot-bundle": {
+          "flags": [
+            "--snapshot-bundle"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament cascade": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament catalog": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "testament gallery": {
+      "arguments": {
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament iceberg-atlas": {
+      "arguments": {
+        "--actor": {
+          "flags": [
+            "--actor"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--cursor": {
+          "flags": [
+            "--cursor"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--event-spine": {
+          "flags": [
+            "--event-spine"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--max-artifact-bytes": {
+          "flags": [
+            "--max-artifact-bytes"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--max-children": {
+          "flags": [
+            "--max-children"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--max-input-bytes": {
+          "flags": [
+            "--max-input-bytes"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--snapshot-bundle": {
+          "flags": [
+            "--snapshot-bundle"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--source-organ": {
+          "flags": [
+            "--source-organ"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--source-repo": {
+          "flags": [
+            "--source-repo"
+          ],
+          "required": true,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament play": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--osc": {
+          "flags": [
+            "--osc"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--yaml": {
+          "flags": [
+            "--yaml"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament record-session": {
+      "arguments": {
+        "--from-commit": {
+          "flags": [
+            "--from-commit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--spine-path": {
+          "flags": [
+            "--spine-path"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--to-commit": {
+          "flags": [
+            "--to-commit"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament render": {
+      "arguments": {
+        "--all-repos": {
+          "flags": [
+            "--all-repos"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "topology": {
+      "arguments": {}
+    },
+    "topology build": {
+      "arguments": {
+        "--verbose": {
+          "flags": [
+            "--verbose"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium": {
+      "arguments": {
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "trivium dialects": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium essays": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "choices": [
+            "all",
+            "analogical",
+            "formal",
+            "structural"
+          ],
+          "flags": [
+            "--tier"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium matrix": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "trivium scan": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        },
+        "organ_a": {
+          "required": false,
+          "takes_value": true
+        },
+        "organ_b": {
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "trivium status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium synthesize": {
+      "arguments": {
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "verify": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "verify contracts": {
+      "arguments": {
+        "--event": {
+          "flags": [
+            "--event"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "verify ledger": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "verify system": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "verify temporal": {
+      "arguments": {
+        "--event": {
+          "flags": [
+            "--event"
+          ],
+          "required": false,
+          "takes_value": true
+        }
+      }
+    }
+  },
+  "schema_version": 1
+}

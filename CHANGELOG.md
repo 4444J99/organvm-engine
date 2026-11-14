@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Public CLI surface inventory: `python -m organvm_engine.api_surface show|check|write` extracts
+  the live `organvm` command tree, compares it with the committed baseline
+  `docs/api/cli-surface.json`, and classifies drift as breaking or compatible; a test keeps the
+  baseline current. Draft version policy in `docs/api/VERSIONING.md` (issue #194).
 - Tests are host-independent: `ORGANVM_*`/`LIMEN_GOV_*` env vars and the host's global
   git config/ignore no longer leak into the suite, and the exit-interview tests
   use a temp workspace pointing at the checkout under test instead of `~/Workspace`.
