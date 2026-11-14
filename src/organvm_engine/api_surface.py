@@ -168,13 +168,13 @@ def _compare_command(
 ) -> None:
     # Express current group members in baseline names so an added alias (which
     # changes the display key) does not look like a different member.
-    to_old = {new_key: old_key for old_key, new_key in renames.items()}
+    to_old: dict[str, str] = {new_key: old_key for old_key, new_key in renames.items()}
     if new.get("subcommand_required") and not old.get("subcommand_required"):
         result.breaking.append(f"subcommand became required: {name}")
     old_groups = [set(g["members"]) for g in old.get("exclusive_groups", [])]
     old_required = [set(g["members"]) for g in old.get("exclusive_groups", []) if g["required"]]
     for group in new.get("exclusive_groups", []):
-        members = {to_old.get(m, m) for m in group["members"]}
+        members: set[str] = {to_old[m] if m in to_old else str(m) for m in group["members"]}
         label = " | ".join(sorted(members))
         # A required group that gains optional members still demands what the old
         # one did, so only a group with no required ancestor is a new requirement.
