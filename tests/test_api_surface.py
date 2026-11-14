@@ -198,6 +198,48 @@ class TestReviewedCounterexamples:
         assert "positional order changed: update field 0 -> 1" in d.breaking
         assert "positional order changed: update value 1 -> 0" in d.breaking
 
+    def test_empty_choices_is_not_unrestricted(self):
+        def before(sub):
+            sub.add_parser("run").add_argument("--mode", choices=["fast", "slow"])
+
+        def after(sub):
+            sub.add_parser("run").add_argument("--mode", choices=[])
+
+        d = diff_surfaces(
+            extract_surface(self._parser(before)), extract_surface(self._parser(after)),
+        )
+        assert "choice removed: run --mode=fast" in d.breaking
+        assert "choice removed: run --mode=slow" in d.breaking
+        assert not any("unrestricted" in c for c in d.compatible)
+
+    def test_subparser_became_required_is_breaking(self):
+        def build(required):
+            p = argparse.ArgumentParser(prog="toy")
+            sub = p.add_subparsers(dest="cmd", required=required)
+            sub.add_parser("a")
+            return extract_surface(p)
+
+        assert diff_surfaces(build(False), build(True)).breaking == [
+            "subcommand became required: (root)",
+        ]
+        assert not diff_surfaces(build(True), build(False)).breaking
+
+    def test_exclusive_group_became_required_is_breaking(self):
+        def build(required):
+            p = argparse.ArgumentParser(prog="toy")
+            sub = p.add_subparsers(dest="cmd")
+            ls = sub.add_parser("list")
+            g = ls.add_mutually_exclusive_group(required=required)
+            g.add_argument("--archived", action="store_true")
+            g.add_argument("--unarchived", action="store_true")
+            return extract_surface(p)
+
+        d = diff_surfaces(build(False), build(True))
+        assert d.breaking == [
+            "exclusive group became required: list (--archived | --unarchived)",
+        ]
+        assert not diff_surfaces(build(True), build(False)).breaking
+
     def test_live_parser_has_root_registry_option(self):
         root = extract_surface(build_parser())["commands"]["(root)"]["arguments"]
         assert "--registry" in root

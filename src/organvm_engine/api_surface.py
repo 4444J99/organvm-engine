@@ -67,9 +67,11 @@ def _walk(parser: argparse.ArgumentParser, path: tuple[str, ...], out: dict[str,
     arguments: dict[str, Any] = {}
     children: list[tuple[str, argparse.ArgumentParser]] = []
     position = 0
+    subcommand_required = False
     for action in parser._actions:
         if isinstance(action, argparse._SubParsersAction):
             children.extend(action.choices.items())
+            subcommand_required = subcommand_required or bool(action.required)
             continue
         if isinstance(action, argparse._HelpAction):
             continue
@@ -79,7 +81,23 @@ def _walk(parser: argparse.ArgumentParser, path: tuple[str, ...], out: dict[str,
             arguments[_argument_key(action)] = _argument_entry(action, position)
             position += 1
     name = " ".join(path) if path else ROOT_COMMAND
-    out[name] = {"arguments": dict(sorted(arguments.items()))}
+    key_of = {id(a): _argument_key(a) for a in parser._actions}
+    groups = sorted(
+        (
+            {
+                "members": sorted(key_of[id(a)] for a in g._group_actions if id(a) in key_of),
+                "required": bool(g.required),
+            }
+            for g in parser._mutually_exclusive_groups
+        ),
+        key=lambda g: g["members"],
+    )
+    entry: dict[str, Any] = {"arguments": dict(sorted(arguments.items()))}
+    if children:
+        entry["subcommand_required"] = subcommand_required
+    if groups:
+        entry["exclusive_groups"] = groups
+    out[name] = entry
     for child_name, child in children:
         _walk(child, (*path, child_name), out)
 
@@ -141,6 +159,20 @@ def _match_arguments(
     return pairs, removed, added
 
 
+def _compare_command(
+    result: SurfaceDiff, name: str, old: dict[str, Any], new: dict[str, Any],
+) -> None:
+    if new.get("subcommand_required") and not old.get("subcommand_required"):
+        result.breaking.append(f"subcommand became required: {name}")
+    old_required = {
+        tuple(g["members"]) for g in old.get("exclusive_groups", []) if g["required"]
+    }
+    for group in new.get("exclusive_groups", []):
+        if group["required"] and tuple(group["members"]) not in old_required:
+            members = " | ".join(group["members"])
+            result.breaking.append(f"exclusive group became required: {name} ({members})")
+
+
 def _compare_argument(
     result: SurfaceDiff, name: str, key: str, old: dict[str, Any], new: dict[str, Any],
 ) -> None:
@@ -158,16 +190,17 @@ def _compare_argument(
             f"positional order changed: {label} "
             f"{old.get('position')} -> {new.get('position')}",
         )
+    old_has, new_has = "choices" in old, "choices" in new
     old_choices = set(old.get("choices", []))
     new_choices = set(new.get("choices", []))
-    if old_choices and new_choices:
+    if old_has and new_has:
         for choice in sorted(old_choices - new_choices):
             result.breaking.append(f"choice removed: {label}={choice}")
         for choice in sorted(new_choices - old_choices):
             result.compatible.append(f"choice added: {label}={choice}")
-    elif old_choices and not new_choices:
+    elif old_has and not new_has:
         result.compatible.append(f"choices unrestricted: {label}")
-    elif new_choices and not old_choices:
+    elif new_has and not old_has:
         result.breaking.append(f"choices restricted: {label}")
     old_flags = set(old.get("flags", []))
     new_flags = set(new.get("flags", []))
@@ -197,6 +230,7 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
     for name in sorted(set(base_cmds) & set(cur_cmds)):
         base_args = base_cmds[name].get("arguments", {})
         cur_args = cur_cmds[name].get("arguments", {})
+        _compare_command(result, name, base_cmds[name], cur_cmds[name])
         pairs, removed, added = _match_arguments(base_args, cur_args)
         for key in removed:
             result.breaking.append(f"argument removed: {name} {key}")

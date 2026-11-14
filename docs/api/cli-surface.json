@@ -10,10 +10,12 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "atoms": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "atoms fanout": {
       "arguments": {
@@ -266,7 +268,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "audit absorption": {
       "arguments": {
@@ -387,7 +390,8 @@
       }
     },
     "ci": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "ci audit": {
       "arguments": {
@@ -575,7 +579,8 @@
       }
     },
     "content": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "content list": {
       "arguments": {
@@ -669,7 +674,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "context diff": {
       "arguments": {
@@ -760,7 +766,8 @@
       }
     },
     "contrib": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "contrib backflow": {
       "arguments": {
@@ -781,7 +788,8 @@
       "arguments": {}
     },
     "corpus": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "corpus coverage": {
       "arguments": {
@@ -1051,7 +1059,8 @@
       }
     },
     "debt": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "debt scan": {
       "arguments": {
@@ -1110,7 +1119,8 @@
       }
     },
     "dispatch": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "dispatch validate": {
       "arguments": {
@@ -1123,7 +1133,8 @@
       }
     },
     "docs": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "docs audit": {
       "arguments": {
@@ -1256,7 +1267,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "ecosystem actions": {
       "arguments": {
@@ -1487,7 +1499,8 @@
       }
     },
     "exit-interview": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "exit-interview counter": {
       "arguments": {
@@ -1643,7 +1656,8 @@
       }
     },
     "fabrica": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "fabrica catch": {
       "arguments": {
@@ -1954,7 +1968,8 @@
       }
     },
     "formation": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "formation invoke": {
       "arguments": {
@@ -2005,7 +2020,8 @@
       }
     },
     "fossil": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "fossil chronicle": {
       "arguments": {
@@ -2152,7 +2168,8 @@
       }
     },
     "fossil witness": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "fossil witness install": {
       "arguments": {
@@ -2223,7 +2240,8 @@
       }
     },
     "functions": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "functions list": {
       "arguments": {
@@ -2265,7 +2283,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "git add-submodule": {
       "arguments": {
@@ -2428,7 +2447,8 @@
       }
     },
     "governance": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "governance audit": {
       "arguments": {
@@ -2792,7 +2812,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "handoff clean": {
       "arguments": {
@@ -2876,7 +2897,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "index bridge": {
       "arguments": {
@@ -2972,7 +2994,8 @@
       "arguments": {}
     },
     "irf": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "irf add": {
       "arguments": {
@@ -3159,7 +3182,8 @@
       }
     },
     "ledger": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "ledger checkpoint": {
       "arguments": {
@@ -3327,7 +3351,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "metrics calculate": {
       "arguments": {
@@ -3418,7 +3443,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "network log": {
       "arguments": {
@@ -3584,7 +3610,8 @@
       }
     },
     "omega": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "omega check": {
       "arguments": {}
@@ -3613,7 +3640,8 @@
       }
     },
     "ontologia": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "ontologia bootstrap": {
       "arguments": {
@@ -3996,7 +4024,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "organism snapshot": {
       "arguments": {
@@ -4044,7 +4073,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "pitch generate": {
       "arguments": {
@@ -4093,7 +4123,8 @@
       }
     },
     "plans": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "plans atomize": {
       "arguments": {
@@ -4345,7 +4376,8 @@
       }
     },
     "portal": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "portal backflow": {
       "arguments": {
@@ -4675,10 +4707,12 @@
       }
     },
     "primitive": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "primitive guardian": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "primitive guardian add-watch": {
       "arguments": {
@@ -4808,7 +4842,8 @@
       }
     },
     "primitive ledger": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "primitive ledger entries": {
       "arguments": {
@@ -4915,7 +4950,8 @@
       }
     },
     "prompts": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "prompts audit": {
       "arguments": {
@@ -5099,7 +5135,8 @@
       }
     },
     "pulse": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "pulse advisories": {
       "arguments": {
@@ -5257,7 +5294,8 @@
           "required": false,
           "takes_value": false
         }
-      }
+      },
+      "subcommand_required": false
     },
     "pulse edges sync": {
       "arguments": {
@@ -5742,7 +5780,8 @@
       }
     },
     "registry": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "registry deps": {
       "arguments": {
@@ -5920,7 +5959,16 @@
           "required": false,
           "takes_value": false
         }
-      }
+      },
+      "exclusive_groups": [
+        {
+          "members": [
+            "--archived",
+            "--unarchived"
+          ],
+          "required": false
+        }
+      ]
     },
     "registry merge": {
       "arguments": {
@@ -6155,7 +6203,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "seed discover": {
       "arguments": {}
@@ -6177,7 +6226,8 @@
       "arguments": {}
     },
     "session": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "session agents": {
       "arguments": {}
@@ -6547,7 +6597,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "sop audit": {
       "arguments": {
@@ -6671,7 +6722,8 @@
       "arguments": {}
     },
     "study": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "study audit": {
       "arguments": {
@@ -6730,7 +6782,8 @@
       }
     },
     "taxonomy": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "taxonomy audit": {
       "arguments": {
@@ -6781,7 +6834,8 @@
       }
     },
     "testament": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "testament candidate-testament": {
       "arguments": {
@@ -7124,7 +7178,8 @@
       }
     },
     "topology": {
-      "arguments": {}
+      "arguments": {},
+      "subcommand_required": false
     },
     "topology build": {
       "arguments": {
@@ -7164,7 +7219,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "trivium dialects": {
       "arguments": {
@@ -7314,7 +7370,8 @@
           "required": false,
           "takes_value": true
         }
-      }
+      },
+      "subcommand_required": false
     },
     "verify contracts": {
       "arguments": {
