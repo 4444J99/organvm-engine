@@ -240,6 +240,37 @@ class TestReviewedCounterexamples:
         ]
         assert not diff_surfaces(build(True), build(False)).breaking
 
+    @staticmethod
+    def _group_surface(members, required, extra=()):
+        p = argparse.ArgumentParser(prog="toy")
+        sub = p.add_subparsers(dest="cmd")
+        ls = sub.add_parser("list")
+        for name in extra:
+            ls.add_argument(name, action="store_true")
+        if members:
+            g = ls.add_mutually_exclusive_group(required=required)
+            for name in members:
+                g.add_argument(name, action="store_true")
+        return extract_surface(p)
+
+    def test_new_mutual_exclusion_is_breaking(self):
+        before = self._group_surface([], False, extra=["--a", "--b"])
+        after = self._group_surface(["--a", "--b"], False)
+        assert diff_surfaces(before, after).breaking == [
+            "mutual exclusion introduced: list --a x --b",
+        ]
+
+    def test_required_group_gaining_new_member_is_compatible(self):
+        before = self._group_surface(["--a", "--b"], True)
+        after = self._group_surface(["--a", "--b", "--c"], True)
+        d = diff_surfaces(before, after)
+        assert d.breaking == []
+        assert "argument added: list --c" in d.compatible
+
+    def test_existing_exclusion_unchanged_is_empty(self):
+        before = self._group_surface(["--a", "--b"], False)
+        assert diff_surfaces(before, self._group_surface(["--a", "--b"], False)).is_empty
+
     def test_live_parser_has_root_registry_option(self):
         root = extract_surface(build_parser())["commands"]["(root)"]["arguments"]
         assert "--registry" in root

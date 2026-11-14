@@ -164,13 +164,25 @@ def _compare_command(
 ) -> None:
     if new.get("subcommand_required") and not old.get("subcommand_required"):
         result.breaking.append(f"subcommand became required: {name}")
-    old_required = {
-        tuple(g["members"]) for g in old.get("exclusive_groups", []) if g["required"]
-    }
+    old_groups = [set(g["members"]) for g in old.get("exclusive_groups", [])]
+    old_required = [set(g["members"]) for g in old.get("exclusive_groups", []) if g["required"]]
     for group in new.get("exclusive_groups", []):
-        if group["required"] and tuple(group["members"]) not in old_required:
-            members = " | ".join(group["members"])
-            result.breaking.append(f"exclusive group became required: {name} ({members})")
+        members = set(group["members"])
+        label = " | ".join(group["members"])
+        # A required group that gains optional members still demands what the old
+        # one did, so only a group with no required ancestor is a new requirement.
+        if group["required"] and not any(prior <= members for prior in old_required):
+            result.breaking.append(f"exclusive group became required: {name} ({label})")
+        # Options that could be combined before but now exclude each other reject
+        # previously valid invocations.
+        # A brand-new option cannot have appeared in an old invocation.
+        ordered = sorted(m for m in members if m in old.get("arguments", {}))
+        for i, first in enumerate(ordered):
+            for second in ordered[i + 1 :]:
+                if not any({first, second} <= prior for prior in old_groups):
+                    result.breaking.append(
+                        f"mutual exclusion introduced: {name} {first} x {second}",
+                    )
 
 
 def _compare_argument(
