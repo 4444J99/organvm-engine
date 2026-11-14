@@ -971,14 +971,6 @@ KINSHIP_COMMUNITIES: list[dict] = [
     },
     # ── ORGAN-I: Theoria ─────────────────────────────────────────────────
     {
-        "project": "lesswrong",
-        "platform": "forum",
-        "relevance": "LessWrong — rationality, epistemology, and decision theory",
-        "url": "https://lesswrong.com",
-        "tags": ["rationality", "epistemology", "decision-theory"],
-        "organs": ["I"],
-    },
-    {
         "project": "principia-cybernetica",
         "platform": "wiki",
         "relevance": "Principia Cybernetica — evolutionary-systemic philosophy collaborative",
