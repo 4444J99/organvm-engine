@@ -80,7 +80,7 @@ def audit_repo(org, repo, language_hint=None):
     # Get file tree
     tree_data, err = gh_api(
         f"repos/{full}/git/trees/HEAD?recursive=1",
-        "[.tree[] | .path]"
+        "{truncated: .truncated, paths: [.tree[].path]}"
     )
     if err:
         report["error"] = f"Could not fetch tree: {err}"
@@ -89,12 +89,18 @@ def audit_repo(org, repo, language_hint=None):
         return report
 
     try:
-        paths = json.loads(tree_data)
-    except (json.JSONDecodeError, TypeError):
+        tree = json.loads(tree_data)
+        paths = tree["paths"]
+        tree_truncated = bool(tree.get("truncated"))
+    except (json.JSONDecodeError, TypeError, KeyError):
         report["error"] = "Could not parse tree response"
         report["classification"] = "ERROR"
         report["language"] = language_hint or "Unknown"
         return report
+
+    if tree_truncated:
+        # GitHub truncates recursive trees past 100k entries / 7 MB; counts are lower bounds.
+        report["tree_truncated"] = True
 
     # Detect language from actual file contents
     language = detect_language(paths)
@@ -159,7 +165,9 @@ def audit_repo(org, repo, language_hint=None):
         ".workflow_runs[0] | {status, conclusion, name, created_at}"
     )
     ci_status = None
-    if ci_data and ci_data != "null":
+    if ci_err:
+        report["ci_error"] = ci_err
+    elif ci_data and ci_data != "null":
         try:
             ci_status = json.loads(ci_data)
         except json.JSONDecodeError:
@@ -285,10 +293,12 @@ def main():
     # CI summary
     ci_passing = sum(1 for r in reports if r.get("ci_latest", {}) and r.get("ci_latest", {}).get("conclusion") == "success")
     ci_failing = sum(1 for r in reports if r.get("ci_latest", {}) and r.get("ci_latest", {}).get("conclusion") == "failure")
-    ci_none = sum(1 for r in reports if not r.get("ci_latest"))
+    ci_none = sum(1 for r in reports if not r.get("ci_latest") and "ci_error" not in r)
+    ci_unavailable = sum(1 for r in reports if "ci_error" in r)
     print(f"\n  CI passing: {ci_passing}")
     print(f"  CI failing: {ci_failing}")
     print(f"  CI none: {ci_none}")
+    print(f"  CI unavailable: {ci_unavailable}")
 
     output_data = {
         "audit_date": datetime.now(timezone.utc).isoformat(),
@@ -303,6 +313,7 @@ def main():
             "ci_passing": ci_passing,
             "ci_failing": ci_failing,
             "ci_none": ci_none,
+            "ci_unavailable": ci_unavailable,
         },
         "repos": reports,
     }

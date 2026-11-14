@@ -35,7 +35,10 @@ ARCHIVE_DIRS = [REPO_ROOT / "docs" / "archive", REPO_ROOT / "docs" / "operations
 # claim marker (e.g. "**DONE-429**:") inside the description column of an
 # IRF-XXX-NNN row, not as the row's primary key. The narrow regex misses
 # those — but they ARE rendered.
-DONE_ID_RE = re.compile(r"DONE-(\d+)")
+# The trailing lookahead rejects date-form IDs (DONE-2026-04-30), matching
+# check-done-id.py, so a year is never mistaken for a counter-sequenced ID.
+DONE_ID_RE = re.compile(r"DONE-(\d+)(?![\d-])")
+GAP_RANGE_RE = re.compile(r"DONE-(\d+)\.\.(\d+)")
 GAP_MARKER_RE = re.compile(r"GAP-DOCUMENTED-IN-IRF-MON-\d{3}")
 
 # Grandfathered ghost set: counter-claimed but never rendered, accepted by
@@ -91,6 +94,8 @@ def gap_marker_covered(irf_text: str) -> set[int]:
     for line in irf_text.splitlines():
         if GAP_MARKER_RE.search(line):
             covered |= {int(m) for m in DONE_ID_RE.findall(line)}
+            for lo, hi in GAP_RANGE_RE.findall(line):
+                covered |= set(range(int(lo), int(hi) + 1))
     return covered
 
 
@@ -112,7 +117,7 @@ def main() -> int:
     counter = load_counter()
     try:
         claimed_max = claimed_max_from(counter)
-    except (KeyError, ValueError, TypeError) as e:
+    except (KeyError, IndexError, ValueError, TypeError) as e:
         print(f"validate-irf-counter: counter malformed: {e}", file=sys.stderr)
         return 3
 

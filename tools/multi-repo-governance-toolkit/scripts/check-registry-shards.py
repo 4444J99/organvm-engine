@@ -9,6 +9,11 @@ import json
 from pathlib import Path
 
 
+def same(a, b):
+    """Strict JSON equality: unlike ==, treats true/1 and 1/1.0 as different."""
+    return json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+
+
 def rows_by_name(organ):
     if not isinstance(organ, dict) or not isinstance(organ.get("repositories"), list):
         raise ValueError("malformed organ")
@@ -39,12 +44,12 @@ def compare(canonical, shards):
         a, b = left[key], right[key]
         result["canonical_only_repositories"] += len(a.keys() - b.keys())
         result["shard_only_repositories"] += len(b.keys() - a.keys())
-        result["changed_repositories"] += sum(a[name] != b[name] for name in a.keys() & b.keys())
+        result["changed_repositories"] += sum(not same(a[name], b[name]) for name in a.keys() & b.keys())
         result["changed_organ_metadata"] += (
-            {k: v for k, v in organs[key].items() if k != "repositories"} !=
-            {k: v for k, v in shards[key].items() if k != "repositories"}
+            not same({k: v for k, v in organs[key].items() if k != "repositories"},
+                     {k: v for k, v in shards[key].items() if k != "repositories"})
         )
-        result["drifted_organs"] += organs[key] != shards[key]
+        result["drifted_organs"] += not same(organs[key], shards[key])
     status = "unmeasured" if result["missing_shards"] or result["extra_shards"] else (
         "drift" if result["drifted_organs"] else "pass")
     return {"status": status, **result}
@@ -54,7 +59,8 @@ def compare_projection(canonical, shards, metadata):
     report = compare(canonical, shards)
     if not isinstance(metadata, dict) or "organs" in metadata:
         raise ValueError("malformed projection metadata")
-    report["metadata_matches"] = metadata == {k: v for k, v in canonical.items() if k != "organs"}
+    report["metadata_matches"] = same(
+        metadata, {k: v for k, v in canonical.items() if k != "organs"})
     if not report["metadata_matches"] and report["status"] == "pass":
         report["status"] = "drift"
     return report

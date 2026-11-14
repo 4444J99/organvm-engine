@@ -21,7 +21,7 @@ def enums: ["status","documentation_status","promotion_status","tier","implement
     source: "registry-v2.json",
     purpose: "Controlled vocabulary registry for ORGANVM domain terms. Slice 1 extracts canonical names from the registry. Synonymy reconciliation (slice 2) and CI validation hook (slice 3) are deferred.",
     deferred: [
-      "synonymy-reconciliation — populate each term's synonyms[] (slice 2)",
+      "synonymy-reconciliation — populate each term synonyms[] (slice 2)",
       "ci-validation-hook — reject off-vocabulary names in CI (slice 3)"
     ],
     term_count: ($terms | length),

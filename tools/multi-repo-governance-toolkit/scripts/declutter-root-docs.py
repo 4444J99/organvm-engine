@@ -56,6 +56,11 @@ def main() -> int:
             for d in docs:
                 print(f"    · {d.name}")
             continue
+        # The commit below takes the whole index; refuse if unrelated changes are staged.
+        rc, _ = run(["git", "diff", "--cached", "--quiet"], repo)
+        if rc != 0:
+            print(f"    ! skip {repo.name}: index has staged changes; commit or unstage them first")
+            continue
         (repo / "docs").mkdir(exist_ok=True)
         moved = []
         for d in docs:

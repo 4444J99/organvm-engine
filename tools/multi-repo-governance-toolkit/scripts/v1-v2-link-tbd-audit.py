@@ -2,7 +2,9 @@
 """V1: Cross-Org Link Audit + V2: TBD/Placeholder Marker Scan
 
 Fetches all deployed READMEs from GitHub via gh api, then:
-- V1: Extracts all markdown links, classifies them, validates they resolve
+- V1: Extracts all markdown links, classifies them, validates system-GitHub
+  repositories and external http(s) URLs (relative links are classified and
+  counted but not resolved; they are excluded from the V1 result)
 - V2: Scans for TBD, TODO, PLACEHOLDER, FIXME, "coming soon", "to be determined"
 """
 
@@ -33,7 +35,7 @@ TBD_PATTERNS = [
 TBD_REGEX = re.compile('|'.join(TBD_PATTERNS), re.IGNORECASE)
 
 # Link extraction regex
-LINK_REGEX = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
+LINK_REGEX = re.compile(r'\[([^\]]*)\]\(((?:[^()]|\([^()]*\))+)\)')
 
 # GitHub org names in our system
 SYSTEM_ORGS = {
@@ -148,14 +150,24 @@ def validate_github_repo_link(org, repo):
 
 
 def validate_external_url(url):
-    """Quick HEAD check for external URL."""
-    try:
-        result = subprocess.run(
-            ["curl", "-sI", "-o", "/dev/null", "-w", "%{http_code}",
-             "-L", "--max-time", "10", url],
-            capture_output=True, text=True, timeout=15
-        )
+    """Quick HEAD check for external URL (GET retry when HEAD returns 405)."""
+    def _status(head):
+        args = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+                "-L", "--max-time", "10", url]
+        if head:
+            args.insert(1, "-I")
+        result = subprocess.run(args, capture_output=True, text=True, timeout=15)
         code = result.stdout.strip()
+        if result.returncode != 0 or code == "000":
+            return None  # Transport failure: unknown
+        return code
+
+    try:
+        code = _status(head=True)
+        if code == "405":
+            code = _status(head=False)
+        if code is None:
+            return None
         return code.startswith("2") or code.startswith("3")
     except (subprocess.TimeoutExpired, Exception):
         return None  # Unknown
@@ -234,7 +246,9 @@ def main():
                 stripped = line.strip()
                 # Allow TBD in specific registry/status contexts
                 if 'launch_date' in stripped.lower() and 'TBD' in stripped:
-                    continue
+                    matches = [m for m in matches if m.upper() != 'TBD']
+                    if not matches:
+                        continue
                 tbd_findings.append({
                     'org': org,
                     'repo': repo,

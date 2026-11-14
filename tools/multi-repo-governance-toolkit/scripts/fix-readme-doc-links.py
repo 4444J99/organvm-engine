@@ -21,14 +21,15 @@ def main(repo: Path) -> int:
                          cwd=repo, capture_output=True, text=True).stdout.strip()
     if not sha:
         print(f"{repo.name}: no declutter commit"); return 0
-    ns = subprocess.run(["git", "show", sha, "--name-status"], cwd=repo,
+    ns = subprocess.run(["git", "show", "-M", sha, "--name-status"], cwd=repo,
                         capture_output=True, text=True).stdout
     moved = [Path(line.split("\t")[2]).name for line in ns.splitlines()
              if line.startswith("R") and "\tdocs/" in line]
     txt = readme.read_text(); orig = txt
     for f in moved:
-        # ](FILE.md) or ](./FILE.md)  ->  ](./docs/FILE.md)   (skip if already docs/)
-        txt = re.sub(r"\]\((\./)?" + re.escape(f) + r"\)", f"](./docs/{f})", txt)
+        # ](FILE.md), ](./FILE.md), also with #fragment or "title" -> ](./docs/FILE.md...)
+        # (skip if already docs/)
+        txt = re.sub(r"\]\((\./)?" + re.escape(f) + r"(?=[)#\s])", f"](./docs/{f}", txt)
     if txt != orig:
         readme.write_text(txt)
         print(f"{repo.name}: FIXED README links -> docs/")

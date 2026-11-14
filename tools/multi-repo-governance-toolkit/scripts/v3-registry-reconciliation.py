@@ -47,8 +47,12 @@ def load_registry():
 
 
 def gh_list_repos(org):
-    """List all repos in an org via gh api."""
+    """List all repos in an org via gh api.
+
+    Returns (names, complete); complete is False if any page failed to load.
+    """
     repos = []
+    complete = True
     page = 1
     while True:
         try:
@@ -59,6 +63,7 @@ def gh_list_repos(org):
             )
             if result.returncode != 0:
                 print(f"  Error listing {org}: {result.stderr.strip()}")
+                complete = False
                 break
             names = [n.strip() for n in result.stdout.strip().split('\n') if n.strip()]
             if not names:
@@ -69,8 +74,9 @@ def gh_list_repos(org):
             page += 1
         except subprocess.TimeoutExpired:
             print(f"  Timeout listing {org}")
+            complete = False
             break
-    return repos
+    return repos, complete
 
 
 def gh_get_repo_info(org, repo):
@@ -292,7 +298,7 @@ def reconcile_identity_snapshot(registry, snapshot, registry_bytes):
                 row.update({
                     "repository_id": repo_id,
                     "canonical_path": repo["full_name"],
-                    "binding": "literal" if requested == repo["full_name"] else "redirect",
+                    "binding": "literal" if requested.lower() == repo["full_name"].lower() else "redirect",
                     "live_visibility": repo["visibility"],
                     "live_archived": repo["archived"],
                 })
@@ -388,12 +394,12 @@ def main(argv=None):
         inputs = {Path(args.registry).resolve(), Path(args.identity_snapshot).resolve()}
         if output_path in inputs:
             parser.error("output must not overwrite either input")
-        raw = Path(args.registry).read_bytes()
         try:
+            raw = Path(args.registry).read_bytes()
             report = reconcile_identity_snapshot(
                 json.loads(raw), json.loads(Path(args.identity_snapshot).read_text()), raw,
             )
-        except (ValueError, TypeError, KeyError) as error:
+        except (OSError, ValueError, TypeError, KeyError) as error:
             print(f"V3 IDENTITY INPUT INVALID: {error}", file=sys.stderr)
             return 2
         if args.aggregate_only:
@@ -427,11 +433,14 @@ def main(argv=None):
     # ── Step 1: List all repos on GitHub ────────────────────────────
     print("\n── Listing repos on GitHub ──")
     github_repos = {}  # org -> [repo_names]
+    incomplete_orgs = []
 
     for org in SYSTEM_ORGS:
         sys.stdout.write(f"\r  Listing {org}...")
         sys.stdout.flush()
-        repos = gh_list_repos(org)
+        repos, listing_complete = gh_list_repos(org)
+        if not listing_complete:
+            incomplete_orgs.append(org)
         github_repos[org] = repos
         print(f"\r  {org}: {len(repos)} repos")
 
@@ -491,6 +500,8 @@ def main(argv=None):
         print(f"  {len(github_not_in_registry)} repos on GitHub not in registry:")
         for org, name in github_not_in_registry:
             print(f"    - {org}/{name}")
+    elif incomplete_orgs:
+        print(f"  Listing incomplete for {', '.join(incomplete_orgs)}; audit cannot be confirmed")
     else:
         print("  All GitHub repos accounted for in registry")
 
@@ -538,7 +549,8 @@ def main(argv=None):
     print(f"  On GitHub but not in registry: {len(github_not_in_registry)}")
     print(f"  Description mismatches: {len(desc_mismatches)}")
 
-    v3_pass = len(deployed_missing) == 0 and len(deployed_no_readme) == 0
+    v3_pass = (len(deployed_missing) == 0 and len(deployed_no_readme) == 0
+               and not incomplete_orgs)
     print(f"\n  V3 RESULT: {'PASS' if v3_pass else 'ISSUES FOUND'}")
 
     # Write report
@@ -557,6 +569,7 @@ def main(argv=None):
     with open(report_path, 'w') as f:
         json.dump(report, f, indent=2)
     print(f"\n  Report written to {report_path}")
+    return 0 if v3_pass else 1
 
 
 if __name__ == "__main__":
