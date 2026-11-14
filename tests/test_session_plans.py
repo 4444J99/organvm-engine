@@ -899,3 +899,31 @@ def test_summary_no_organ_section_when_all_unknown():
     ]
     output = generate_summary(tasks, 1)
     assert "By Organ" not in output
+
+
+def test_resolve_organ_repo_with_relative_workspace(tmp_path, monkeypatch):
+    """A resolved plan path still attributes against a relative workspace."""
+    plans = tmp_path / "ws" / "organvm-iii-ergon" / "my-repo" / ".claude" / "plans"
+    plans.mkdir(parents=True)
+    plan = plans / "2026-01-01-x.md"
+    plan.write_text("# X\n")
+    monkeypatch.chdir(tmp_path)
+
+    organ, repo = _resolve_organ_repo(plan.resolve(), Path("ws"))
+    assert organ == "III"
+    assert repo == "my-repo"
+
+
+def test_project_filter_keeps_organ_with_symlinked_workspace(tmp_path):
+    real = tmp_path / "real"
+    plans = real / "organvm-iii-ergon" / "my-repo" / ".claude" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "2026-01-01-x.md").write_text("# X\n")
+    link = tmp_path / "link"
+    link.symlink_to(real)
+
+    results = discover_plans(
+        workspace=link, project_filter=str(link / "organvm-iii-ergon" / "my-repo"),
+    )
+    assert len(results) == 1
+    assert results[0].organ == "III"

@@ -253,6 +253,24 @@ def _gemini_slug_for_directory(directory: str) -> str | None:
     return projects.get(directory)
 
 
+def gemini_directory_for_slug(slug: str) -> str | None:
+    """Forward-lookup the working directory a Gemini project slug names."""
+    if not slug or not GEMINI_PROJECTS_JSON.exists():
+        return None
+    try:
+        with GEMINI_PROJECTS_JSON.open(encoding="utf-8") as f:
+            mapping = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    projects = mapping.get("projects", mapping)
+    if not isinstance(projects, dict):
+        return None
+    for directory, value in projects.items():
+        if value == slug:
+            return directory
+    return None
+
+
 def discover_codex_sessions(
     project_filter: str | None = None,
     directory_filter: str | None = None,

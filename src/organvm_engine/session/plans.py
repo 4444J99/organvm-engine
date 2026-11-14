@@ -99,8 +99,13 @@ def _resolve_organ_repo(
     try:
         rel = plan_path.relative_to(workspace)
     except ValueError:
-        # Path is outside workspace — try content-based fallback
-        return _resolve_organ_repo_from_content(plan_path)
+        # A resolved search root yields resolved plan paths; compare against
+        # the resolved workspace too (relative or symlinked workspace).
+        try:
+            rel = plan_path.resolve().relative_to(workspace.resolve())
+        except (ValueError, OSError):
+            # Path is outside workspace — try content-based fallback
+            return _resolve_organ_repo_from_content(plan_path)
 
     parts = rel.parts
     if not parts:

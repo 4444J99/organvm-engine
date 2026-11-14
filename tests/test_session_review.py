@@ -364,3 +364,14 @@ def test_find_session_by_payload_id_when_filename_differs(tmp_path, monkeypatch)
 
     found = find_session("my-custom-payload-id")
     assert found == jsonl
+
+
+def test_gemini_directory_for_slug_reverse_lookup(tmp_path, monkeypatch):
+    """Review resolves a Gemini project slug back to its working directory."""
+    projects = tmp_path / "projects.json"
+    projects.write_text(json.dumps({"projects": {"/Users/test/Workspace/proj": "slug-abc"}}))
+    monkeypatch.setattr(session_agents, "GEMINI_PROJECTS_JSON", projects)
+
+    assert session_agents.gemini_directory_for_slug("slug-abc") == "/Users/test/Workspace/proj"
+    assert session_agents.gemini_directory_for_slug("missing") is None
+    assert session_agents.gemini_directory_for_slug("") is None
