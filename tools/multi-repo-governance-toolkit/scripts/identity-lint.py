@@ -40,6 +40,7 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
+from typing import NoReturn
 from pathlib import Path
 
 MAX_N = 3
@@ -47,7 +48,14 @@ WORD_RE = re.compile(r"[a-z0-9]+")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})")
 HOME_RE = re.compile(r"(/Users/|/home/|~/Workspace\b|~/Code\b)")
 DOMAIN_RE = re.compile(r"\b((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})\b")
+NOREPLY_RE = re.compile(r"(?<![a-z0-9])no-?reply(?![a-z0-9])")
 RULES = {"denylist", "email", "home-path", "domain"}
+
+
+def die(msg: str) -> NoReturn:
+    """Report a usage/config error and exit 2 (matches the documented exit codes)."""
+    print(msg, file=sys.stderr)
+    raise SystemExit(2)
 
 
 def normalize(text: str) -> list[str]:
@@ -71,7 +79,7 @@ def ngrams(words: list[str], max_n: int = MAX_N):
 def email_allowed(addr: str, domain: str) -> bool:
     d = domain.lower()
     local = addr.split("@", 1)[0].lower()
-    if "noreply" in local or "no-reply" in local or "noreply" in d:
+    if NOREPLY_RE.search(local) or NOREPLY_RE.search(d):
         return True
     labels = d.split(".")
     return "example" in labels[:-1] or d in {"example", "localhost"}
@@ -99,10 +107,10 @@ def load_allow(path: Path) -> list[Allow]:
         body, _, reason = s.partition("#")
         parts = body.split(None, 2)
         if len(parts) != 3 or not reason.strip():
-            raise SystemExit(f"{path}:{n}: need '<rule> <glob> <regex>  # reason'")
+            die(f"{path}:{n}: need '<rule> <glob> <regex>  # reason'")
         rule, glob, rx = parts
         if rule != "*" and rule not in RULES:
-            raise SystemExit(f"{path}:{n}: unknown rule {rule!r}")
+            die(f"{path}:{n}: unknown rule {rule!r}")
         out.append(Allow(rule, glob, re.compile(rx.strip()), reason.strip()))
     return out
 
@@ -116,7 +124,7 @@ def load_hashes() -> set[str]:
     for s in split_env("IDENTITY_DENYLIST"):
         s = s.lower()
         if not re.fullmatch(r"[0-9a-f]{64}", s):
-            raise SystemExit("IDENTITY_DENYLIST: bad hash line")
+            die("IDENTITY_DENYLIST: bad hash line")
         hs.add(s)
     return hs
 
@@ -127,9 +135,9 @@ def load_own(salt: str) -> set[str]:
 
 def list_files(root: Path) -> list[str]:
     try:
-        out = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=root,
+        out = subprocess.run(["git", "ls-files", "-z", "-co", "--exclude-standard"], cwd=root,
                              capture_output=True, text=True, check=True).stdout
-        files = [f for f in out.splitlines() if f]
+        files = [f for f in out.split("\0") if f]
     except (subprocess.CalledProcessError, FileNotFoundError):
         files = [str(p.relative_to(root)) for p in root.rglob("*") if p.is_file() and ".git" not in p.parts]
     return sorted(files)
@@ -187,7 +195,12 @@ def main(argv=None) -> int:
             print("identity-lint: IDENTITY_SALT is required for --hash-stdin", file=sys.stderr)
             return 2
         for t in sys.stdin.read().splitlines():
-            if normalize(t):
+            words = normalize(t)
+            if len(words) > MAX_N:
+                print(f"identity-lint: term has {len(words)} words; scan matches at most "
+                      f"{MAX_N}, so its hash would never match", file=sys.stderr)
+                return 2
+            if words:
                 print(term_hash(t, salt))
         return 0
     root = Path(a.root).resolve()

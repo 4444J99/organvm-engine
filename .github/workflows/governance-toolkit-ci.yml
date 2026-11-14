@@ -44,4 +44,12 @@ jobs:
           IDENTITY_DENYLIST: ${{ secrets.IDENTITY_DENYLIST }}
           IDENTITY_OWN_NAMES: ${{ secrets.IDENTITY_OWN_NAMES }}
         run: |
-          python scripts/identity-lint.py || echo "::warning title=identity-lint::findings present (warning-only)"
+          # identity-lint.py exit codes: 0 clean, 1 findings, 2 usage/config error.
+          # Both non-zero outcomes stay warning-only, but are reported separately.
+          rc=0
+          python scripts/identity-lint.py || rc=$?
+          case "$rc" in
+            0) ;;
+            1) echo "::warning title=identity-lint::findings present (warning-only)" ;;
+            *) echo "::warning title=identity-lint::scanner failed before completing (exit $rc; warning-only)" ;;
+          esac

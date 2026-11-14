@@ -27,11 +27,14 @@ from pathlib import Path
 def load_jsonl(path):
     items = []
     with open(path) as f:
-        for line in f:
+        for lineno, line in enumerate(f, 1):
+            if not line.strip():
+                continue
             try:
                 items.append(json.loads(line))
-            except Exception:
-                pass
+            except json.JSONDecodeError as exc:
+                print(f"warning: skipping malformed JSONL line {path}:{lineno}: {exc}",
+                      file=sys.stderr)
     return items
 
 

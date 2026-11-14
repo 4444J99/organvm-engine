@@ -47,7 +47,7 @@ class OrchestratorReport:
     warnings: list[str]
 
 
-def _parse_handoff(text: str) -> OrchestratorReport:
+def _parse_handoff(text: str, handoff_path: Path = DEFAULT_HANDOFF) -> OrchestratorReport:
     session_match = re.search(r"\*\*From:\*\*\s*([^|]+)", text)
     phase_match = re.search(r"\*\*Phase:\*\*\s*([^\n]+)", text)
     session = session_match.group(1).strip() if session_match else None
@@ -83,7 +83,7 @@ def _parse_handoff(text: str) -> OrchestratorReport:
     next_action = actions[0] if actions else None
 
     return OrchestratorReport(
-        handoff_path=str(DEFAULT_HANDOFF),
+        handoff_path=str(handoff_path),
         handoff_session=session,
         handoff_phase=phase,
         completed_count=len(completed),
@@ -141,7 +141,7 @@ def run(argv: list[str] | None = None) -> int:
         print(f"ERROR: handoff envelope not found at {handoff}", file=sys.stderr)
         return 1
 
-    report = _parse_handoff(handoff.read_text())
+    report = _parse_handoff(handoff.read_text(), handoff)
     if args.json:
         print(json.dumps({
             **{k: v for k, v in asdict(report).items() if k != "open_actions" and k != "next_action"},

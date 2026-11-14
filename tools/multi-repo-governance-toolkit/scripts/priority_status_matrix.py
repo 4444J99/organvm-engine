@@ -152,7 +152,7 @@ def recency_analysis(prompt_records: list[dict]) -> list[dict]:
             year_buckets[year]["open"] += 1
         elif status == "ANSWERED":
             year_buckets[year]["answered"] += 1
-        else:
+        elif status in {"PARTIAL", "DEFERRED", "FAILED"}:
             year_buckets[year]["other"] += 1
 
     result = []
@@ -335,11 +335,22 @@ def main() -> None:
 
     max_open_year = max(recency, key=lambda r: r["open_pct"]) if recency else None
     if max_open_year and max_open_year["open_pct"] > 0:
-        bias = "more" if max_open_year["year"] >= "2025" else "NOT more"
+        dated = [r for r in recency if r["year"].isdigit()]
+        recent = [r for r in dated if r["year"] >= "2025"]
+        older = [r for r in dated if r["year"] < "2025"]
         print("\n  6. RECENCY BIAS")
         print(f"     - Year {max_open_year['year']} has highest OPEN rate: {max_open_year['open_pct']:.1f}%")
         print(f"       ({max_open_year['open']} OPEN out of {max_open_year['total']} total)")
-        print(f"     - Newer items are {bias} likely to be OPEN.")
+        recent_total = sum(r["total"] for r in recent)
+        older_total = sum(r["total"] for r in older)
+        if recent_total and older_total:
+            recent_rate = sum(r["open"] for r in recent) / recent_total
+            older_rate = sum(r["open"] for r in older) / older_total
+            bias = "more" if recent_rate > older_rate else "NOT more"
+            print(f"     - Newer items are {bias} likely to be OPEN "
+                  f"(2025+: {recent_rate * 100:.1f}% vs older: {older_rate * 100:.1f}%).")
+        else:
+            print("     - Not enough dated cohorts to compare newer vs older items.")
 
     # --- 7. Write output ---
     output_records = []

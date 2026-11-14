@@ -190,7 +190,12 @@ def generate_dashboard(metrics, snapshots):
     soak_complete = elapsed_days >= 30
     vigilia_bar = progress_bar_html(soak_day, 30, "VIGILIA (30-Day Soak Test)", MAGENTA)
     vigilia_note = (
-        "Soak test ran 2026-02-16 → 2026-03-18. Completed: 30 of 30 days."
+        "Soak test ran 2026-02-16 → 2026-03-18. "
+        + (
+            f"Completed: 30 of 30 days ({len(real_snaps)} real snapshot(s) collected)."
+            if real_snaps
+            else "30 of 30 days elapsed; no real snapshots collected."
+        )
         if soak_complete
         else f"Soak test started 2026-02-16. Completes ~2026-03-18. Day {soak_day} of 30."
     )
@@ -241,8 +246,8 @@ def generate_dashboard(metrics, snapshots):
     wc = computed.get("word_counts") or {}
     _tw = wc.get("total") if wc.get("total") is not None else manual.get("total_words")
     words_display = f"{int(_tw):,}" if isinstance(_tw, (int, float)) else "n/a"
-    code_files = manual.get("code_files") if manual.get("code_files") not in (None, "", "?") else "n/a"
-    test_files = manual.get("test_files") if manual.get("test_files") not in (None, "", "?") else "n/a"
+    code_files = escape(str(manual.get("code_files"))) if manual.get("code_files") not in (None, "", "?") else "n/a"
+    test_files = escape(str(manual.get("test_files"))) if manual.get("test_files") not in (None, "", "?") else "n/a"
     organs_display = f"{computed.get('operational_organs', '?')}/{computed.get('total_organs', '?')}"
 
     # System numbers

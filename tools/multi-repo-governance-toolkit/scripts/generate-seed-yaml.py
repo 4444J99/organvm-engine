@@ -149,7 +149,7 @@ def detect_language_remote(org: str, repo: str) -> str:
     """Detect primary language from GitHub API."""
     try:
         result = subprocess.run(
-            ["gh", "api", f"repos/{org}/{repo}/languages", "--jq", "keys[0]"],
+            ["gh", "api", f"repos/{org}/{repo}/languages", "--jq", "keys_unsorted[0]"],
             capture_output=True, text=True, timeout=15,
         )
         if result.returncode == 0 and result.stdout.strip():
@@ -347,7 +347,8 @@ def push_remote(org: str, repo: str, content: str) -> tuple[bool, str]:
         ["gh", "api", f"repos/{org}/{repo}/contents/seed.yaml", "--jq", ".sha"],
         capture_output=True, text=True,
     )
-    sha = result.stdout.strip() if result.returncode == 0 else None
+    if result.returncode == 0 and result.stdout.strip():
+        return True, "seed.yaml already present remotely"
 
     encoded = base64.b64encode(content.encode()).decode()
     payload = {
@@ -355,8 +356,6 @@ def push_remote(org: str, repo: str, content: str) -> tuple[bool, str]:
         "content": encoded,
         "branch": branch,
     }
-    if sha:
-        payload["sha"] = sha
 
     result = subprocess.run(
         ["gh", "api", f"repos/{org}/{repo}/contents/seed.yaml",
@@ -472,7 +471,12 @@ def main():
                     results["failed"] += 1
             else:
                 seed_file = local_path / "seed.yaml"
-                seed_file.write_text(content)
+                try:
+                    seed_file.write_text(content)
+                except OSError as exc:
+                    print(f"  [FAIL] {org}/{name} → write failed: {exc}")
+                    results["failed"] += 1
+                    continue
                 print(f"  [WROTE] {org}/{name} (lang={language})")
                 results["success"] += 1
         elif args.remote_only:

@@ -108,19 +108,20 @@ def categorize(pr: dict[str, Any]) -> str:
         age_days = 0
 
     review = pr.get("reviewDecision", "")
-    if review == "APPROVED":
-        return "close-to-merge"
     if review == "CHANGES_REQUESTED":
         return "needs-response"
+
+    mergeable = pr.get("mergeable", "")
+    if mergeable == "CONFLICTING":
+        return "blocked"
+
+    if review == "APPROVED":
+        return "close-to-merge"
 
     if age_days >= VERY_STALE_DAYS:
         return "stale"
     if age_days >= STALE_DAYS:
         return "waiting-on-maintainer"
-
-    mergeable = pr.get("mergeable", "")
-    if mergeable == "CONFLICTING":
-        return "blocked"
 
     return "waiting-on-maintainer"
 
@@ -167,6 +168,10 @@ def main() -> None:
         print(f"Manifest not found: {args.manifest}", file=sys.stderr)
         sys.exit(1)
 
+    if args.update and yaml is None:
+        print("--update requires PyYAML. Install it with: python -m pip install pyyaml", file=sys.stderr)
+        sys.exit(1)
+
     prs = parse_manifest(args.manifest)
     print(f"Checking {len(prs)} PRs...", file=sys.stderr)
 
@@ -178,6 +183,7 @@ def main() -> None:
         status["category"] = categorize(status) if "error" not in status or "title" in status else "error"
         results.append(status)
 
+    all_results = results
     if args.category:
         results = [r for r in results if r.get("category") == args.category]
 
@@ -196,7 +202,7 @@ def main() -> None:
             data = yaml.safe_load(f)
 
         state_map = {}
-        for r in results:
+        for r in all_results:
             state = r.get("state", "").lower()
             if state in ("merged", "closed", "open"):
                 state_map[r["url"]] = state

@@ -76,7 +76,7 @@ def _parse_irf(text: str) -> list[IRFEntry]:
             irf_id=irf_id,
             closed=closed,
             priority=priority,
-            summary=summary[:240],
+            summary=summary,
             last_col=last_col,
         ))
     return rows
@@ -158,11 +158,17 @@ def run(argv: list[str] | None = None) -> int:
     report = _scan(entries)
 
     if args.json:
+        def _entry(e: IRFEntry) -> dict:
+            # Matching uses the full summary; only the emitted copy is capped.
+            d = asdict(e)
+            d["summary"] = d["summary"][:240]
+            return d
+
         print(json.dumps({
             **{k: v for k, v in asdict(report).items() if not isinstance(v, list)},
-            "open_vacuums": [asdict(e) for e in report.open_vacuums],
-            "p1_open": [asdict(e) for e in report.p1_open],
-            "none_in_last_col": [asdict(e) for e in report.none_in_last_col],
+            "open_vacuums": [_entry(e) for e in report.open_vacuums],
+            "p1_open": [_entry(e) for e in report.p1_open],
+            "none_in_last_col": [_entry(e) for e in report.none_in_last_col],
         }, indent=2))
     else:
         print(_emit_markdown(report))

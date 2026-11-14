@@ -63,7 +63,7 @@ It generates per-organ configs and profile READMEs. The shared meta profile need
 the corpus renderer and its registry, metrics, and snapshot inputs; it is not
 generated or overwritten by this toolkit.
 
-The DONE-ID validator reads `data/done-id-counter.json` and
+The DONE-ID validator, `scripts/check-done-id.py`, reads `data/done-id-counter.json` and
 `INST-INDEX-RERUM-FACIENDARUM.md` from the current directory, or from the corpus
 checkout selected with `--repo-root /path/to/corpus`. Add `--staged` to validate
 that checkout's staged IRF additions against the staged counter and the complete
