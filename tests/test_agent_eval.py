@@ -417,6 +417,18 @@ def test_same_trace_digest_cannot_claim_changed_evaluation_outcome():
         )
 
 
+def test_same_trace_digest_tolerates_reordered_checks_and_failures():
+    before, after, rubric = paired_reports()
+    after["trace_digest"] = before["trace_digest"]
+    for key in ("scores", "coverage", "decision", "scope", "failed_required"):
+        after[key] = copy.deepcopy(before[key])
+    after["checks"] = list(reversed(copy.deepcopy(before["checks"])))
+    assert len(after["checks"]) > 1
+    result = promotion_gate([before], [after], case_ids=[after["case_id"]],
+                            rubric_digest=digest(rubric), scope_manifest_digest=SCOPE_DIGEST)
+    assert result["decision"] in {"blocked", "eligible_for_review"}
+
+
 def test_trace_digest_cannot_be_reused_across_held_out_cases():
     before, after, rubric = paired_reports()
     before2, after2, _ = paired_reports()
