@@ -43,7 +43,7 @@ The observed run belongs to parent head `9d891bb9718d517ce764618e08ce8e21589cbcd
 it is not claimed as verification of the new source commit.
 
 ```sh
-PYTHONPATH=src python -m organvm_engine.ci.runtime_evidence docs/research/evidence/github-ci-34762163480.input.json
+PYTHONPATH=src python -m organvm_engine.ci.runtime_evidence tests/fixtures/ci_evidence/github-ci-34762163480.input.json
 ```
 
 Expected exit: **1**, decision `not_executed`. No rerun or merge is triggered.

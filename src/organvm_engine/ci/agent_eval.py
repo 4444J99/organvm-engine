@@ -402,10 +402,16 @@ def promotion_gate(baseline: list[dict], candidate: list[dict], *, case_ids: lis
         if (report["scope"]["manifest_digest"] != old["scope"]["manifest_digest"]
                 or report["scope"]["expected_count"] != old["scope"]["expected_count"]):
             raise ValueError("gate: paired scope manifest mismatch")
-        outcome_fields = ("checks", "scores", "coverage", "failed_required", "decision", "scope")
+        def outcome(result: dict) -> dict:
+            """Observable outcome with check and failure order normalized, like the contract."""
+            normalized = {field: result[field]
+                          for field in ("scores", "coverage", "decision", "scope")}
+            normalized["checks"] = sorted(result["checks"], key=lambda row: row["id"])
+            normalized["failed_required"] = sorted(result["failed_required"])
+            return normalized
+
         if (report["trace_digest"] == old["trace_digest"]
-                and not _json_equal({field: report[field] for field in outcome_fields},
-                                    {field: old[field] for field in outcome_fields})):
+                and not _json_equal(outcome(report), outcome(old))):
             raise ValueError("gate: trace digest contradicts evaluation outcome")
         if report.get("decision") != "pass" or report.get("failed_required") != []:
             reasons.add("candidate_required_check_failure")

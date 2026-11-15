@@ -250,17 +250,56 @@ def test_privileged_workflow_run_head_checkout_is_detected():
     assert "privileged_head_checkout" in codes(text)
 
 
-@pytest.mark.parametrize("missing", ["ref", "repository"])
-def test_workflow_run_checkout_requires_both_untrusted_head_selectors(missing):
-    settings = {
-        "ref": "${{ github.event.workflow_run.head_sha }}",
-        "repository": "${{ github.event.workflow_run.head_repository.full_name }}",
-    }
-    settings.pop(missing)
+def _workflow_run_checkout(settings):
     rendered = "".join(f"          {key}: {value}\n" for key, value in settings.items())
     text = SAFE.replace("on: [push, pull_request]", "on: workflow_run")
-    text = text.replace("      - run:", f"        with:\n{rendered}      - run:")
+    return text.replace("      - run:", f"        with:\n{rendered}      - run:")
+
+
+def test_workflow_run_checkout_without_head_sha_is_not_flagged():
+    text = _workflow_run_checkout({
+        "repository": "${{ github.event.workflow_run.head_repository.full_name }}"})
     assert "privileged_head_checkout" not in codes(text)
+
+
+@pytest.mark.parametrize("repository", [
+    None, "''", "${{ github.repository }}", "${{ GitHub . Repository }}"])
+def test_workflow_run_head_sha_with_default_repository_is_flagged(repository):
+    settings = {"ref": "${{ github.event.workflow_run.head_sha }}"}
+    if repository is not None:
+        settings["repository"] = repository if repository != "''" else '""'
+    assert "privileged_head_checkout" in codes(_workflow_run_checkout(settings))
+
+
+def test_workflow_run_head_sha_with_other_explicit_repository_is_not_flagged():
+    text = _workflow_run_checkout({
+        "ref": "${{ github.event.workflow_run.head_sha }}", "repository": "octo/other"})
+    assert "privileged_head_checkout" not in codes(text)
+
+
+@pytest.mark.parametrize("expression", [
+    "${{ GITHUB.event.issue.title }}",
+    "${{ github . event . issue . title }}",
+    "${{ GitHub.Event [ 'issue' ] . Title }}",
+])
+def test_untrusted_run_expression_ignores_case_and_path_whitespace(expression):
+    text = SAFE.replace("pytest tests/", f"echo {expression}")
+    assert "untrusted_run_expression" in codes(text)
+
+
+@pytest.mark.parametrize("expression", [
+    "${{ GITHUB.EVENT.PULL_REQUEST.HEAD.SHA }}",
+    "${{ github . event . pull_request . head . sha }}",
+])
+def test_privileged_checkout_ignores_case_and_path_whitespace(expression):
+    text = SAFE.replace("on: [push, pull_request]", "on: pull_request_target")
+    text = text.replace("      - run:", f"        with:\n          ref: {expression}\n      - run:")
+    assert "privileged_head_checkout" in codes(text)
+
+
+def test_quoted_literal_with_dots_is_not_collapsed_into_a_finding():
+    text = SAFE.replace("pytest tests/", "echo ${{ format('github . event . issue . title') }}")
+    assert "untrusted_run_expression" not in codes(text)
 
 
 def test_untrusted_expression_in_env_is_not_shell_source():

@@ -38,16 +38,19 @@ UNTRUSTED_CONTEXT = re.compile(
     r"github\.event\.(?:workflow_run\.)?head_commit\.(?:message|author|committer)\b|"
     r"github\.event\.commits(?:\s*\[[^\]]+\]|\.\*)\.(?:message|author|committer)\b|"
     r"github\.head_ref\b)",
+    re.IGNORECASE,
 )
-PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b")
-PR_HEAD_REF = re.compile(r"github\.head_ref\b")
-PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b")
-WORKFLOW_RUN_HEAD_SHA = re.compile(r"github\.event\.workflow_run\.head_sha\b")
+PR_HEAD = re.compile(r"github\.event\.pull_request\.head\b", re.IGNORECASE)
+PR_HEAD_REF = re.compile(r"github\.head_ref\b", re.IGNORECASE)
+PR_MERGE_SHA = re.compile(r"github\.event\.pull_request\.merge_commit_sha\b", re.IGNORECASE)
+WORKFLOW_RUN_HEAD_SHA = re.compile(r"github\.event\.workflow_run\.head_sha\b", re.IGNORECASE)
 WORKFLOW_RUN_HEAD_REPOSITORY = re.compile(
     r"github\.event\.workflow_run\.head_repository\.full_name\b",
+    re.IGNORECASE,
 )
+CURRENT_REPOSITORY = re.compile(r"^\s*(?:\$\{\{\s*github\s*\.\s*repository\s*\}\})?\s*$", re.IGNORECASE)
 PR_SYNTHETIC_REF = re.compile(
-    r"refs/pull/(?:[0-9]+|\$\{\{.*?github\.event\.(?:pull_request\.)?number\b.*?\}\})/(?:head|merge)\b",
+    r"refs/pull/(?:[0-9]+|\$\{\{.*?(?i:github\.event\.(?:pull_request\.)?number\b).*?\}\})/(?:head|merge)\b",
     re.DOTALL,
 )
 PR_SYNTHETIC_FORMAT_REF = re.compile(
@@ -84,9 +87,20 @@ FINDING_SEVERITIES = {
 }
 
 
+_PATH_DOT = re.compile(r"""('(?:[^']|'')*'|"(?:[^"]|"")*")|\s*\.\s*""")
+
+
+def _collapse_path_whitespace(value: str) -> str:
+    """Drop whitespace around `.` outside quoted literals; the Actions lexer skips it."""
+    return _PATH_DOT.sub(lambda match: match.group(1) or ".", value)
+
+
 def _normalize_event_paths(value: str) -> str:
-    """Normalize quoted bracket property access for bounded GitHub expressions."""
-    return BRACKET_SEGMENT.sub(lambda match: "." + match.group(2), value)
+    """Normalize whitespace and quoted bracket access for bounded GitHub expressions."""
+    bracketed = BRACKET_SEGMENT.sub(lambda match: "." + match.group(2), value)
+    for expression in _github_expressions(bracketed):
+        bracketed = bracketed.replace(expression, _collapse_path_whitespace(expression))
+    return bracketed
 
 
 def _contains_pr_head(value: Any) -> bool:
@@ -110,7 +124,11 @@ def _contains_pr_head(value: Any) -> bool:
 
 
 def _contains_workflow_run_head(value: dict[str, Any]) -> bool:
-    """Require both the workflow-run head SHA and its contributor repository."""
+    """Flag a workflow-run head SHA checked out from the contributor or the default repository.
+
+    checkout defaults `repository` to `github.repository` and accepts a SHA as `ref`; a
+    fork head commit is reachable there, so an omitted repository does not make it safe.
+    """
     ref_value = value.get("ref", "")
     repository_value = value.get("repository", "")
     if not isinstance(ref_value, str) or not isinstance(repository_value, str):
@@ -124,7 +142,8 @@ def _contains_workflow_run_head(value: dict[str, Any]) -> bool:
         )
 
     return (references(ref_value, WORKFLOW_RUN_HEAD_SHA)
-            and references(repository_value, WORKFLOW_RUN_HEAD_REPOSITORY))
+            and (references(repository_value, WORKFLOW_RUN_HEAD_REPOSITORY)
+                 or CURRENT_REPOSITORY.fullmatch(repository_value) is not None))
 
 
 def _contains_untrusted_run_expression(value: str) -> bool:
@@ -201,7 +220,7 @@ def _contains_synthetic_format_component_ref(value: str) -> bool:
             continue
         number_arg = arguments[placeholders[0]]
         kind_arg = arguments[placeholders[1]]
-        if (re.search(r"github\.event\.(?:pull_request\.)?number\b", number_arg)
+        if (re.search(r"github\.event\.(?:pull_request\.)?number\b", number_arg, re.IGNORECASE)
                 and re.fullmatch(r"(['\"])(?:head|merge)\1", kind_arg)):
             return True
     return False
