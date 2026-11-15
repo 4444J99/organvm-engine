@@ -263,7 +263,8 @@ def test_workflow_run_checkout_without_head_sha_is_not_flagged():
 
 
 @pytest.mark.parametrize("repository", [
-    None, "''", "${{ github.repository }}", "${{ GitHub . Repository }}"])
+    None, "''", "${{ github.repository }}", "${{ GitHub . Repository }}", "${{ github['repository'] }}",
+    '${{ github["repository"] }}'])
 def test_workflow_run_head_sha_with_default_repository_is_flagged(repository):
     settings = {"ref": "${{ github.event.workflow_run.head_sha }}"}
     if repository is not None:

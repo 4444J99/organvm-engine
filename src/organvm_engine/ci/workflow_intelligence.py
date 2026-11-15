@@ -143,7 +143,7 @@ def _contains_workflow_run_head(value: dict[str, Any]) -> bool:
 
     return (references(ref_value, WORKFLOW_RUN_HEAD_SHA)
             and (references(repository_value, WORKFLOW_RUN_HEAD_REPOSITORY)
-                 or CURRENT_REPOSITORY.fullmatch(repository_value) is not None))
+                 or CURRENT_REPOSITORY.fullmatch(_normalize_event_paths(repository_value)) is not None))
 
 
 def _contains_untrusted_run_expression(value: str) -> bool:
