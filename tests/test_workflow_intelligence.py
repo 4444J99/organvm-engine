@@ -426,6 +426,16 @@ def test_drift_separates_representation_from_declarations():
     assert drift(empty, original)["changes"][0]["kind"] == "added"
 
 
+def test_same_revision_drift_treats_a_missing_enumeration_flag_as_unknown():
+    legacy_previous = snapshot(enumeration_complete=False)
+    legacy_current = snapshot(enumeration_complete=False)
+    del legacy_previous["enumeration_complete"]
+    del legacy_current["enumeration_complete"]
+    assert drift(legacy_previous, legacy_current)["changes"] == []
+    assert drift(legacy_previous, snapshot())["changes"] == []
+    assert drift(snapshot(), legacy_current)["changes"] == []
+
+
 def test_trigger_order_only_change_is_representation_only():
     reordered = snapshot(
         SAFE.replace("on: [push, pull_request]", "on: [pull_request, push]"),

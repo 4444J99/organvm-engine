@@ -569,8 +569,9 @@ def drift(previous: dict, current: dict) -> dict:
     if previous["revision"] == current["revision"]:
         previous_paths = set(previous["expected_paths"])
         current_paths = set(current["expected_paths"])
-        if ((previous["enumeration_complete"] and not current_paths <= previous_paths)
-                or (current["enumeration_complete"] and not previous_paths <= current_paths)):
+        if ((previous.get("enumeration_complete") is True and not current_paths <= previous_paths)
+                or (current.get("enumeration_complete") is True
+                    and not previous_paths <= current_paths)):
             raise ValueError("drift: conflicting complete enumeration")
         for path in set(previous["workflows"]) & set(current["workflows"]):
             before, after = previous["workflows"][path], current["workflows"][path]
