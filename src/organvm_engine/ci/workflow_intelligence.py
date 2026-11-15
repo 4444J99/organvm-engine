@@ -87,12 +87,27 @@ FINDING_SEVERITIES = {
 }
 
 
-_PATH_DOT = re.compile(r"""('(?:[^']|'')*'|"(?:[^"]|"")*")|\s*\.\s*""")
+_PATH_TOKEN = re.compile(r"""'(?:[^']|'')*'|"(?:[^"]|"")*"|\.""")
 
 
 def _collapse_path_whitespace(value: str) -> str:
-    """Drop whitespace around `.` outside quoted literals; the Actions lexer skips it."""
-    return _PATH_DOT.sub(lambda match: match.group(1) or ".", value)
+    """Drop whitespace around `.` outside quoted literals; the Actions lexer skips it.
+
+    Linear in the input: the pattern only matches quoted literals and single dots, and the
+    surrounding whitespace is trimmed by index rather than by a backtracking `\\s*`.
+    """
+    out: list[str] = []
+    cursor = 0
+    for match in _PATH_TOKEN.finditer(value):
+        if match.group(0) != ".":
+            continue
+        out.append(value[cursor:match.start()].rstrip())
+        out.append(".")
+        cursor = match.end()
+        while cursor < len(value) and value[cursor].isspace():
+            cursor += 1
+    out.append(value[cursor:])
+    return "".join(out)
 
 
 def _normalize_event_paths(value: str) -> str:

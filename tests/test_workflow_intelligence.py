@@ -720,3 +720,17 @@ def test_invalid_permissions_are_not_clean(value):
 def test_invalid_timeout_types(value):
     with pytest.raises(ValueError):
         analyze_workflow(SAFE.replace("timeout-minutes: 10", "timeout-minutes: " + value))
+
+
+def test_path_whitespace_normalization_is_linear_on_padded_expressions():
+    import time
+
+    from organvm_engine.ci.workflow_intelligence import _normalize_event_paths
+
+    padded = "${{" + " " * 200_000 + "github.event.issue.title }}"
+    started = time.perf_counter()
+    result = _normalize_event_paths(padded)
+    assert time.perf_counter() - started < 1.0
+    assert "github.event.issue.title" in result
+    assert _normalize_event_paths("${{ github . event\t.\nissue . title }}") == "${{ github.event.issue.title }}"
+    assert _normalize_event_paths("${{ format('a . b', github . x) }}") == "${{ format('a . b', github.x) }}"
