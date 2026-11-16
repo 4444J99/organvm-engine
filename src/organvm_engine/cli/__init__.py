@@ -1177,7 +1177,9 @@ def build_parser() -> argparse.ArgumentParser:
     ctx_sub = ctx.add_subparsers(dest="subcommand")
     c_sync = ctx_sub.add_parser(
         "sync",
-        help="Sync CLAUDE.md, GEMINI.md, and AGENTS.md",
+        help=(
+            "Write docs/organvm-context.md and point CLAUDE.md, GEMINI.md and AGENTS.md at it"
+        ),
     )
     c_sync.add_argument(
         "--dry-run",

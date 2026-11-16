@@ -46,12 +46,20 @@ def test_sync_all_updates_repo_in_additional_flat_workspace_root(tmp_path, monke
     synced_line = next(line for line in content.splitlines() if "Last synced:" in line)
     synced_at = synced_line.split("Last synced: ", 1)[1].rstrip("*")
 
+    document_path = repo / "docs" / "organvm-context.md"
+    document = document_path.read_text()
+
     assert result["errors"] == []
     assert str(claude_md) in result["updated"]
+    assert str(document_path) in result["created"]
     assert any(change["path"] == str(claude_md) for change in result["changelog"])
+    assert any(change["path"] == str(document_path) for change in result["changelog"])
+    # The instruction file carries only the pointer; the generated text is in the document.
     assert AUTO_START in content
-    assert "recursive-engine" in content
-    assert "**Produces**" in content
-    assert "`META-ORGANVM`" in content
+    assert "docs/organvm-context.md" in content
+    assert "recursive-engine" not in content.replace("# Recursive Engine", "")
+    assert "recursive-engine" in document
+    assert "**Produces**" in document
+    assert "`META-ORGANVM`" in document
     synced_dt = datetime.strptime(synced_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
     assert datetime.now(timezone.utc) - synced_dt < timedelta(minutes=1)

@@ -322,7 +322,12 @@ class TestSyncRepo:
         assert result["change"]["action"] == "created"
         content = (repo_path / "CLAUDE.md").read_text()
         assert AUTO_START in content
-        assert "recursive-engine" in content
+        assert "docs/organvm-context.md" in content
+        # The generated text is in the shared document, not in the instruction file.
+        document = (repo_path / "docs" / "organvm-context.md").read_text()
+        assert result["context_document"]["action"] == "created"
+        assert "recursive-engine" in document
+        assert "recursive-engine" not in content
 
     def test_sync_updates_existing(self, tmp_path, registry):
         repo_path = tmp_path / "recursive-engine"
@@ -334,6 +339,7 @@ class TestSyncRepo:
         content = claude_md.read_text()
         assert "## Keep This" in content
         assert "## Old" not in content
+        assert "docs/organvm-context.md" in content
 
     def test_sync_flags_stale_handoff(self, tmp_path, registry):
         from datetime import datetime, timedelta, timezone
@@ -356,7 +362,8 @@ class TestSyncRepo:
         result = sync_repo(repo_path, "recursive-engine", "organvm-i-theoria", registry)
 
         assert result["action"] == "created"
-        content = (repo_path / "CLAUDE.md").read_text()
-        assert "## Active Handoff Status" in content
-        assert "**STALE**" in content
-        assert "verify constraints" in content
+        document = (repo_path / "docs" / "organvm-context.md").read_text()
+        assert "## Active Handoff Status" in document
+        assert "**STALE**" in document
+        assert "verify constraints" in document
+        assert "STALE" not in (repo_path / "CLAUDE.md").read_text()

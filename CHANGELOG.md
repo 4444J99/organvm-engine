@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- `organvm context sync` writes the full generated context to one generator-owned
+  `docs/organvm-context.md` per directory (repo, organ, workspace) and leaves only a short
+  pointer, with its `Last synced` stamp, between the `ORGANVM:AUTO` markers of `CLAUDE.md`,
+  `GEMINI.md` and `AGENTS.md`, so agents that auto-load those files no longer carry the
+  generated text. A legacy full block is migrated to the pointer on the next sync. The
+  receipted (`--receipt`) transaction layer covers the new file like any other output; its
+  preflight creates a missing `docs/` first and a rollback removes it again. The changelog
+  rollback understands whole-file records, and `contextmd.reader.read_generated_context`
+  reads the document with a fallback to a legacy in-file block.
 - Public CLI surface inventory: `python -m organvm_engine.api_surface show|check|write` extracts
   the live `organvm` command tree, compares it with the committed baseline
   `docs/api/cli-surface.json`, and classifies drift as breaking or compatible; a test keeps the

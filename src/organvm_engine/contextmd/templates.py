@@ -68,6 +68,21 @@ This repo participates in the **{organ_key} ({organ_name})** swarm.
 <!-- ORGANVM:AUTO:END -->
 """
 
+# ── Pointer (CLAUDE.md / GEMINI.md / AGENTS.md at every level) ────
+
+POINTER_SECTION = """\
+<!-- ORGANVM:AUTO:START -->
+Generated system context (organ, edges, directives, task queue, density) is in `{context_path}`.
+Read it when you need it; it is refreshed by `organvm context sync --write`. *Last synced: {timestamp}*
+<!-- ORGANVM:AUTO:END -->"""
+
+# ── Shared generated context file (docs/organvm-context.md) ───────
+
+CONTEXT_DOCUMENT_HEADER = (
+    "<!-- GENERATED FILE: written by `organvm context sync --write`. "
+    "Do not edit; changes are overwritten. -->"
+)
+
 # ── Organ-level template ──────────────────────────────────────────
 
 ORGAN_SECTION = """\

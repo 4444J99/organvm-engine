@@ -2,11 +2,13 @@
 
 The sync process:
 1. Load registry + seeds once
-2. Walk each organ directory looking for CLAUDE.md, GEMINI.md, and AGENTS.md files
-3. For each file, inject or replace the auto-generated section
-4. Optionally update the workspace-level context files
+2. Walk each organ directory and repo, rendering each level's full context once
+3. Write it to the generator-owned ``docs/organvm-context.md`` of that directory
+4. Inject or replace a short pointer to it between the AUTO markers of the
+   CLAUDE.md, GEMINI.md, and AGENTS.md files (workspace, organ and repo level)
 
-Preserves all manually-written content outside the AUTO markers.
+Preserves all manually-written content outside the AUTO markers. A file that
+still carries a legacy full generated block is migrated to the pointer.
 """
 
 from __future__ import annotations
@@ -22,9 +24,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from organvm_engine.contextmd import AUTO_END, AUTO_START
+from organvm_engine.contextmd import (
+    AUTO_END,
+    AUTO_START,
+    CONTEXT_DOCUMENT_RELPATH,
+    INSTRUCTION_FILENAMES,
+)
 from organvm_engine.contextmd.generator import (
+    compose_context_document,
     generate_agents_section,
+    generate_context_pointer,
     generate_organ_section,
     generate_repo_section,
     generate_workspace_section,
@@ -38,6 +47,7 @@ CUSTODY_TRANSACTION_ALIAS = re.compile(
 )
 CUSTODY_RECOVERY_RECORD = re.compile(r"^recovery-[0-9a-f]{64}\.json$")
 MAX_CUSTODY_RECOVERY_BYTES = 4096
+SYNC_TIMESTAMP_PATTERN = re.compile(r"\*Last synced: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\*")
 
 
 class ContextCustodyPublicationError(RuntimeError):
@@ -272,17 +282,25 @@ def sync_all(
     failed_output_paths: list[Path] = []
     target_preimages: list[dict[str, Any]] = []
     rendered_remote_references: list[dict[str, str]] = []
+    created_directories: list[str] = []
 
     if receipt_enabled:
         assert receipt_path is not None
-        target_preimages = _preflight_context_outputs(
-            workspace=ws,
-            registry=reg,
-            target_organs=target_organs,
-            extra_roots=extra_roots,
-            organ_directory_map=organ_directory_map,
-            workspace_identity=receipt_workspace_identity,
-        )
+        try:
+            target_preimages = _preflight_context_outputs(
+                workspace=ws,
+                registry=reg,
+                target_organs=target_organs,
+                extra_roots=extra_roots,
+                organ_directory_map=organ_directory_map,
+                workspace_identity=receipt_workspace_identity,
+                created_directories=created_directories,
+            )
+        except Exception:
+            _remove_created_context_directories(
+                ws, created_directories, receipt_workspace_identity,
+            )
+            raise
         receipt_target_absolute = _lexical_absolute(Path(receipt_path))
         output_targets = {
             _lexical_absolute(ws / str(binding["path"]))
@@ -316,43 +334,40 @@ def sync_all(
             organ_path = ws / organ_dir_name
 
             if organ_path.is_dir():
-                # 2. Sync organ-level context files
-                for filename in ["CLAUDE.md", "GEMINI.md", "AGENTS.md"]:
-                    try:
-                        organ_section = generate_organ_section(
-                            organ_key,
-                            reg,
-                            all_seeds,
-                            timestamp=render_timestamp,
-                            include_live_context=not receipt_enabled,
-                        )
-                        res = _inject_section_result(
-                            organ_path / filename,
-                            organ_section,
-                            dry_run,
-                            custody_root=ws if receipt_enabled else None,
-                            expected_input_bindings=(
-                                target_preimage_map if receipt_enabled else None
+                # 2. Sync organ-level context document and pointers
+                def render_organ_document(
+                    organ_key: str = organ_key,
+                ) -> str:
+                    return compose_context_document(
+                        f"ORGANVM organ context: {organ_key}",
+                        [
+                            generate_organ_section(
+                                organ_key,
+                                reg,
+                                all_seeds,
+                                timestamp=render_timestamp,
+                                include_live_context=not receipt_enabled,
                             ),
-                            custody_root_identity=receipt_workspace_identity,
-                        )
-                        _record_sync_result(
-                            res,
-                            updated,
-                            created,
-                            skipped,
-                            changes,
-                            expected_output_bindings,
-                            target_preimages,
-                        )
-                    except Exception as e:
-                        _record_sync_error(
-                            e,
-                            organ_path / filename,
-                            errors,
-                            expected_output_bindings,
-                            failed_output_paths,
-                        )
+                        ],
+                    )
+
+                _sync_context_outputs(
+                    directory=organ_path,
+                    render_document=render_organ_document,
+                    dry_run=dry_run,
+                    updated=updated,
+                    created=created,
+                    skipped=skipped,
+                    changes=changes,
+                    errors=errors,
+                    expected_output_bindings=expected_output_bindings,
+                    failed_output_paths=failed_output_paths,
+                    target_preimages=target_preimages,
+                    target_preimage_map=target_preimage_map,
+                    receipt_workspace=ws if receipt_enabled else None,
+                    receipt_workspace_identity=receipt_workspace_identity,
+                    timestamp=render_timestamp,
+                )
 
                 # 3. Sync repo-level context files for the hierarchical workspace layout.
                 for repo_entry in organ_data.get("repositories", []):
@@ -425,42 +440,37 @@ def sync_all(
                         resolve_all_sops=resolve_all_sops,
                     )
 
-        # 4. Sync workspace-level context files
-        for filename in ["CLAUDE.md", "GEMINI.md", "AGENTS.md"]:
-            try:
-                ws_section = generate_workspace_section(
-                    reg,
-                    all_seeds,
-                    timestamp=render_timestamp,
-                    include_live_context=not receipt_enabled,
-                )
-                res = _inject_section_result(
-                    ws / filename,
-                    ws_section,
-                    dry_run,
-                    custody_root=ws if receipt_enabled else None,
-                    expected_input_bindings=(
-                        target_preimage_map if receipt_enabled else None
+        # 4. Sync workspace-level context document and pointers
+        def render_workspace_document() -> str:
+            return compose_context_document(
+                "ORGANVM workspace context",
+                [
+                    generate_workspace_section(
+                        reg,
+                        all_seeds,
+                        timestamp=render_timestamp,
+                        include_live_context=not receipt_enabled,
                     ),
-                    custody_root_identity=receipt_workspace_identity,
-                )
-                _record_sync_result(
-                    res,
-                    updated,
-                    created,
-                    skipped,
-                    changes,
-                    expected_output_bindings,
-                    target_preimages,
-                )
-            except Exception as e:
-                _record_sync_error(
-                    e,
-                    ws / filename,
-                    errors,
-                    expected_output_bindings,
-                    failed_output_paths,
-                )
+                ],
+            )
+
+        _sync_context_outputs(
+            directory=ws,
+            render_document=render_workspace_document,
+            dry_run=dry_run,
+            updated=updated,
+            created=created,
+            skipped=skipped,
+            changes=changes,
+            errors=errors,
+            expected_output_bindings=expected_output_bindings,
+            failed_output_paths=failed_output_paths,
+            target_preimages=target_preimages,
+            target_preimage_map=target_preimage_map,
+            receipt_workspace=ws if receipt_enabled else None,
+            receipt_workspace_identity=receipt_workspace_identity,
+            timestamp=render_timestamp,
+        )
 
     except Exception as exc:
         if receipt_enabled:
@@ -470,6 +480,7 @@ def sync_all(
                 target_preimages=target_preimages,
                 expected_output_bindings=expected_output_bindings,
                 workspace_identity=receipt_workspace_identity,
+                created_directories=created_directories,
                 cause=exc,
             )
         raise
@@ -598,6 +609,7 @@ def sync_all(
                 target_preimages=target_preimages,
                 expected_output_bindings=expected_output_bindings,
                 workspace_identity=receipt_workspace_identity,
+                created_directories=created_directories,
                 cause=exc,
             )
         result["receipt_path"] = str(receipt_target)
@@ -634,6 +646,8 @@ def sync_all(
                             "old_section": change.get("old_section", ""),
                             "new_section": change.get("new_section", ""),
                         }
+                        if change.get("whole_file"):
+                            record["whole_file"] = True
                         f.write(json.dumps(record) + "\n")
             except Exception:
                 # Fallback or silent failure if no corpus repo exists in test envs
@@ -821,24 +835,165 @@ def _sync_repo_context_files(
         all_sops, repo=repo_name, organ=organ_dir_name, phase=repo_phase,
     )
 
-    for filename in ["CLAUDE.md", "GEMINI.md"]:
-        try:
-            res = sync_repo(
-                repo_path,
-                repo_name,
-                org_name,
-                registry,
+    agents_references: list[dict[str, str]] = []
+    document_path = repo_path / CONTEXT_DOCUMENT_RELPATH
+
+    def render_repo_document() -> str:
+        nonlocal agents_references
+        document = _render_repo_context_document(
+            repo_name,
+            org_name,
+            registry,
+            repo_seed,
+            sop_entries=repo_sops,
+            repo_path=repo_path,
+            timestamp=render_timestamp,
+            include_live_context=include_live_context,
+        )
+        if receipt_workspace is not None:
+            agents_references = resolve_agents_remote_references(
                 repo_seed,
+                registry,
+                default_owner=str(org_name),
+            )
+        return document
+
+    def bind_document_references(res: dict[str, Any]) -> None:
+        if receipt_workspace is None:
+            return
+        output_binding = res.get("output_binding")
+        if not isinstance(output_binding, dict):
+            raise RuntimeError("receipted context document output is missing its byte binding")
+        output_label = str(output_binding["path"])
+        for reference in agents_references:
+            rendered_remote_references.append(
+                {**reference, "output_path": output_label},
+            )
+
+    def bind_retained_document_references(error: Exception) -> None:
+        if not isinstance(error, ContextCustodyPublicationError):
+            return
+        output_label = str(error.output_binding["path"])
+        assert receipt_workspace is not None
+        parent_fd, filename, label = _open_custody_parent(
+            document_path, receipt_workspace,
+            expected_root_identity=receipt_workspace_identity,
+        )
+        try:
+            retained_payload = _read_custody_payload(parent_fd, filename)
+        finally:
+            os.close(parent_fd)
+        if (
+            retained_payload is None
+            or _payload_binding(label, retained_payload) != error.output_binding
+        ):
+            raise RuntimeError(
+                "retained context document output changed before reference binding",
+            ) from error
+        rendered_remote_references.extend(
+            {**reference, "output_path": output_label}
+            for reference in agents_references
+            if reference["url"].encode("utf-8") in retained_payload
+        )
+
+    _sync_context_outputs(
+        directory=repo_path,
+        render_document=render_repo_document,
+        dry_run=dry_run,
+        updated=updated,
+        created=created,
+        skipped=skipped,
+        changes=changes,
+        errors=errors,
+        expected_output_bindings=expected_output_bindings,
+        failed_output_paths=failed_output_paths,
+        target_preimages=target_preimages,
+        target_preimage_map=target_preimage_map,
+        receipt_workspace=receipt_workspace,
+        receipt_workspace_identity=receipt_workspace_identity,
+        timestamp=render_timestamp,
+        on_document_result=bind_document_references,
+        on_document_error=bind_retained_document_references,
+    )
+
+
+def _sync_context_outputs(
+    *,
+    directory: Path,
+    render_document,
+    dry_run: bool,
+    updated: list[str],
+    created: list[str],
+    skipped: list[str],
+    changes: list[dict[str, Any]] | None,
+    errors: list[dict[str, str]],
+    expected_output_bindings: list[dict[str, str | int]],
+    failed_output_paths: list[Path],
+    target_preimages: list[dict[str, Any]],
+    target_preimage_map: dict[str, dict[str, Any]],
+    receipt_workspace: Path | None,
+    receipt_workspace_identity: dict[str, int] | None,
+    timestamp: str | None,
+    on_document_result=None,
+    on_document_error=None,
+) -> None:
+    """Write one directory's context document, then point its instruction files at it.
+
+    The document is rendered and written exactly once per directory, before any
+    pointer, so a failed document write never leaves a pointer to a missing file
+    (a legacy full block stays in place instead). Every write, document and
+    pointers alike, goes through the same ``_inject_section_result`` custody path.
+    """
+    document_path = directory / CONTEXT_DOCUMENT_RELPATH
+    custody = {
+        "custody_root": receipt_workspace,
+        "expected_input_bindings": (
+            target_preimage_map if receipt_workspace is not None else None
+        ),
+        "custody_root_identity": receipt_workspace_identity,
+    }
+    try:
+        document = render_document()
+        document_result = _inject_section_result(
+            document_path,
+            document,
+            dry_run,
+            whole_file=True,
+            **custody,
+        )
+        _record_sync_result(
+            document_result,
+            updated,
+            created,
+            skipped,
+            changes,
+            expected_output_bindings,
+            target_preimages,
+        )
+        if on_document_result is not None:
+            on_document_result(document_result)
+    except Exception as e:
+        _record_sync_error(
+            e,
+            document_path,
+            errors,
+            expected_output_bindings,
+            failed_output_paths,
+        )
+        if on_document_error is not None:
+            on_document_error(e)
+        return
+
+    # A pointer's stamp follows the document: it moves only when the document did.
+    refresh_stamp = document_result["action"] != "unchanged"
+    for filename in INSTRUCTION_FILENAMES:
+        try:
+            res = _inject_section_result(
+                directory / filename,
+                generate_context_pointer(timestamp),
                 dry_run,
-                filename=filename,
-                sop_entries=repo_sops,
-                custody_root=receipt_workspace,
-                timestamp=render_timestamp,
-                include_live_context=include_live_context,
-                expected_input_bindings=(
-                    target_preimage_map if receipt_workspace is not None else None
-                ),
-                custody_root_identity=receipt_workspace_identity,
+                refresh_timestamp=refresh_stamp,
+                **custody,
             )
             _record_sync_result(
                 res,
@@ -852,81 +1007,51 @@ def _sync_repo_context_files(
         except Exception as e:
             _record_sync_error(
                 e,
-                repo_path / filename,
+                directory / filename,
                 errors,
                 expected_output_bindings,
                 failed_output_paths,
             )
 
-    agents_references: list[dict[str, str]] = []
-    try:
-        agents_section = generate_agents_section(
-            repo_name,
-            org_name,
-            registry,
-            repo_seed,
-            timestamp=render_timestamp,
-        )
-        if receipt_workspace is not None:
-            agents_references = resolve_agents_remote_references(
-                repo_seed,
-                registry,
-                default_owner=str(org_name),
-            )
-        res = _inject_section_result(
-            repo_path / "AGENTS.md",
-            agents_section,
-            dry_run,
-            custody_root=receipt_workspace,
-            expected_input_bindings=(
-                target_preimage_map if receipt_workspace is not None else None
-            ),
-            custody_root_identity=receipt_workspace_identity,
-        )
-        _record_sync_result(
-            res,
-            updated,
-            created,
-            skipped,
-            changes,
-            expected_output_bindings,
-            target_preimages,
-        )
-        if receipt_workspace is not None:
-            output_binding = res.get("output_binding")
-            if not isinstance(output_binding, dict):
-                raise RuntimeError("receipted AGENTS output is missing its byte binding")
-            output_label = str(output_binding["path"])
-            for reference in agents_references:
-                rendered_remote_references.append(
-                    {**reference, "output_path": output_label},
-                )
-    except Exception as e:
-        _record_sync_error(
-            e,
-            repo_path / "AGENTS.md",
-            errors,
-            expected_output_bindings,
-            failed_output_paths,
-        )
-        if isinstance(e, ContextCustodyPublicationError):
-            output_label = str(e.output_binding["path"])
-            assert receipt_workspace is not None
-            parent_fd, filename, label = _open_custody_parent(
-                repo_path / "AGENTS.md", receipt_workspace,
-                expected_root_identity=receipt_workspace_identity,
-            )
-            try:
-                retained_payload = _read_custody_payload(parent_fd, filename)
-            finally:
-                os.close(parent_fd)
-            if retained_payload is None or _payload_binding(label, retained_payload) != e.output_binding:
-                raise RuntimeError("retained AGENTS output changed before reference binding") from e
-            rendered_remote_references.extend(
-                {**reference, "output_path": output_label}
-                for reference in agents_references
-                if reference["url"].encode("utf-8") in retained_payload
-            )
+
+def _render_repo_context_document(
+    repo_name: str,
+    org: str,
+    registry: dict,
+    seed: dict | None,
+    *,
+    sop_entries: list | None,
+    repo_path: Path,
+    timestamp: str | None,
+    include_live_context: bool,
+) -> str:
+    """Render everything the repo's instruction files used to carry inline.
+
+    One document serves every agent: the system context (with each agent's
+    prompting hint) followed by the agent-swarm context.
+    """
+    repo_section = generate_repo_section(
+        repo_name,
+        org,
+        registry,
+        seed,
+        sop_entries=sop_entries,
+        agent=("claude", "gemini"),
+        repo_path=str(repo_path),
+        timestamp=timestamp,
+        include_live_context=include_live_context,
+    )
+    agents_section = generate_agents_section(
+        repo_name,
+        org,
+        registry,
+        seed,
+        timestamp=timestamp,
+    )
+    return compose_context_document(
+        f"ORGANVM system context: {repo_name}",
+        [repo_section, agents_section],
+    )
 
 
 def sync_repo(
@@ -944,27 +1069,39 @@ def sync_repo(
     expected_input_bindings: dict[str, dict[str, Any]] | None = None,
     custody_root_identity: dict[str, int] | None = None,
 ) -> dict[str, Any]:
-    """Sync a single repo's context file."""
-    agent = filename.replace(".md", "").lower() if filename else None
-    section = generate_repo_section(
+    """Sync a single repo: its context document, then the pointer in ``filename``.
+
+    The result describes the pointer file; the document write is reported under
+    ``context_document`` in the same shape.
+    """
+    document = _render_repo_context_document(
         repo_name,
         org,
         registry,
         seed,
         sop_entries=sop_entries,
-        agent=agent,
-        repo_path=str(repo_path),
+        repo_path=repo_path,
         timestamp=timestamp,
         include_live_context=include_live_context,
     )
-    file_path = repo_path / filename
-    res = _inject_section_result(
-        file_path,
-        section,
+    custody = {
+        "custody_root": custody_root,
+        "expected_input_bindings": expected_input_bindings,
+        "custody_root_identity": custody_root_identity,
+    }
+    document_res = _inject_section_result(
+        repo_path / CONTEXT_DOCUMENT_RELPATH,
+        document,
         dry_run,
-        custody_root=custody_root,
-        expected_input_bindings=expected_input_bindings,
-        custody_root_identity=custody_root_identity,
+        whole_file=True,
+        **custody,
+    )
+    res = _inject_section_result(
+        repo_path / filename,
+        generate_context_pointer(timestamp),
+        dry_run,
+        refresh_timestamp=document_res["action"] != "unchanged",
+        **custody,
     )
     return {
         "path": res["path"],
@@ -973,6 +1110,13 @@ def sync_repo(
         "change": res.get("change"),
         "output_binding": res.get("output_binding"),
         "input_binding": res.get("input_binding"),
+        "context_document": {
+            "path": document_res["path"],
+            "action": document_res["action"],
+            "change": document_res.get("change"),
+            "output_binding": document_res.get("output_binding"),
+            "input_binding": document_res.get("input_binding"),
+        },
     }
 
 
@@ -988,8 +1132,17 @@ def _inject_section_result(
     custody_root: Path | None = None,
     expected_input_bindings: dict[str, dict[str, Any]] | None = None,
     custody_root_identity: dict[str, int] | None = None,
+    *,
+    whole_file: bool = False,
+    refresh_timestamp: bool = False,
 ) -> dict[str, Any]:
-    """Inject or replace the auto-generated section and describe the generated diff."""
+    """Inject or replace the auto-generated section and describe the generated diff.
+
+    With ``whole_file`` the text is the entire generator-owned file (no markers,
+    no surrounding manual content); it is replaced as a whole. With
+    ``refresh_timestamp`` a differing ``Last synced`` stamp counts as a change
+    instead of being ignored.
+    """
     import re
 
     custody: tuple[str, str] | None = None
@@ -1050,7 +1203,9 @@ def _inject_section_result(
                     f"context target changed after receipted preflight: {output_label}",
                 )
 
-    if content is None:
+    if whole_file:
+        action, rendered, change = _render_generated_file(file_path, content, new_section)
+    elif content is None:
         action = "created"
         rendered = new_section + "\n"
         change = _build_change_record(file_path, action, "", new_section)
@@ -1060,6 +1215,7 @@ def _inject_section_result(
             content,
             new_section,
             re,
+            refresh_timestamp=refresh_timestamp,
         )
 
     if not dry_run and action != "unchanged":
@@ -1098,6 +1254,8 @@ def _inject_section_result(
             finally:
                 os.close(parent_fd)
         else:
+            if whole_file:
+                file_path.parent.mkdir(exist_ok=True)
             file_path.write_text(rendered)
 
     output_binding = None
@@ -1148,6 +1306,8 @@ def _render_existing_context(
     content: str,
     new_section: str,
     re_module,
+    *,
+    refresh_timestamp: bool = False,
 ) -> tuple[str, str, dict[str, Any] | None]:
     """Render an existing context file without performing filesystem writes."""
     original_content = content
@@ -1186,14 +1346,10 @@ def _render_existing_context(
         healing_changed_content = content != original_content.strip()
         if new_content == content and not healing_changed_content:
             return "unchanged", original_content, None
-        timestamp_pattern = (
-            r"(?m)^\*Last synced: "
-            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\*$"
-        )
         if (
             not healing_changed_content
-            and re_module.sub(timestamp_pattern, "*Last synced: <semantic>*", new_content)
-            == re_module.sub(timestamp_pattern, "*Last synced: <semantic>*", content)
+            and not refresh_timestamp
+            and _without_sync_timestamps(new_content) == _without_sync_timestamps(content)
         ):
             return "unchanged", original_content, None
         return (
@@ -1209,6 +1365,29 @@ def _render_existing_context(
         rendered,
         _build_change_record(file_path, "updated", "", new_section),
     )
+
+
+def _without_sync_timestamps(text: str) -> str:
+    """Mask ``Last synced`` stamps (own line or end of line) for semantic comparison."""
+    return SYNC_TIMESTAMP_PATTERN.sub("*Last synced: <semantic>*", text)
+
+
+def _render_generated_file(
+    file_path: Path,
+    content: str | None,
+    new_text: str,
+) -> tuple[str, str, dict[str, Any] | None]:
+    """Render a whole generator-owned file; only the sync stamps may differ when unchanged."""
+    rendered = new_text.rstrip("\n") + "\n"
+    if content is None:
+        change = _build_change_record(file_path, "created", "", rendered, whole_file=True)
+        return "created", rendered, change
+    if content == rendered or _without_sync_timestamps(content) == _without_sync_timestamps(
+        rendered,
+    ):
+        return "unchanged", content, None
+    change = _build_change_record(file_path, "updated", content, rendered, whole_file=True)
+    return "updated", rendered, change
 
 
 def _capture_custody_root_identity(custody_root: Path) -> dict[str, int]:
@@ -1304,7 +1483,7 @@ def _context_output_targets(
     strict: bool = True,
 ) -> list[Path]:
     """Enumerate selected output paths without creating or changing them."""
-    targets = [workspace / name for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")]
+    targets = _level_output_targets(workspace)
     for organ_key in target_organs:
         organ_name = organ_directory_map.get(organ_key)
         if not _safe_path_component(organ_name):
@@ -1314,9 +1493,7 @@ def _context_output_targets(
         assert isinstance(organ_name, str)
         organ_path = workspace / organ_name
         if organ_path.is_dir():
-            targets.extend(
-                organ_path / name for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")
-            )
+            targets.extend(_level_output_targets(organ_path))
         organ_data = registry.get("organs", {}).get(organ_key, {})
         for repo_entry in organ_data.get("repositories", []):
             repo_name = repo_entry.get("name")
@@ -1329,11 +1506,16 @@ def _context_output_targets(
             for repo_path in candidates:
                 if not repo_path.is_dir():
                     continue
-                targets.extend(
-                    repo_path / name
-                    for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md")
-                )
+                targets.extend(_level_output_targets(repo_path))
     return sorted(set(targets), key=_lexical_absolute)
+
+
+def _level_output_targets(directory: Path) -> list[Path]:
+    """Return one directory's generated context document and its instruction files."""
+    return [
+        directory / CONTEXT_DOCUMENT_RELPATH,
+        *(directory / name for name in INSTRUCTION_FILENAMES),
+    ]
 
 
 def _recover_standard_context_outputs(
@@ -1409,14 +1591,25 @@ def _preflight_context_outputs(
     extra_roots: list[Path],
     organ_directory_map: dict[str, str],
     workspace_identity: dict[str, int] | None = None,
+    created_directories: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """Reject unsafe targets and bind every preimage before the first write."""
+    """Reject unsafe targets and bind every preimage before the first write.
+
+    A missing ``docs/`` directory is the one thing created here, before its
+    preimage is bound, because custody refuses to open an absent parent. Each
+    directory created is appended to ``created_directories`` so a rollback can
+    remove it again.
+    """
     targets = _context_output_targets(
         workspace=workspace, registry=registry, target_organs=target_organs,
         extra_roots=extra_roots, organ_directory_map=organ_directory_map,
     )
     bindings: list[dict[str, Any]] = []
     for target in targets:
+        if target.parts[-2:] == Path(CONTEXT_DOCUMENT_RELPATH).parts:
+            created = _ensure_custody_context_directory(target, workspace, workspace_identity)
+            if created is not None and created_directories is not None:
+                created_directories.append(created)
         parent_fd, filename, label = _open_custody_parent(
             target,
             workspace,
@@ -1453,6 +1646,59 @@ def _preflight_context_outputs(
     return bindings
 
 
+def _ensure_custody_context_directory(
+    target: Path,
+    workspace: Path,
+    workspace_identity: dict[str, int] | None,
+) -> str | None:
+    """Create the missing directory holding a generated document; return its label if new.
+
+    Opens the directory's own parent through the same no-follow custody walk,
+    so a symlinked or non-directory ``docs`` still fails strict preflight.
+    """
+    parent_fd, name, label = _open_custody_parent(
+        target.parent,
+        workspace,
+        expected_root_identity=workspace_identity,
+    )
+    try:
+        try:
+            os.mkdir(name, 0o755, dir_fd=parent_fd)
+        except FileExistsError:
+            return None
+        os.fsync(parent_fd)
+        return label
+    finally:
+        os.close(parent_fd)
+
+
+def _remove_created_context_directories(
+    workspace: Path,
+    labels: list[str],
+    workspace_identity: dict[str, int] | None,
+) -> None:
+    """Best-effort removal of directories preflight created; non-empty ones stay.
+
+    Never removes content: ``rmdir`` fails on a directory that holds anything,
+    and any failure is left for the operator rather than escalated.
+    """
+    for label in sorted(labels, reverse=True):
+        try:
+            parent_fd, name, _label = _open_custody_parent(
+                workspace / label,
+                workspace,
+                expected_root_identity=workspace_identity,
+            )
+        except (OSError, RuntimeError):
+            continue
+        try:
+            os.rmdir(name, dir_fd=parent_fd)
+        except OSError:
+            pass
+        finally:
+            os.close(parent_fd)
+
+
 def _raise_after_receipted_rollback(
     message: str,
     *,
@@ -1460,6 +1706,7 @@ def _raise_after_receipted_rollback(
     target_preimages: list[dict[str, Any]],
     expected_output_bindings: list[dict[str, str | int]],
     workspace_identity: dict[str, int] | None,
+    created_directories: list[str] | None = None,
     cause: Exception | None = None,
 ) -> None:
     """Restore every published context target before reporting late input drift."""
@@ -1472,6 +1719,9 @@ def _raise_after_receipted_rollback(
         )
     except Exception as exc:
         raise RuntimeError(f"{message}; context output rollback failed: {exc}") from exc
+    _remove_created_context_directories(
+        workspace, created_directories or [], workspace_identity,
+    )
     if cause is not None:
         raise RuntimeError(message) from cause
     raise RuntimeError(message)
@@ -2977,6 +3227,8 @@ def _build_change_record(
     action: str,
     old_section: str,
     new_section: str,
+    *,
+    whole_file: bool = False,
 ) -> dict[str, Any]:
     """Build a compact changelog record for one generated context section."""
     old_lines = old_section.splitlines()
@@ -3001,7 +3253,7 @@ def _build_change_record(
         if line.startswith("-") and not line.startswith("---")
     )
 
-    return {
+    record: dict[str, Any] = {
         "path": str(file_path),
         "action": action,
         "added_lines": added,
@@ -3012,6 +3264,10 @@ def _build_change_record(
         "old_section": old_section,
         "new_section": new_section,
     }
+    if whole_file:
+        # The record covers a whole generator-owned file, not a marked block.
+        record["whole_file"] = True
+    return record
 
 
 def _section_hash(section: str) -> str | None:
