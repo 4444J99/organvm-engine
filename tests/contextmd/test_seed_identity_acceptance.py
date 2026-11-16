@@ -67,6 +67,7 @@ def test_owner_and_directory_aliases_keep_same_name_seeds_separate(tmp_path, ali
     result = sync_all(
         workspace=tmp_path, registry_path=str(registry_path),
         additional_workspace_roots=[], receipt_path=tmp_path / "receipt.json",
+        create_instruction_files=True,
     )
     assert result["errors"] == []
     first_document = (first / "docs" / "organvm-context.md").read_text()

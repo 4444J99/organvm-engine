@@ -314,10 +314,22 @@ class TestBuildVariableContext:
 
 
 class TestSyncRepo:
-    def test_sync_creates_file(self, tmp_path, registry):
+    def test_sync_does_not_create_the_instruction_file_by_default(self, tmp_path, registry):
         repo_path = tmp_path / "recursive-engine"
         repo_path.mkdir()
         result = sync_repo(repo_path, "recursive-engine", "organvm-i-theoria", registry)
+        assert result["action"] == "declined"
+        assert result["reason"] == "absent"
+        assert not (repo_path / "CLAUDE.md").exists()
+        assert "recursive-engine" in (repo_path / "docs" / "organvm-context.md").read_text()
+
+    def test_sync_creates_file_when_opted_in(self, tmp_path, registry):
+        repo_path = tmp_path / "recursive-engine"
+        repo_path.mkdir()
+        result = sync_repo(
+            repo_path, "recursive-engine", "organvm-i-theoria", registry,
+            create_instruction_files=True,
+        )
         assert result["action"] == "created"
         assert result["change"]["action"] == "created"
         content = (repo_path / "CLAUDE.md").read_text()
@@ -359,7 +371,10 @@ class TestSyncRepo:
             "# Active handoff\n",
         )
 
-        result = sync_repo(repo_path, "recursive-engine", "organvm-i-theoria", registry)
+        result = sync_repo(
+            repo_path, "recursive-engine", "organvm-i-theoria", registry,
+            create_instruction_files=True,
+        )
 
         assert result["action"] == "created"
         document = (repo_path / "docs" / "organvm-context.md").read_text()
