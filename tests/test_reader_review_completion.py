@@ -204,7 +204,7 @@ def test_malformed_explicit_organ_directory_never_falls_back(directory) -> None:
 
 
 @pytest.mark.parametrize("concurrent_winner", [False, True])
-def test_retained_agents_failure_keeps_rendered_reference_inventory(
+def test_retained_document_failure_keeps_rendered_reference_inventory(
     tmp_path, monkeypatch, concurrent_winner,
 ) -> None:
     import organvm_engine.contextmd.sync as sync_mod
@@ -217,22 +217,24 @@ def test_retained_agents_failure_keeps_rendered_reference_inventory(
         "repo: recursive-engine\norg: organvm-i-theoria\nconsumes:\n"
         "  - type: context\n    source: external/selected\n", encoding="utf-8",
     )
-    target = repo / "AGENTS.md"
+    # The rendered links live in the shared context document, so that is the
+    # output whose retained bytes must keep the reference inventory.
+    target = repo / "docs" / "organvm-context.md"
     real_fsync = sync_mod.os.fsync
     failed = False
 
-    def fail_after_agents_install(descriptor):
+    def fail_after_document_install(descriptor):
         nonlocal failed
         if stat.S_ISDIR(os.fstat(descriptor).st_mode) and target.exists() and not failed:
             failed = True
             if concurrent_winner:
-                replacement = repo / "winner.tmp"
+                replacement = target.parent / "winner.tmp"
                 replacement.write_text("Concurrent writer without rendered links.\n")
                 replacement.replace(target)
             raise OSError("post-install durability failure")
         return real_fsync(descriptor)
 
-    monkeypatch.setattr(sync_mod.os, "fsync", fail_after_agents_install)
+    monkeypatch.setattr(sync_mod.os, "fsync", fail_after_document_install)
     result = sync_all(
         workspace=workspace, registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[repo.parent], organs=["ORGAN-I"],
@@ -241,9 +243,10 @@ def test_retained_agents_failure_keeps_rendered_reference_inventory(
     receipt = json.loads((workspace / "receipt.json").read_text())
     assert failed and result["errors"]
     assert receipt["status"] == "failed"
-    assert any(output["path"] == "flat/recursive-engine/AGENTS.md" for output in receipt["outputs"])
+    document_label = "flat/recursive-engine/docs/organvm-context.md"
+    assert any(output["path"] == document_label for output in receipt["outputs"])
     expected_references = [{
-        "direction": "consumes", "output_path": "flat/recursive-engine/AGENTS.md",
+        "direction": "consumes", "output_path": document_label,
         "path": "CLAUDE.md", "ref": "main", "ref_source": "fallback.main",
         "repository": "external/selected",
         "url": "https://github.com/external/selected/blob/main/CLAUDE.md",

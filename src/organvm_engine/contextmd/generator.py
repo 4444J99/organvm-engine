@@ -8,6 +8,7 @@ for auto-generated sections at each level (repo, organ, workspace).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import TYPE_CHECKING
@@ -16,12 +17,13 @@ from urllib.parse import quote
 if TYPE_CHECKING:
     from organvm_engine.plans.index import PlanIndex
 
-from organvm_engine.contextmd import AUTO_END, AUTO_START
+from organvm_engine.contextmd import AUTO_END, AUTO_START, CONTEXT_DOCUMENT_RELPATH
 from organvm_engine.contextmd.templates import (
     AGENTS_SECTION,
     AMMOI_SECTION,
     ATOMS_NOT_RUN_HINT,
     ATOMS_REPO_QUEUE_SECTION,
+    CONTEXT_DOCUMENT_HEADER,
     ECOSYSTEM_STATUS_SECTION,
     HANDOFF_STATUS_SECTION,
     LOGOS_SECTION,
@@ -29,6 +31,7 @@ from organvm_engine.contextmd.templates import (
     ONTOLOGIA_STATUS_SECTION,
     ORGAN_SECTION,
     PLAN_CONTEXT_SECTION,
+    POINTER_SECTION,
     REPO_SECTION,
     SESSION_REVIEW_SECTION,
     SOP_DIRECTIVES_SECTION,
@@ -239,7 +242,7 @@ def generate_repo_section(
     seed: dict | None = None,
     plan_index: "PlanIndex | None" = None,
     sop_entries: list | None = None,
-    agent: str | None = None,
+    agent: str | Sequence[str] | None = None,
     repo_path: str | None = None,
     timestamp: str | None = None,
     include_live_context: bool = True,
@@ -1159,19 +1162,25 @@ def _build_ammoi_context() -> str:
     )
 
 
-def _build_prompting_hint(agent: str | None) -> str:
-    """Build a one-line prompting standards hint for the given agent."""
+def _build_prompting_hint(agent: str | Sequence[str] | None) -> str:
+    """Build the prompting standards hint line(s) for one agent or several."""
     if not agent:
         return ""
+    agents = [agent] if isinstance(agent, str) else list(agent)
     try:
         from organvm_engine.prompting.loader import format_guidelines_hint, load_guidelines
-
-        guidelines = load_guidelines(agent)
-        if guidelines:
-            return "\n" + format_guidelines_hint(guidelines) + "\n"
     except ImportError:
-        pass
-    return ""
+        return ""
+    hints: list[str] = []
+    for name in agents:
+        guidelines = load_guidelines(name)
+        if guidelines:
+            hint = format_guidelines_hint(guidelines)
+            if hint not in hints:
+                hints.append(hint)
+    if not hints:
+        return ""
+    return "\n" + "\n".join(hints) + "\n"
 
 
 def _format_consumers(consumers: list | None) -> str:
@@ -1373,3 +1382,31 @@ def _build_logos_context(repo_name: str, repo_data: dict) -> str:
 def _timestamp() -> str:
     """Return ISO 8601 timestamp for sync tracking."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# ── Pointer and shared context document ───────────────────────────
+
+
+def generate_context_pointer(timestamp: str | None = None) -> str:
+    """Generate the short pointer that instruction files carry between the markers.
+
+    The same text goes into CLAUDE.md, GEMINI.md and AGENTS.md at every level
+    (workspace, organ, repo); the path is relative to the file's own directory.
+    """
+    return POINTER_SECTION.format(
+        context_path=CONTEXT_DOCUMENT_RELPATH,
+        timestamp=timestamp or _timestamp(),
+    )
+
+
+def strip_auto_markers(section: str) -> str:
+    """Remove the AUTO sentinel lines so a section can live in a whole-file document."""
+    kept = [line for line in section.splitlines() if line.strip() not in (AUTO_START, AUTO_END)]
+    return "\n".join(kept).strip("\n")
+
+
+def compose_context_document(title: str, sections: Sequence[str]) -> str:
+    """Join generated sections into one generator-owned markdown document."""
+    parts = [CONTEXT_DOCUMENT_HEADER, f"# {title}"]
+    parts.extend(strip_auto_markers(section) for section in sections)
+    return "\n\n".join(part for part in parts if part)

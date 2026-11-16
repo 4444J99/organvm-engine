@@ -184,6 +184,18 @@ def cmd_context_rollback(args: argparse.Namespace) -> int:
             print(f"  File {path} does not exist. Skipping.")
             continue
 
+        if record.get("whole_file"):
+            # A generator-owned file (docs/organvm-context.md) has no markers to
+            # cut around: restore the previous bytes, or remove what was created.
+            if action == "created":
+                print(f"  Deleting generator-owned {path}.")
+                path.unlink()
+            elif action == "updated":
+                path.write_text(old_section)
+            else:
+                print(f"  Unknown action {action} for {path}. Skipping.")
+            continue
+
         content = path.read_text()
 
         if action == "created":

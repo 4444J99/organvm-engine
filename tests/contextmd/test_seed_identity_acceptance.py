@@ -69,11 +69,15 @@ def test_owner_and_directory_aliases_keep_same_name_seeds_separate(tmp_path, ali
         additional_workspace_roots=[], receipt_path=tmp_path / "receipt.json",
     )
     assert result["errors"] == []
+    first_document = (first / "docs" / "organvm-context.md").read_text()
+    second_document = (second / "docs" / "organvm-context.md").read_text()
+    assert "first-only" in first_document
+    assert "second-only" not in first_document
+    assert "second-only" in second_document
+    assert "first-only" not in second_document
     for filename in ("AGENTS.md", "CLAUDE.md", "GEMINI.md"):
-        assert "first-only" in (first / filename).read_text()
-        assert "second-only" not in (first / filename).read_text()
-        assert "second-only" in (second / filename).read_text()
-        assert "first-only" not in (second / filename).read_text()
+        for repo in (first, second):
+            assert "docs/organvm-context.md" in (repo / filename).read_text()
 
 
 @pytest.mark.parametrize("owner", ["owner-one", "local-theory", "organvm-i-theoria"])
@@ -84,7 +88,7 @@ def test_explicit_directory_seed_is_rendered_and_bound(tmp_path, owner):
         workspace=tmp_path, registry_path=str(registry_path), organs=["ORGAN-I"],
         additional_workspace_roots=[], receipt_path=tmp_path / "receipt.json",
     )
-    assert "custom-only" in (repo / "AGENTS.md").read_text()
+    assert "custom-only" in (repo / "docs" / "organvm-context.md").read_text()
     receipt = json.loads((tmp_path / "receipt.json").read_text())
     assert {seed["path"] for seed in receipt["inputs"]["seeds"]} == {
         "local-theory/shared-name/seed.yaml",

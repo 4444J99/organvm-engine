@@ -46,7 +46,7 @@ Every other module imports from these; change them carefully.
 | `metrics/` | Calculate system metrics, propagate into markdown/JSON, timeseries, variable resolution |
 | `dispatch/` | Event payload validation, routing, cascade |
 | `git/` | Superproject init/sync, submodule status/drift, workspace reproduction |
-| `contextmd/` | Auto-generate CLAUDE.md/GEMINI.md/AGENTS.md across all repos from templates |
+| `contextmd/` | Write `docs/organvm-context.md` per repo/organ/workspace from templates and point CLAUDE.md/GEMINI.md/AGENTS.md at it (short pointer between the AUTO markers) |
 | `omega/` | 17-criterion binary scorecard for system maturity |
 | `ci/` | CI health triage from soak-test data |
 | `deadlines/` | Parse deadlines from `rolling-todo.md` |

@@ -96,6 +96,7 @@ def test_sync_all_exposes_an_exact_machine_readable_receipt(tmp_path, monkeypatc
         "AGENTS.md",
         "CLAUDE.md",
         "GEMINI.md",
+        "docs/organvm-context.md",
     }
     assert all(
         item["journal_object"] == item["sha256"]
@@ -197,9 +198,9 @@ def test_receipted_sync_does_not_bootstrap_a_phantom_corpus_between_runs(
 
     first_receipt = json.loads((workspace / "receipt-1.json").read_text())
     second_receipt = json.loads((workspace / "receipt-2.json").read_text())
-    assert len(first["created"]) == 3
+    assert len(first["created"]) == 4
     assert second["created"] == []
-    assert len(second["skipped"]) == 3
+    assert len(second["skipped"]) == 4
     for key in ("registry", "seeds", "seeds_manifest_sha256", "sops"):
         assert first_receipt["inputs"][key] == second_receipt["inputs"][key]
     assert [
@@ -209,6 +210,7 @@ def test_receipted_sync_does_not_bootstrap_a_phantom_corpus_between_runs(
         {"path": "AGENTS.md", "state": "absent"},
         {"path": "CLAUDE.md", "state": "absent"},
         {"path": "GEMINI.md", "state": "absent"},
+        {"path": "docs/organvm-context.md", "state": "absent"},
     ]
     assert all(
         set(binding["parent_identity"]) == {"device", "inode"}
@@ -246,8 +248,12 @@ def test_first_receipted_run_cas_binds_preexisting_unchanged_outputs(
         timestamp="2026-09-01T12:00:00Z",
         include_live_context=False,
     )
+    document = sync_mod.compose_context_document("ORGANVM workspace context", [section])
+    (workspace / "docs").mkdir()
+    (workspace / "docs" / "organvm-context.md").write_text(document + "\n", encoding="utf-8")
+    pointer = sync_mod.generate_context_pointer("2026-09-01T12:00:00Z")
     for filename in ("CLAUDE.md", "GEMINI.md", "AGENTS.md"):
-        (workspace / filename).write_text(section + "\n", encoding="utf-8")
+        (workspace / filename).write_text(pointer + "\n", encoding="utf-8")
     journal = workspace / ".organvm-context-cas"
     assert not journal.exists()
 
@@ -259,15 +265,17 @@ def test_first_receipted_run_cas_binds_preexisting_unchanged_outputs(
     )
 
     receipt = json.loads((workspace / "receipt.json").read_text())
-    assert len(result["skipped"]) == 3
+    assert len(result["skipped"]) == 4
     assert result["errors"] == []
     assert receipt["status"] == "success"
     assert {item["path"] for item in receipt["outputs"]} == {
         "AGENTS.md",
         "CLAUDE.md",
         "GEMINI.md",
+        "docs/organvm-context.md",
     }
-    assert len(list(journal.glob("sha256-*.object"))) == 1
+    # The three identical pointers share one object; the document is the other.
+    assert len(list(journal.glob("sha256-*.object"))) == 2
     assert not list(journal.glob("transaction-*"))
 
 
@@ -342,7 +350,7 @@ def test_receipt_only_lists_urls_rendered_into_selected_outputs(tmp_path, monkey
     assert receipt["resolved_remote_references"] == [
         {
             "direction": "consumes",
-            "output_path": "flat/recursive-engine/AGENTS.md",
+            "output_path": "flat/recursive-engine/docs/organvm-context.md",
             "path": "CLAUDE.md",
             "ref": "main",
             "ref_source": "fallback.main",
@@ -506,7 +514,9 @@ def test_preflight_race_preserves_a_new_manual_target(tmp_path, monkeypatch) -> 
     def create_manual_target(*args, **kwargs):
         nonlocal calls
         calls += 1
-        if calls == 3:
+        # The workspace is rendered once, after preflight and before any of its
+        # outputs (document first, then the three pointers) is written.
+        if calls == 1:
             target.write_text("CONCURRENT USER EDIT\n", encoding="utf-8")
         return original_generate(*args, **kwargs)
 
@@ -777,9 +787,10 @@ def test_receipted_sync_binds_sop_sources_and_resolved_semantics(
     )
     assert first["inputs"]["sops"]["entries"][0]["title"] == "First"
     assert second["inputs"]["sops"]["entries"][0]["title"] == "Second"
-    assert "| repo | graduation | directive | Second |" in (
-        repo / "CLAUDE.md"
-    ).read_text(encoding="utf-8")
+    document = (repo / "docs" / "organvm-context.md").read_text(encoding="utf-8")
+    assert "| repo | graduation | directive | Second |" in document
+    assert "| repo | graduation | directive | First |" not in document
+    assert "| repo | graduation |" not in (repo / "CLAUDE.md").read_text(encoding="utf-8")
 
 
 def test_receipted_sync_never_calls_unbound_live_context_helpers(
@@ -892,6 +903,9 @@ def test_receipted_sync_rejects_repo_parent_replacement_after_preflight(
     repo.mkdir(parents=True)
     replacement = tmp_path / "replacement-repo"
     replacement.mkdir()
+    # The replacement carries its own docs/ so the parent-identity binding, not a
+    # missing directory, is what rejects the swapped repo.
+    (replacement / "docs").mkdir()
     moved_repo = tmp_path / "original-repo"
     original_payload = "manual context\n"
     if targets_present:
@@ -922,16 +936,38 @@ def test_receipted_sync_rejects_repo_parent_replacement_after_preflight(
 
     assert swapped is True
     assert receipt["status"] == "failed"
+    # The document is rejected first (its parent no longer has the preflight
+    # identity); its pointers are then never attempted, and every one of the four
+    # targets is reported as not producing a bound output.
     assert sum(
         "target changed after receipted preflight" in error["error"]
         for error in result["errors"]
-    ) == 3
+    ) == 1
+    assert sum(
+        "did not produce a bound output" in error["error"]
+        for error in result["errors"]
+    ) == 4
+    assert {
+        Path(error["path"]).relative_to(workspace).as_posix() for error in result["errors"]
+    } == {
+        "organvm-i-theoria/recursive-engine/docs/organvm-context.md",
+        "organvm-i-theoria/recursive-engine/CLAUDE.md",
+        "organvm-i-theoria/recursive-engine/GEMINI.md",
+        "organvm-i-theoria/recursive-engine/AGENTS.md",
+    }
     expected_names = {"CLAUDE.md", "GEMINI.md", "AGENTS.md"} if targets_present else set()
-    assert {path.name for path in repo.iterdir()} == expected_names
-    assert {path.name for path in moved_repo.iterdir()} == expected_names
+    # Nothing was written into either docs/ directory.
+    assert {path.name for path in repo.iterdir()} == expected_names | {"docs"}
+    assert {path.name for path in moved_repo.iterdir()} == expected_names | {"docs"}
+    assert list((repo / "docs").iterdir()) == []
+    assert list((moved_repo / "docs").iterdir()) == []
     if targets_present:
-        assert all(path.read_text() == original_payload for path in repo.iterdir())
-        assert all(path.read_text() == original_payload for path in moved_repo.iterdir())
+        for directory in (repo, moved_repo):
+            assert all(
+                path.read_text() == original_payload
+                for path in directory.iterdir()
+                if path.is_file()
+            )
 
 
 def test_receipted_sync_rejects_oversize_render_before_install(
@@ -996,9 +1032,9 @@ def test_receipted_sync_preserves_outputs_across_distinct_run_times(
     first_receipt = json.loads((workspace / "receipt-1.json").read_text())
     second_receipt = json.loads((workspace / "receipt-2.json").read_text())
 
-    assert len(first["created"]) == 3
+    assert len(first["created"]) == 4
     assert second["updated"] == []
-    assert len(second["skipped"]) == 3
+    assert len(second["skipped"]) == 4
     assert first_receipt["outputs"] == second_receipt["outputs"]
     assert first_receipt["generated_at"] == "2026-09-01T12:00:00Z"
     assert second_receipt["generated_at"] == "2026-09-01T12:00:02Z"
