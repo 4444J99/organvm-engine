@@ -9,6 +9,6 @@ permissions:
   actions: read
 jobs:
   warning-inspection:
-    uses: 4444J99/github-engineering-standards/.github/workflows/warning-pilot.yml@3c2cc51ffc9d2facf2caaa9c8edc8fb85613421b
+    uses: 4444J99/guide-github-standard/.github/workflows/warning-pilot.yml@3c2cc51ffc9d2facf2caaa9c8edc8fb85613421b
     with:
       expected-checks: '["test", "test-matrix (3.11)", "test-matrix (3.12)"]'
