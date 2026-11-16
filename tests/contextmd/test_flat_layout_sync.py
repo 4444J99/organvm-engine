@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from organvm_engine.contextmd import AUTO_START
+from organvm_engine.contextmd import AUTO_END, AUTO_START
 from organvm_engine.contextmd.sync import sync_all
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
@@ -23,7 +23,8 @@ def test_sync_all_updates_repo_in_additional_flat_workspace_root(tmp_path, monke
     repo.mkdir(parents=True)
 
     claude_md = repo / "CLAUDE.md"
-    claude_md.write_text("# Recursive Engine\n")
+    # Only a file that already carries both AUTO markers receives the pointer.
+    claude_md.write_text(f"# Recursive Engine\n\n{AUTO_START}\nold block\n{AUTO_END}\n")
     (repo / "seed.yaml").write_text(
         "repo: recursive-engine\n"
         "org: organvm-i-theoria\n"
@@ -58,6 +59,8 @@ def test_sync_all_updates_repo_in_additional_flat_workspace_root(tmp_path, monke
     assert AUTO_START in content
     assert "docs/organvm-context.md" in content
     assert "recursive-engine" not in content.replace("# Recursive Engine", "")
+    assert not (repo / "GEMINI.md").exists()
+    assert not (repo / "AGENTS.md").exists()
     assert "recursive-engine" in document
     assert "**Produces**" in document
     assert "`META-ORGANVM`" in document

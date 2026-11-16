@@ -1207,6 +1207,14 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Atomically create a machine-readable sync custody receipt at this new path",
     )
+    c_sync.add_argument(
+        "--create-instruction-files",
+        action="store_true",
+        help=(
+            "Also create missing CLAUDE.md/GEMINI.md/AGENTS.md and append the pointer to "
+            "ones without AUTO markers (default: only files that already carry both markers)"
+        ),
+    )
     c_diff = ctx_sub.add_parser(
         "diff",
         help="Review recent context sync changes",

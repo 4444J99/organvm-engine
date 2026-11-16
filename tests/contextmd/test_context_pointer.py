@@ -75,6 +75,20 @@ def run_sync(workspace: Path, **kwargs):
     )
 
 
+LEVEL_FILES = ("CLAUDE.md", "GEMINI.md", "AGENTS.md")
+
+
+def seed_markers(*levels: Path) -> None:
+    """Give every level the three instruction files, each with an (old) AUTO block."""
+    for level in levels:
+        for name in LEVEL_FILES:
+            (level / name).write_text(f"# Manual {name}\n\n{AUTO_START}\nold\n{AUTO_END}\n")
+
+
+def all_levels(workspace: Path) -> tuple[Path, Path, Path]:
+    return workspace, workspace / "organvm-i-theoria", repo_of(workspace)
+
+
 def block_words(path: Path) -> int:
     text = path.read_text()
     block = text[text.index(AUTO_START) : text.index(AUTO_END) + len(AUTO_END)]
@@ -106,6 +120,7 @@ def test_sync_repo_writes_the_document_and_only_a_pointer(tmp_path, registry):
         result = sync_repo(
             repo, "recursive-engine", "organvm-i-theoria", registry,
             filename=name, timestamp=T1, include_live_context=False,
+            create_instruction_files=True,
         )
         assert (repo / name).read_text() == EXPECTED_POINTER + "\n"
         assert result["context_document"]["path"] == str(repo / DOCUMENT)
@@ -129,6 +144,7 @@ def test_document_carries_every_agents_prompting_hint(tmp_path, registry):
 
 
 def test_sync_all_writes_a_document_and_pointers_at_every_level(workspace):
+    seed_markers(*all_levels(workspace))
     result = run_sync(workspace)
 
     assert result["errors"] == []
@@ -148,6 +164,7 @@ def test_sync_all_writes_a_document_and_pointers_at_every_level(workspace):
 
 
 def test_dry_run_reports_the_document_and_each_pointer_without_writing(workspace):
+    seed_markers(*all_levels(workspace))
     result = run_sync(workspace, dry_run=True)
 
     assert result["dry_run"] is True
@@ -162,7 +179,7 @@ def test_dry_run_reports_the_document_and_each_pointer_without_writing(workspace
     }
     assert not (workspace / "docs").exists()
     assert not (repo_of(workspace) / "docs").exists()
-    assert not (repo_of(workspace) / "CLAUDE.md").exists()
+    assert "old" in (repo_of(workspace) / "CLAUDE.md").read_text()
 
 
 # ── idempotency ───────────────────────────────────────────────────────
@@ -173,7 +190,7 @@ def test_second_run_with_a_later_timestamp_changes_nothing(tmp_path, registry):
     repo.mkdir()
     sync_repo(
         repo, "recursive-engine", "organvm-i-theoria", registry,
-        timestamp=T1, include_live_context=False,
+        timestamp=T1, include_live_context=False, create_instruction_files=True,
     )
     before = {
         path.relative_to(repo): path.read_bytes() for path in repo.rglob("*") if path.is_file()
@@ -194,6 +211,7 @@ def test_second_run_with_a_later_timestamp_changes_nothing(tmp_path, registry):
 
 
 def test_sync_all_second_run_is_all_skipped(workspace):
+    seed_markers(*all_levels(workspace))
     first = run_sync(workspace)
     second = run_sync(workspace)
 
@@ -208,7 +226,7 @@ def test_pointer_stamp_moves_only_when_the_document_changes(tmp_path, registry):
     repo.mkdir()
     sync_repo(
         repo, "recursive-engine", "organvm-i-theoria", registry,
-        timestamp=T1, include_live_context=False,
+        timestamp=T1, include_live_context=False, create_instruction_files=True,
     )
     seed = {"produces": [{"target": "repo-b", "artifact": "data"}]}
 
@@ -301,10 +319,176 @@ def test_whole_file_inject_replaces_hand_edits(tmp_path):
     assert target.read_text() == "generated\n"
 
 
+# ── the sync never creates or grows an instruction file ──────────────
+
+
+def _paths(level: Path) -> dict[str, Path]:
+    return {name: level / name for name in LEVEL_FILES}
+
+
+def test_missing_instruction_files_are_not_created_but_every_document_is(workspace):
+    result = run_sync(workspace)
+
+    assert result["errors"] == []
+    for level in all_levels(workspace):
+        assert (level / DOCUMENT).is_file()
+        for path in _paths(level).values():
+            assert not path.exists()
+    assert sorted(result["created"]) == sorted(
+        str(level / DOCUMENT) for level in all_levels(workspace)
+    )
+    assert result["updated"] == []
+    declined = {item["path"]: item["reason"] for item in result["declined"]}
+    assert len(declined) == 9
+    assert set(declined.values()) == {"absent"}
+
+
+def test_files_without_both_markers_are_left_byte_identical(workspace):
+    repo = repo_of(workspace)
+    untouched = {
+        "CLAUDE.md": "# Manual notes\n\nNo generated block here.\n",
+        "GEMINI.md": f"# Half open\n\n{AUTO_START}\nno end marker\n",
+        "AGENTS.md": f"# Half closed\n\nno start marker\n{AUTO_END}\n",
+    }
+    for name, text in untouched.items():
+        (repo / name).write_text(text)
+
+    result = run_sync(workspace)
+
+    assert result["errors"] == []
+    for name, text in untouched.items():
+        assert (repo / name).read_text() == text
+    reasons = {Path(item["path"]).name: item["reason"] for item in result["declined"]
+               if Path(item["path"]).parent == repo}
+    assert reasons == {name: "no-markers" for name in untouched}
+    assert str(repo / DOCUMENT) in result["created"]
+
+
+def test_only_a_file_with_both_markers_receives_the_pointer(workspace):
+    repo = repo_of(workspace)
+    (repo / "CLAUDE.md").write_text(f"# Manual\n\n{AUTO_START}\nold\n{AUTO_END}\n")
+    (repo / "AGENTS.md").write_text("# Manual only\n")
+
+    result = run_sync(workspace)
+
+    assert "docs/organvm-context.md" in (repo / "CLAUDE.md").read_text()
+    assert (repo / "AGENTS.md").read_text() == "# Manual only\n"
+    assert not (repo / "GEMINI.md").exists()
+    assert str(repo / "CLAUDE.md") in result["updated"]
+
+
+def test_dry_run_reports_declined_files_and_creates_nothing_else(workspace):
+    result = run_sync(workspace, dry_run=True)
+
+    assert len(result["declined"]) == 9
+    assert sorted(result["created"]) == sorted(
+        str(level / DOCUMENT) for level in all_levels(workspace)
+    )
+    assert not any(workspace.rglob("*.md"))
+
+
+def test_opt_in_creates_missing_files_and_appends_to_files_without_markers(workspace):
+    repo = repo_of(workspace)
+    (repo / "AGENTS.md").write_text("# Manual only\n")
+
+    result = run_sync(workspace, create_instruction_files=True)
+
+    assert result["errors"] == [] and result["declined"] == []
+    for level in all_levels(workspace):
+        for name in ("CLAUDE.md", "GEMINI.md"):
+            assert "docs/organvm-context.md" in (level / name).read_text()
+    appended = (repo / "AGENTS.md").read_text()
+    assert appended.startswith("# Manual only")
+    assert "docs/organvm-context.md" in appended and appended.count(AUTO_START) == 1
+
+
+def test_receipted_sync_leaves_missing_and_markerless_files_alone(workspace):
+    repo = repo_of(workspace)
+    (repo / "AGENTS.md").write_text("# Manual only\n")
+    (repo / "CLAUDE.md").write_text(f"# Manual\n\n{AUTO_START}\nold\n{AUTO_END}\n")
+
+    result = run_sync(workspace, receipt_path=workspace / "receipt.json")
+
+    receipt = json.loads((workspace / "receipt.json").read_text())
+    assert result["errors"] == []
+    assert receipt["status"] == "success"
+    assert receipt["errors"] == []
+    assert {item["path"] for item in receipt["outputs"]} == {
+        "docs/organvm-context.md",
+        "organvm-i-theoria/docs/organvm-context.md",
+        "organvm-i-theoria/recursive-engine/docs/organvm-context.md",
+        "organvm-i-theoria/recursive-engine/CLAUDE.md",
+    }
+    assert (repo / "AGENTS.md").read_text() == "# Manual only\n"
+    assert not (repo / "GEMINI.md").exists()
+    assert not (workspace / "CLAUDE.md").exists()
+    # Every pointer target was still bound as input evidence before any write.
+    labels = {item["path"] for item in receipt["inputs"]["target_preimages"]}
+    assert "organvm-i-theoria/recursive-engine/GEMINI.md" in labels
+    assert len(result["declined"]) == 8
+
+
+def test_receipted_opt_in_creates_through_custody(workspace):
+    result = run_sync(
+        workspace, receipt_path=workspace / "receipt.json", create_instruction_files=True,
+    )
+
+    receipt = json.loads((workspace / "receipt.json").read_text())
+    assert result["errors"] == [] and result["declined"] == []
+    assert len(receipt["outputs"]) == 12
+
+
+def test_declining_does_not_hide_a_target_that_changed_after_preflight(workspace, monkeypatch):
+    import organvm_engine.contextmd.sync as sync_mod
+
+    target = workspace / "AGENTS.md"
+    original = sync_mod.generate_workspace_section
+
+    def create_manual_target(*args, **kwargs):
+        target.write_text("CONCURRENT USER EDIT\n", encoding="utf-8")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(sync_mod, "generate_workspace_section", create_manual_target)
+    result = run_sync(workspace, receipt_path=workspace / "receipt.json")
+
+    assert target.read_text() == "CONCURRENT USER EDIT\n"
+    assert any("changed after receipted preflight" in e["error"] for e in result["errors"])
+
+
+def test_cli_flag_defaults_off_and_is_forwarded(monkeypatch, capsys):
+    import organvm_engine.contextmd.sync as sync_mod
+    from organvm_engine.cli import build_parser, main
+
+    parser = build_parser()
+    assert parser.parse_args(["context", "sync"]).create_instruction_files is False
+    assert parser.parse_args(
+        ["context", "sync", "--create-instruction-files"],
+    ).create_instruction_files is True
+
+    seen = {}
+
+    def fake_sync_all(**kwargs):
+        seen.update(kwargs)
+        return {
+            "updated": [], "created": [], "skipped": [], "errors": [], "dry_run": True,
+            "declined": [{"path": "/x/CLAUDE.md", "reason": "absent"}], "changes": [],
+        }
+
+    monkeypatch.setattr(sync_mod, "sync_all", fake_sync_all)
+    monkeypatch.setattr("sys.argv", ["organvm", "context", "sync"])
+    assert main() == 0
+    assert seen["create_instruction_files"] is False
+    assert "Declined" in capsys.readouterr().out
+    monkeypatch.setattr("sys.argv", ["organvm", "context", "sync", "--create-instruction-files"])
+    assert main() == 0
+    assert seen["create_instruction_files"] is True
+
+
 # ── custody: receipted sync covers the new file ───────────────────────
 
 
 def test_receipted_sync_binds_the_document_like_any_other_output(workspace):
+    seed_markers(*all_levels(workspace))
     first = run_sync(workspace, receipt_path=workspace / "receipt-1.json")
     second = run_sync(workspace, receipt_path=workspace / "receipt-2.json")
 
@@ -319,7 +503,8 @@ def test_receipted_sync_binds_the_document_like_any_other_output(workspace):
     preimages = {item["path"]: item for item in receipt["inputs"]["target_preimages"]}
     assert preimages[label]["state"] == "absent"
     assert set(preimages[label]["parent_identity"]) == {"device", "inode"}
-    assert len(first["created"]) == 12
+    assert len(first["created"]) == 3
+    assert len(first["updated"]) == 9
     assert second["created"] == [] and second["updated"] == []
     assert len(second["skipped"]) == 12
     assert receipt["outputs"] == again["outputs"]
@@ -414,6 +599,7 @@ def test_receipted_preflight_failure_removes_directories_it_created(workspace):
 
 
 def test_changelog_records_mark_document_changes_as_whole_file(workspace):
+    seed_markers(*all_levels(workspace))
     result = run_sync(workspace, dry_run=True)
     by_path = {change["path"]: change for change in result["changes"]}
 

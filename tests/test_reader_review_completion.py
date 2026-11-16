@@ -181,7 +181,7 @@ def test_owner_identity_does_not_change_organ_output_directory(
     result = sync_all(
         workspace=workspace, registry_path=str(registry_path),
         additional_workspace_roots=[], organs=["ORGAN-I"],
-        receipt_path=workspace / "receipt.json",
+        receipt_path=workspace / "receipt.json", create_instruction_files=True,
     )
     receipt = json.loads((workspace / "receipt.json").read_text())
     assert result["errors"] == []

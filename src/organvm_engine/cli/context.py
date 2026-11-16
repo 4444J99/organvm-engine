@@ -38,6 +38,7 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
         dry_run=dry_run,
         organs=organs,
         receipt_path=getattr(args, "receipt", None),
+        create_instruction_files=bool(getattr(args, "create_instruction_files", False)),
     )
 
     print("System Context Sync Results")
@@ -45,6 +46,9 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
     print(f"  Updated: {len(result['updated'])}")
     print(f"  Created: {len(result['created'])}")
     print(f"  Skipped: {len(result['skipped'])}")
+    declined = result.get("declined") or []
+    if declined:
+        print(f"  Declined (instruction file absent or without markers): {len(declined)}")
     if result["errors"]:
         print(f"  Errors:  {len(result['errors'])}")
         for e in result["errors"]:
