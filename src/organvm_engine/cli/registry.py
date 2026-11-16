@@ -91,6 +91,7 @@ def cmd_registry_list(args: argparse.Namespace) -> int:
                 "organ": organ_key,
                 "status": repo.get("implementation_status", ""),
                 "tier": repo.get("tier", ""),
+                "public": bool(repo.get("public", False)),
                 "promotion": repo.get("promotion_status", ""),
                 "org": repo.get("org", ""),
             }
