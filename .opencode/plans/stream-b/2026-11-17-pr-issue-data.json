@@ -1,0 +1,74 @@
+{
+ "repo": "organvm-engine",
+ "slug": "4444J99/organvm-engine",
+ "archived_upstream": false,
+ "prs": {
+  "prs_total": 124,
+  "prs_merged": 96,
+  "prs_open": 1,
+  "prs_closed_unmerged": 27
+ },
+ "closed_classes": {
+  "abandoned": 4,
+  "producer_retired": 16,
+  "series_superseded": 7
+ },
+ "supersession_links": [
+  {
+   "old": 86,
+   "new": 145,
+   "class": "series_superseded",
+   "title": "chore(deps): bump the all-actions group across 1 directory with 2 updates"
+  },
+  {
+   "old": 99,
+   "new": 112,
+   "class": "series_superseded",
+   "title": "[limen LIMEN-060] feat: implement MCP tool wrappers for all 5 organvm CLIs"
+  },
+  {
+   "old": 101,
+   "new": 117,
+   "class": "series_superseded",
+   "title": "[limen LIMEN-049] feat: handoff staleness detection and workspace-wide handoff listing"
+  },
+  {
+   "old": 105,
+   "new": 120,
+   "class": "series_superseded",
+   "title": "[limen LIMEN-050] feat: context sync diff/changelog between runs"
+  },
+  {
+   "old": 125,
+   "new": 134,
+   "class": "series_superseded",
+   "title": "[limen LIMEN-065] feat: exit interview testimony for documentation-only repos"
+  },
+  {
+   "old": 126,
+   "new": 143,
+   "class": "series_superseded",
+   "title": "[limen LIMEN-048] feat: SOP staleness detection cross-reference SOPs against governed code"
+  },
+  {
+   "old": 127,
+   "new": 131,
+   "class": "series_superseded",
+   "title": "[limen LIMEN-070] network: R3 kinship mirror research \u2014 community identification"
+  }
+ ],
+ "open_pr_actions": [
+  {
+   "pr": 214,
+   "action": "keep",
+   "title": "chore(deps): bump actions/checkout from 4.4.0 to 7.0.1 in the all-actions group across 1 directory",
+   "idle_days": -1
+  }
+ ],
+ "issues": {
+  "total": 113,
+  "open": 43,
+  "stale": 28
+ },
+ "generated": "2026-11-17"
+}
