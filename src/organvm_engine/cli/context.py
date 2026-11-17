@@ -97,21 +97,25 @@ def cmd_context_migrate_legacy(args: argparse.Namespace) -> int:
     mode = "WRITE" if write else "DRY RUN"
     print(f"Legacy context migration [{mode}]")
     print("─" * 40)
-    markers = {"migrate": "M" if write else "would M", "error": "!"}
+    markers = {"migrate": "M" if write else "would M"}
     for item in report.files:
-        if item.action in markers:
+        if item.action == "migrate":
             extras = []
             if item.document:
                 extras.append(f"docs {item.document}")
             if item.differing:
                 extras.append("differing from the document source")
-            if item.action == "error":
-                extras.append(item.reason)
             suffix = f"  [{'; '.join(extras)}]" if extras else ""
             print(
                 f"  {markers[item.action]} {item.path}  "
                 f"words {item.words_before} -> {item.words_after}{suffix}",
             )
+        elif item.action == "error":
+            extras = []
+            if item.document:
+                extras.append(f"docs {item.document}")
+            extras.append(item.reason)
+            print(f"  ! {item.path}  [{'; '.join(extras)}]")
 
     migrated = report.by_action("migrate")
     if migrated:

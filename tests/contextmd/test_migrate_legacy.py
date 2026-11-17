@@ -165,6 +165,20 @@ def test_files_in_a_linked_git_worktree_are_skipped(tmp_path):
     assert item.reason == "linked-worktree"
 
 
+def test_relative_path_inside_a_linked_worktree_is_skipped(tmp_path, monkeypatch):
+    worktree = tmp_path / "wt"
+    write_instruction(worktree / "sub" / "CLAUDE.md")
+    (worktree / ".git").write_text("gitdir: /elsewhere/.git/worktrees/wt\n")
+    before = tree(tmp_path)
+    monkeypatch.chdir(worktree / "sub")
+
+    report = migrate_legacy(["."], write=True)
+
+    assert tree(tmp_path) == before
+    (item,) = report.by_action("skipped")
+    assert item.reason == "linked-worktree"
+
+
 def test_a_normal_git_checkout_is_migrated_and_grouped_under_its_top_level(tmp_path):
     repo = tmp_path / "repo"
     (repo / ".git").mkdir(parents=True)
@@ -191,6 +205,18 @@ def test_excluded_path_parts_are_skipped(tmp_path, parts):
     before = tree(tmp_path)
 
     report = migrate_legacy([tmp_path], write=True)
+
+    assert tree(tmp_path) == before
+    (item,) = report.by_action("skipped")
+    assert item.reason == "excluded-path"
+
+
+def test_relative_excluded_path_is_skipped(tmp_path, monkeypatch):
+    write_instruction(tmp_path / "receipts" / "CLAUDE.md")
+    before = tree(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    report = migrate_legacy([Path("receipts/CLAUDE.md")], write=True)
 
     assert tree(tmp_path) == before
     (item,) = report.by_action("skipped")
@@ -239,6 +265,36 @@ def test_a_symlinked_instruction_file_is_skipped(tmp_path):
     assert (repo / "CLAUDE.md").is_symlink()
     (item,) = report.by_action("skipped")
     assert item.reason == "symlinked-file"
+
+
+def test_broken_symlink_and_symlink_to_pointer_are_skipped_without_error(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "CLAUDE.md").symlink_to(tmp_path / "does-not-exist")
+    pointer_target = tmp_path / "elsewhere" / "AGENTS.md"
+    write_instruction(pointer_target, generate_context_pointer(STAMP))
+    (repo / "AGENTS.md").symlink_to(pointer_target)
+
+    report = migrate_legacy([repo], write=True)
+
+    assert not report.by_action("error")
+    assert not report.by_action("unchanged")
+    assert [item.reason for item in report.by_action("skipped")] == [
+        "symlinked-file",
+        "symlinked-file",
+    ]
+
+
+def test_non_regular_instruction_file_such_as_fifo_is_skipped_without_blocking(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    os.mkfifo(repo / "CLAUDE.md")
+
+    report = migrate_legacy([repo], write=True)
+
+    assert not report.by_action("error")
+    (item,) = report.by_action("skipped")
+    assert item.reason == "non-regular-file"
 
 
 def test_blocks_without_a_stamp_or_with_broken_markers_are_skipped(tmp_path):
@@ -393,5 +449,19 @@ def test_cli_exits_non_zero_when_a_write_fails(tmp_path, monkeypatch, capsys):
 
     code, out = run_cli(monkeypatch, capsys, "--write", str(repo))
 
+    assert code == 1
+    assert "Errors: 1" in out
+    assert "docs created" not in out
+    assert "words " not in out.splitlines()[2]
+
+
+def test_nonexistent_path_records_an_error_and_exits_non_zero(tmp_path, monkeypatch, capsys):
+    missing = tmp_path / "does-not-exist"
+
+    report = migrate_legacy([missing])
+    (item,) = report.by_action("error")
+    assert "does not exist" in item.reason
+
+    code, out = run_cli(monkeypatch, capsys, str(missing))
     assert code == 1
     assert "Errors: 1" in out

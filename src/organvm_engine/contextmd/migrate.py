@@ -36,6 +36,7 @@ SKIP_LINKED_WORKTREE = "linked-worktree"
 SKIP_EXCLUDED_PATH = "excluded-path"
 SKIP_SYMLINKED_FILE = "symlinked-file"
 SKIP_SYMLINKED_DIRECTORY = "symlinked-directory"
+SKIP_NON_REGULAR_FILE = "non-regular-file"
 SKIP_MALFORMED_MARKERS = "malformed-markers"
 SKIP_NO_STAMP = "no-last-synced-stamp"
 
@@ -98,11 +99,21 @@ def migrate_legacy(paths: list[Path | str], *, write: bool = False) -> Migration
 
 def _collect(root: Path, report: MigrationReport) -> list[Path]:
     """Return instruction files under ``root``; never descend into symlinked directories."""
+    if not os.path.lexists(root):
+        report.files.append(
+            FileResult(str(root), "error", f"path does not exist: {root}", repo=_repo_of(root)),
+        )
+        return []
     if root.is_symlink() and root.is_dir():
         report.skipped_directories.append(str(root))
         return []
     if root.is_file() or root.is_symlink():
         return [root] if root.name in SOURCE_ORDER else []
+    if not root.is_dir():
+        report.files.append(
+            FileResult(str(root), "skipped", SKIP_NON_REGULAR_FILE, repo=_repo_of(root)),
+        )
+        return []
     found: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         kept = []
@@ -132,10 +143,26 @@ class _Legacy:
 
 def _classify(path: Path, report: MigrationReport) -> _Legacy | None:
     """Return the legacy block of ``path``, or record why it is not migratable."""
+    repo = _repo_of(path)
+    reason = _skip_reason(path)
+    if reason:
+        report.files.append(FileResult(str(path), "skipped", reason, repo=repo))
+        return None
     try:
-        original = path.read_bytes()
+        st = path.lstat()
     except OSError as exc:
-        report.files.append(FileResult(str(path), "error", f"unreadable: {exc}"))
+        report.files.append(FileResult(str(path), "error", f"unreadable: {exc}", repo=repo))
+        return None
+    if stat.S_ISLNK(st.st_mode):
+        report.files.append(FileResult(str(path), "skipped", SKIP_SYMLINKED_FILE, repo=repo))
+        return None
+    if not stat.S_ISREG(st.st_mode):
+        report.files.append(FileResult(str(path), "skipped", SKIP_NON_REGULAR_FILE, repo=repo))
+        return None
+    try:
+        original = _read_regular_file(path)
+    except OSError as exc:
+        report.files.append(FileResult(str(path), "error", f"unreadable: {exc}", repo=repo))
         return None
     text = original.decode("utf-8", errors="surrogateescape")
     start = text.find(AUTO_START)
@@ -144,20 +171,15 @@ def _classify(path: Path, report: MigrationReport) -> _Legacy | None:
         return None
     if start < 0 or end < start:
         report.files.append(
-            FileResult(str(path), "skipped", SKIP_MALFORMED_MARKERS, repo=_repo_of(path)),
+            FileResult(str(path), "skipped", SKIP_MALFORMED_MARKERS, repo=repo),
         )
         return None
     inner = text[start + len(AUTO_START) : end]
     words = len(inner.split())
-    repo = _repo_of(path)
     if is_pointer_block(inner):
         report.files.append(
             FileResult(str(path), "unchanged", "already a pointer", words, words, repo),
         )
-        return None
-    reason = _skip_reason(path)
-    if reason:
-        report.files.append(FileResult(str(path), "skipped", reason, words, 0, repo))
         return None
     match = STAMP.search(inner)
     if match is None:
@@ -166,11 +188,27 @@ def _classify(path: Path, report: MigrationReport) -> _Legacy | None:
     return _Legacy(path, original, text, start, end + len(AUTO_END), inner, match.group(1))
 
 
+def _read_regular_file(path: Path) -> bytes:
+    """Read ``path`` without following symlinks or blocking on special files."""
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    descriptor = os.open(path, flags)
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise OSError(f"not a regular file: {path}")
+        chunks: list[bytes] = []
+        while chunk := os.read(descriptor, 65536):
+            chunks.append(chunk)
+        return b"".join(chunks)
+    finally:
+        os.close(descriptor)
+
+
 def _skip_reason(path: Path) -> str:
     top = _git_top(path)
     if top is not None and (top / ".git").is_file():
         return SKIP_LINKED_WORKTREE
-    spelled = str(path)
+    # Normalize lexically so relative paths still match directory boundaries without resolving symlinks.
+    spelled = os.path.abspath(path)  # noqa: PTH100
     if any(part in spelled for part in EXCLUDED_PATH_PARTS):
         return SKIP_EXCLUDED_PATH
     if path.is_symlink():
@@ -180,7 +218,8 @@ def _skip_reason(path: Path) -> str:
 
 def _git_top(path: Path) -> Path | None:
     """Nearest ancestor directory holding a ``.git`` entry (a directory or a gitfile)."""
-    for ancestor in path.parents:
+    lexical = Path(os.path.abspath(path))  # noqa: PTH100
+    for ancestor in lexical.parents:
         if os.path.lexists(ancestor / ".git"):
             return ancestor
     return None
@@ -228,6 +267,9 @@ def _migrate_directory(
         except Exception as exc:
             for result in results:
                 result.action, result.reason = "error", str(exc)
+                result.words_after = 0
+                result.document = ""
+                result.document_path = ""
             report.files.extend(results)
             return
         for item, result in zip(ordered, results, strict=True):
@@ -235,6 +277,7 @@ def _migrate_directory(
                 _replace_block(item)
             except Exception as exc:  # one file's failure must not stop the run
                 result.action, result.reason = "error", str(exc)
+                result.words_after = 0
     report.files.extend(results)
 
 
