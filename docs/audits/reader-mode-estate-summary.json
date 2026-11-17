@@ -1,0 +1,69 @@
+{
+  "audit_date": "2026-08-31",
+  "generated_at": "2026-08-31T23:58:17.371128Z",
+  "scope": {
+    "repositories": 323,
+    "public": 239,
+    "private": 84,
+    "source_segments": {
+      "personal": 24,
+      "ergon": 52,
+      "theoria_poiesis": 30,
+      "governance_comms": 47,
+      "umbrella_core": 51,
+      "umbrella_extended": 49,
+      "organvm_gap": 70
+    },
+    "source_manifest": "reader-mode-input-manifest.json",
+    "linked_accounts": 11,
+    "coverage_note": "The installation endpoint capped organvm at 100 rows; authenticated repository search added 70 omitted rows. The linked a-organvm account exposed zero repositories; organvm/a-organvm is a distinct repository."
+  },
+  "documentation_classes": {
+    "public": {
+      "A": 36,
+      "B": 41,
+      "C": 45,
+      "D": 12,
+      "E": 22,
+      "F": 83
+    },
+    "private": {
+      "A": 9,
+      "B": 14,
+      "C": 16,
+      "D": 0,
+      "E": 6,
+      "F": 39
+    }
+  },
+  "documentation_class_totals": {
+    "A": 45,
+    "B": 55,
+    "C": 61,
+    "D": 12,
+    "E": 28,
+    "F": 122
+  },
+  "mean_scores": {
+    "private": {
+      "orientation": 2.238,
+      "technical_depth": 2.107,
+      "conceptual_depth": 1.94,
+      "commercial_relevance": 1.012,
+      "evidence": 2.155,
+      "seo_surface": 0.286,
+      "cross_linking": 1.643
+    },
+    "public": {
+      "orientation": 2.707,
+      "technical_depth": 2.573,
+      "conceptual_depth": 2.138,
+      "commercial_relevance": 1.544,
+      "evidence": 2.105,
+      "seo_surface": 2.339,
+      "cross_linking": 1.9
+    }
+  },
+  "public_integrity_attention": 13,
+  "privacy": "Private repository names and row-level findings are excluded from committed artifacts."
+}

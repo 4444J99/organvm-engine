@@ -6,7 +6,8 @@ variables when available, falls back to conventional defaults.
 Environment variables:
     ORGANVM_WORKSPACE_DIR — workspace root (default: ~/Workspace)
     ORGANVM_CORPUS_DIR — corpus repo (default: probe of
-        ~/Code/organvm/organvm-corpvs-testamentvm, then the legacy
+        ~/Code/organvm/organvm-corpvs-testamentvm, then the managed
+        library shelf, then the legacy
         <workspace>/meta-organvm/organvm-corpvs-testamentvm; a candidate qualifies
         only if it contains the repo registry)
     ORGANVM_ADDITIONAL_WORKSPACE_ROOTS — colon-separated flat workspace roots
@@ -18,6 +19,8 @@ import argparse
 import os
 from dataclasses import dataclass
 from pathlib import Path
+
+from organvm_engine._stable_io import read_stable_regular_bytes
 
 _DEFAULT_WORKSPACE = Path.home() / "Workspace"
 _LEGACY_CORPUS_SUBPATH = "meta-organvm/organvm-corpvs-testamentvm"
@@ -56,8 +59,9 @@ class PathConfig:
         if env:
             return _coerce_path(env)
         canonical = _DEFAULT_CODE_ROOT / _CORPUS_REPO_NAME
+        managed = self.workspace_root() / "library/shelves/meta-organvm" / _CORPUS_REPO_NAME
         legacy = self.workspace_root() / _LEGACY_CORPUS_SUBPATH
-        for candidate in (canonical, legacy):
+        for candidate in (canonical, managed, legacy):
             if _holds_registry(candidate):
                 return candidate
         return canonical
@@ -122,7 +126,7 @@ def _load_governance_config_paths(workspace: Path) -> list[Path]:
     try:
         import yaml
 
-        data = yaml.safe_load(config_path.read_text()) or {}
+        data = yaml.safe_load(read_stable_regular_bytes(config_path)) or {}
     except Exception:
         return []
 

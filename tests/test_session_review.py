@@ -5,7 +5,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from organvm_engine.cli.session import cmd_session_review
+from organvm_engine.cli.session import _print_unreadable_sessions, cmd_session_review
+from organvm_engine.session import agents as session_agents
+from organvm_engine.session.agents import UnreadableSession
+from organvm_engine.session.parser import find_session
 
 # ── Helpers ───────────────────────────────────────────────────────
 
@@ -103,6 +106,30 @@ def test_review_by_session_id(tmp_path, capsys):
         assert "Export:" in captured.out
 
 
+def test_review_checks_uncommitted_only_for_session_project(tmp_path, capsys):
+    jsonl = _make_test_session(tmp_path)
+    calls = []
+
+    def fake_check_uncommitted(**kwargs):
+        calls.append(kwargs)
+        return []
+
+    with (
+        patch("organvm_engine.cli.session.find_session", return_value=jsonl),
+        patch("organvm_engine.cli.session.discover_plans", return_value=[]),
+        patch(
+            "organvm_engine.git.status.check_uncommitted_files",
+            side_effect=fake_check_uncommitted,
+        ),
+    ):
+        args = _FakeArgs(session_id="test-abc")
+        result = cmd_session_review(args)
+        assert result == 0
+
+    capsys.readouterr()
+    assert calls == [{"project_path": "/Users/test/Workspace/project", "timeout": 5}]
+
+
 def test_review_latest(tmp_path, capsys):
     jsonl = _make_test_session(tmp_path)
 
@@ -130,6 +157,34 @@ def test_review_latest(tmp_path, capsys):
         assert result == 0
         captured = capsys.readouterr()
         assert "Session Review:" in captured.out
+
+
+def test_review_latest_skips_non_utf8_session(tmp_path, monkeypatch, capsys):
+    projects_dir = tmp_path / "claude-projects"
+    project_dir = projects_dir / "-Users-test-Workspace-project"
+    project_dir.mkdir(parents=True)
+    _make_test_session(project_dir, session_id="valid-latest")
+
+    unreadable = project_dir / "broken.jsonl"
+    unreadable.write_bytes(b'{"timestamp":"2026-03-07T10:00:00Z"}\n\x8d\n')
+
+    monkeypatch.setattr(session_agents, "CLAUDE_PROJECTS_DIR", projects_dir)
+    monkeypatch.setattr(session_agents, "GEMINI_TMP_DIR", tmp_path / "no-gemini")
+    monkeypatch.setattr(session_agents, "CODEX_SESSIONS_DIR", tmp_path / "no-codex")
+    monkeypatch.setattr(session_agents, "CODEX_ARCHIVED_DIR", tmp_path / "no-archive")
+    monkeypatch.setattr(session_agents, "OPENCODE_DB", tmp_path / "no-opencode.db")
+
+    with patch("organvm_engine.cli.session.discover_plans", return_value=[]):
+        result = cmd_session_review(_FakeArgs(latest=True))
+
+    assert result == 0
+    captured = capsys.readouterr()
+    assert "Session Review: valid-la" in captured.out
+    assert '"status": "unreadable-session"' in captured.out
+    assert '"file":' in captured.out
+    assert "broken.jsonl" in captured.out
+    assert "Re-encode the file as UTF-8" in captured.out
+    assert "Traceback" not in captured.out
 
 
 def test_review_latest_no_sessions(capsys):
@@ -182,3 +237,141 @@ def test_review_unparseable_session(tmp_path, capsys):
         assert result == 1
         captured = capsys.readouterr()
         assert "Could not parse" in captured.out
+
+
+def test_review_non_utf8_session_reports_action(tmp_path, capsys):
+    bad_jsonl = tmp_path / "non-utf8.jsonl"
+    valid_prefix = b"{}\n" * 7_000
+    bad_jsonl.write_bytes(valid_prefix + b"\x8d\n")
+
+    with patch("organvm_engine.cli.session.find_session", return_value=bad_jsonl):
+        result = cmd_session_review(_FakeArgs(session_id="non-utf8"))
+
+    assert result == 1
+    captured = capsys.readouterr()
+    assert '"status": "unreadable-session"' in captured.out
+    assert f'"reason": "non-UTF-8 input at byte {len(valid_prefix)}"' in captured.out
+    assert "Re-encode the file as UTF-8" in captured.out
+    assert "Traceback" not in captured.out
+
+
+def test_unreadable_session_output_is_capped(tmp_path, capsys):
+    diagnostics = [
+        UnreadableSession("claude", tmp_path / f"broken-{index}.jsonl", index)
+        for index in range(12)
+    ]
+
+    _print_unreadable_sessions(diagnostics)
+
+    output = capsys.readouterr().out
+    assert output.count('"status": "unreadable-session"') == 10
+    assert '"count": 2, "status": "unreadable-sessions-omitted"' in output
+    assert "broken-9.jsonl" in output
+    assert "broken-10.jsonl" not in output
+
+
+def test_review_latest_with_relocated_codex_home(tmp_path, monkeypatch, capsys):
+    relocated = tmp_path / ".agent-runtime" / "codex"
+    active_dir = relocated / "sessions" / "2026" / "09" / "16"
+    active_dir.mkdir(parents=True)
+
+    session_file = active_dir / "rollout-2026-09-16T10-00-00-relocated.jsonl"
+    entries = [
+        {
+            "timestamp": "2026-09-16T10:00:00Z",
+            "type": "session_meta",
+            "payload": {
+                "id": "relocated-codex-123",
+                "cwd": "/Users/test/Workspace/project",
+                "timestamp": "2026-09-16T10:00:00Z",
+            },
+        },
+        {
+            "timestamp": "2026-09-16T10:01:00Z",
+            "type": "response_item",
+            "payload": {
+                "role": "user",
+                "type": "message",
+                "content": [{"type": "input_text", "text": "Execute Styx closeout"}],
+            },
+        },
+        {
+            "timestamp": "2026-09-16T10:01:30Z",
+            "type": "response_item",
+            "payload": {
+                "role": "assistant",
+                "type": "message",
+                "content": [{"type": "output_text", "text": "Styx closeout complete."}],
+            },
+        },
+    ]
+    with session_file.open("w") as fh:
+        for e in entries:
+            fh.write(json.dumps(e) + "\n")
+
+    monkeypatch.setenv("CODEX_HOME", str(relocated))
+    # Isolate from the host's real Claude/Gemini/OpenCode corpora so the
+    # relocated Codex session is the newest one discovered.
+    monkeypatch.setattr(session_agents, "CLAUDE_PROJECTS_DIR", tmp_path / "no-claude")
+    monkeypatch.setattr(session_agents, "GEMINI_TMP_DIR", tmp_path / "no-gemini")
+    monkeypatch.setattr(session_agents, "OPENCODE_DB", tmp_path / "no-opencode.db")
+
+    with patch("organvm_engine.cli.session.discover_plans", return_value=[]):
+        args = _FakeArgs(latest=True)
+        result = cmd_session_review(args)
+
+    assert result == 0
+    captured = capsys.readouterr()
+    assert "Session Review:" in captured.out
+    assert "codex" in captured.out
+    assert "relocated" in captured.out or "relocate" in captured.out
+
+
+def test_session_agents_diagnostics_reports_relocated_codex_home(tmp_path, monkeypatch, capsys):
+    from organvm_engine.cli.session import cmd_session_agents
+
+    relocated = tmp_path / "my_relocated_codex"
+    monkeypatch.setenv("CODEX_HOME", str(relocated))
+
+    args = _FakeArgs()
+    result = cmd_session_agents(args)
+    assert result == 0
+
+    captured = capsys.readouterr()
+    resolved = str(relocated.resolve())
+    assert resolved in captured.out
+    assert f"and {resolved} for durability" in captured.out
+
+
+def test_find_session_by_payload_id_when_filename_differs(tmp_path, monkeypatch):
+    relocated = tmp_path / "codex_payload_test"
+    sessions_dir = relocated / "sessions" / "2026" / "09" / "16"
+    sessions_dir.mkdir(parents=True)
+
+    jsonl = sessions_dir / "rollout-2026-09-16T10-00-00-uuid12345.jsonl"
+    entry = {
+        "timestamp": "2026-09-16T10:00:00Z",
+        "type": "session_meta",
+        "payload": {
+            "id": "my-custom-payload-id",
+            "cwd": "/Users/test/Workspace/project",
+            "timestamp": "2026-09-16T10:00:00Z",
+        },
+    }
+    jsonl.write_text(json.dumps(entry) + "\n", encoding="utf-8")
+
+    monkeypatch.setenv("CODEX_HOME", str(relocated))
+
+    found = find_session("my-custom-payload-id")
+    assert found == jsonl
+
+
+def test_gemini_directory_for_slug_reverse_lookup(tmp_path, monkeypatch):
+    """Review resolves a Gemini project slug back to its working directory."""
+    projects = tmp_path / "projects.json"
+    projects.write_text(json.dumps({"projects": {"/Users/test/Workspace/proj": "slug-abc"}}))
+    monkeypatch.setattr(session_agents, "GEMINI_PROJECTS_JSON", projects)
+
+    assert session_agents.gemini_directory_for_slug("slug-abc") == "/Users/test/Workspace/proj"
+    assert session_agents.gemini_directory_for_slug("missing") is None
+    assert session_agents.gemini_directory_for_slug("") is None

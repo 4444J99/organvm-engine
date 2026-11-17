@@ -1,0 +1,54 @@
+name: RFC (org-wide)
+description: Propose a cross-repo change for review.
+title: "[RFC] <short title>"
+labels: [org-wide, rfc, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Logic-First Framework
+
+        This RFC should adhere to the repository's **Logic-First Framework**
+        (see [`docs/LOGIC_FRAMEWORK.md`](../../docs/LOGIC_FRAMEWORK.md)): ground the
+        proposal in explicit **premises**, sound **reasoning**, and a clear
+        **conclusion**, rather than assertion or preference.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: State your premises — the facts and assumptions this proposal starts from — and the reasoning that follows from them.
+      placeholder: |
+        Premise: ...
+        Premise: ...
+        Reasoning: therefore, ...
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Design/Approach
+      description: The conclusion your premises and reasoning lead to. Note where it aligns with (or is an exception to) the Logic-First Framework.
+      placeholder: Architecture, alternatives, rollout plan
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Affected repos/teams
+      placeholder: Repos, APIs, contracts
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and mitigations
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Success metrics

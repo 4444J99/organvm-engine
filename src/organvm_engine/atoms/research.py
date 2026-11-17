@@ -128,6 +128,7 @@ class ResearchActivationResult:
     total_directives: int = 0
     tasks: list[dict] = field(default_factory=list)
     errors: list[tuple[str, str]] = field(default_factory=list)
+    activation_candidates: list[Path] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -554,6 +555,7 @@ def activate_research(
                 task = directive_to_task(directive, doc, research_dir)
                 result.tasks.append(task)
 
+            result.activation_candidates.append(doc_path)
             if mark_activated:
                 mark_doc_activated(doc_path)
 

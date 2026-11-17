@@ -1,0 +1,67 @@
+{
+  "receipt_type": "reader-mode-resumed-source-acceptance",
+  "recorded_at": "2026-09-09T13:28:56.256488+00:00",
+  "repository": "organvm/organvm-engine",
+  "owner_pr": 175,
+  "parent_commit": "a258ba51422ed7b680a30e144d44165e3638aec4",
+  "repairs": [
+    "Recognize private repository identifiers in dotted filename/hostname forms, including prefixed hostnames, preserving longest known complete public identifiers.",
+    "Apply canonical repository URL equality to canonical and Class D records while admitting valid upstream-fork links to their actual repository.",
+    "Reject explicit receipt requests in dry-run sync at both API and CLI admission before reading the workspace.",
+    "Reject every nonexistent, nondirectory, or empty explicit audit path before producing any report."
+  ],
+  "source_and_test_sha256": {
+    "src/organvm_engine/documentation/privacy.py": "sha256:b0c276ed7dd57f4b2892cb66347d2e45546cc7d3aa6c46fa2992aba8599a32d9",
+    "src/organvm_engine/documentation/record.py": "sha256:ac6c20e57768769f92393cab162358d8f725a3d74b238779dda2d4f153dad8b4",
+    "src/organvm_engine/contextmd/sync.py": "sha256:01fa061892e82cdcea50e36b5cf6a1137cd62e7207cc7010ccbe88e98224d3a2",
+    "src/organvm_engine/cli/context.py": "sha256:bdf18343804e599428f1b8a27fde96c3d1e030e62c406faace7572d180d4da49",
+    "src/organvm_engine/cli/docs.py": "sha256:3a136aaa41a0a64a2c152e6685db8a3591dd19da86276c9869b1e32f64013176",
+    "tests/test_reader_final_gate_boundaries.py": "sha256:2c51bddad5bc61a64bacee55fbf7f262c7c08d974c76c817c11d880d381a9ff5"
+  },
+  "verification": {
+    "affected_command": "pytest -q tests/test_documentation.py tests/test_documentation_record_hardening.py tests/test_reader_acceptance_boundaries.py tests/test_reader_final_gate_boundaries.py tests/contextmd/test_sync_receipt.py tests/test_contextmd.py tests/test_cli.py",
+    "affected_passed": 600,
+    "affected_skipped": 1,
+    "affected_failed": 0,
+    "affected_duration_seconds": 22.28,
+    "original_new_tests_at_parent": "20 failing counterexamples and 3 passing controls at exact a258ba5.",
+    "independent_review_correction": "Review found prefixed hostname docs.secret-repo.github.io still excluded by the left dot boundary; 12 added prefix variants failed before correcting that boundary.",
+    "final_changed_shard_command": "pytest -q tests/test_reader_final_gate_boundaries.py tests/test_documentation_record_hardening.py -k \"privacy or private or suffix or final_gate\"",
+    "final_changed_shard_passed": 42,
+    "final_changed_shard_deselected": 340,
+    "final_changed_shard_duration_seconds": 0.7,
+    "final_new_case_inventory": 35,
+    "independent_review": {
+      "reviewer": "Codex peer /root/stranded_recovery",
+      "verdict": "PASS",
+      "independent_probes": 8,
+      "probe_scope": "Dotted prefix, mixed-case full-public shielding, longer-private precedence, known dotted public full name, and hyphen/underscore prefix exclusions."
+    },
+    "ruff": "PASS",
+    "boundary": "The 600-case batch precedes the final privacy-only left-boundary correction. Its unchanged-source receipts remain evidence; the implicated final privacy/new-case shard passed 42 cases. No whole-suite or hosted acceptance inferred."
+  },
+  "review_threads": [
+    "PRRT_kwDORSsFes6gqqIu",
+    "PRRT_kwDORSsFes6gqqI2",
+    "PRRT_kwDORSsFes6gqqI8",
+    "PRRT_kwDORSsFes6gqqJH"
+  ],
+  "live_merge_gate": {
+    "main": "0efc9cf5a9998b179dabe9ef815d59a48a50889d",
+    "estate_class": "governed_public; shared-writer merge-drain; no single-owner override",
+    "actual_required_checks": [
+      "test",
+      "test-matrix (3.11)",
+      "test-matrix (3.12)"
+    ],
+    "parent_ci_run": 34354178360,
+    "parent_required_jobs_executed_steps": 0,
+    "cli_runtime": "Genuine GitHub CLI 2.100.0 is available; gh auth status still reports no authenticated hosts. The prior missing-executable diagnosis is superseded.",
+    "prior_submission": "The genuine-CLI merge-drain attempt failed before queue admission with live PR state unavailable. No unchanged-auth retry.",
+    "lifecycle_classification": "This source-delivery PR is eligible for lifecycle:delivery after reviewed source publication; this label does not attest any check or merge.",
+    "next_command": "scripts/merge-drain.py --repo organvm/organvm-engine --pr 175 --expected-head <published-head>",
+    "owner": "Existing Engine #175, with authenticated rail/bootstrap owned by the active root session."
+  },
+  "downstream": "Editorial #12 is receiving independent source repairs while its generated context remains held until actual Engine merge. Limen #2553 keeps its explicit dependency and About metadata pre-merge predicates.",
+  "boundary": "No generated private audit corpus, no simulated installation or merge, no installed activation assertion."
+}

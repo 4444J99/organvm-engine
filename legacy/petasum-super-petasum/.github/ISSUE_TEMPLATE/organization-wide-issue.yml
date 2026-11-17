@@ -1,0 +1,94 @@
+name: Organization-Wide Issue
+description: Report an issue that affects multiple repositories across the organization
+title: "[ORG] "
+labels: ["org-wide", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an organization-wide issue. This form helps track issues that span multiple repositories or affect the entire organization.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a clear and concise description of the organization-wide issue
+      placeholder: Describe the issue...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: affected-repos
+    attributes:
+      label: Affected Repositories
+      description: Select all repositories that are affected by this issue
+      options:
+        - label: All repositories
+        - label: Multiple specific repositories (list in additional context)
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this issue?
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+
+  - type: input
+    id: affected-teams
+    attributes:
+      label: Affected Teams
+      description: List teams that are affected by this issue
+      placeholder: "e.g., Frontend, Backend, DevOps"
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Describe what should happen
+      placeholder: What should happen?
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: Describe what is currently happening
+      placeholder: What is happening now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: If applicable, provide steps to reproduce the issue
+      placeholder: |
+        1.
+        2.
+        3.
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: If you have a solution in mind, describe it here
+      placeholder: Describe your proposed solution...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or information about the issue
+      placeholder: Any additional information...
+
+  - type: input
+    id: related-issues
+    attributes:
+      label: Related Issues/PRs
+      description: Link to any related issues or pull requests
+      placeholder: "#123, owner/repo#456"

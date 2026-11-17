@@ -2,10 +2,24 @@
 
 from pathlib import Path
 
+import pytest
+from conftest import replace_with_nonregular
+
 from organvm_engine import paths
 
 
 class TestPaths:
+    def test_corpus_dir_probes_managed_shelf(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("ORGANVM_CORPUS_DIR", raising=False)
+        monkeypatch.delenv("ORGANVM_WORKSPACE_DIR", raising=False)
+        workspace = tmp_path / "ws"
+        corpus = workspace / "library/shelves/meta-organvm/organvm-corpvs-testamentvm"
+        corpus.mkdir(parents=True)
+        (corpus / "repo-registry.json").write_text("{}")
+        monkeypatch.setattr(paths, "_DEFAULT_WORKSPACE", workspace)
+        monkeypatch.setattr(paths, "_DEFAULT_CODE_ROOT", tmp_path / "empty")
+        assert paths.corpus_dir() == corpus
+
     def test_workspace_root_uses_blocked_default(self, monkeypatch):
         # autouse fixture sets _DEFAULT_WORKSPACE to /nonexistent/...
         # Clear env var so the blocked default is actually used
@@ -47,6 +61,44 @@ class TestPaths:
             Path.home() / "Code" / "organvm",
             Path("/tmp/other-root"),
         ]
+
+    @pytest.mark.parametrize("replacement_kind", ["fifo", "symlink", "directory"])
+    def test_governance_config_nonregular_swap_never_blocks(
+        self,
+        tmp_path,
+        monkeypatch,
+        replacement_kind,
+    ):
+        config_dir = tmp_path / "meta-organvm" / "organvm-corpvs-testamentvm"
+        config_dir.mkdir(parents=True)
+        config_path = config_dir / "governance-config.yaml"
+        config_path.write_text(
+            "additional_workspace_roots: [/tmp/foreign]\n",
+            encoding="utf-8",
+        )
+        outside = tmp_path / "outside.yaml"
+        outside.write_text(
+            "additional_workspace_roots: [/tmp/outside]\n",
+            encoding="utf-8",
+        )
+        real_read = paths.read_stable_regular_bytes
+        swapped = False
+
+        def swap_after_is_file(path, *args, **kwargs):
+            nonlocal swapped
+            if Path(path) == config_path and not swapped:
+                replace_with_nonregular(
+                    config_path,
+                    replacement_kind,
+                    outside,
+                )
+                swapped = True
+            return real_read(path, *args, **kwargs)
+
+        monkeypatch.setattr(paths, "read_stable_regular_bytes", swap_after_is_file)
+
+        assert paths.additional_workspace_roots(workspace=tmp_path) == []
+        assert swapped is True
 
     def test_corpus_dir_skips_husk_and_probes_code_root(self, tmp_path, monkeypatch):
         # Legacy location exists but holds no registry (relocation husk);

@@ -1,0 +1,46 @@
+# Instance-specific config (contains personal org names)
+.config/organvm.env.local
+
+# macOS
+.DS_Store
+
+# Claude Code session exports (transcripts are on-demand, never committed — per CLAUDE.md)
+*-local-command-caveatcaveat-the-messages-below.txt
+export-*.md
+
+# Untriaged memory harvest staging — classify and route before tracking
+/memory/
+
+# Scratch/working files
+.scratch/
+
+# Python bytecode (from scripts/, scripts/plugins/, etc.)
+__pycache__/
+*.pyc
+*.pyo
+
+# Bulk atom pipeline outputs (committed summaries + manifest only)
+data/atoms/*.jsonl
+
+# Personal clipboard exports must NEVER land in this public repo. The heartbeat and the
+# prompts-distill-closeout.sh wrapper route them to ~/.cache (untracked); these are
+# defense-in-depth nets against the engine's CWD-relative `clipboard --output-dir` default
+# (ai-prompts-clipboard-export.json) and `distill`'s atoms-dir default input
+# (clipboard-prompts.json) ever landing a personal export here. (leak-vector hygiene; GH#352)
+data/atoms/ai-prompts-clipboard-export.*
+ai-prompts-clipboard-export.*
+clipboard-prompts.json
+data/atoms/clipboard-prompts.json
+
+# Corpus pipeline outputs (events.jsonl can run very large; regenerable from sources)
+# IRF-SEC-010 resolution: ignore rather than LFS-track
+data/corpus/*/events.jsonl
+
+# Prompt registry pipeline outputs (regenerable via extract→atomize→triage→measure→route)
+# See data/prompt-registry/README.md for regeneration commands
+data/prompt-registry/*.json
+
+
+# Identity lint inputs live in repo secrets only; never commit them
+.identity-denylist.sha256
+.identity-own-names

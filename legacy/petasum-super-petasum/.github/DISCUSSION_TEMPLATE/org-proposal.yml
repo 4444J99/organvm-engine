@@ -1,0 +1,15 @@
+title: "[Proposal] <short title>"
+labels: [org-wide, proposal]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Questions for reviewers

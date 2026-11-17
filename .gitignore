@@ -27,3 +27,26 @@ ai-prompts-clipboard-export.md
 
 # MCP tool working directories
 .serena/
+
+# Audit runtime custody, never generator source. Abrupt pre-journal exits may
+# retain private scratch here; tracked public artifacts remain subject to Git
+# cleanliness checks. Do not broaden these to arbitrary audit files.
+/docs/audits/.reader-mode-audit-build.*/
+/docs/audits/.reader-mode-recovery.*.pending
+/docs/audits/.reader-mode-publication.recovery
+/docs/audits/.2026-08-31-reader-mode-estate-audit.ipynb.*.tmp
+/docs/audits/.2026-08-31-reader-mode-estate-audit.ipynb.*.rollback
+/docs/audits/.2026-08-31-reader-mode-estate-audit.ipynb.*.displaced
+/docs/audits/.2026-08-31-reader-mode-estate-audit.ipynb.*.failed
+/docs/audits/.reader-mode-estate-summary.json.*.tmp
+/docs/audits/.reader-mode-estate-summary.json.*.rollback
+/docs/audits/.reader-mode-estate-summary.json.*.displaced
+/docs/audits/.reader-mode-estate-summary.json.*.failed
+/docs/audits/.reader-mode-public-rollout.json.*.tmp
+/docs/audits/.reader-mode-public-rollout.json.*.rollback
+/docs/audits/.reader-mode-public-rollout.json.*.displaced
+/docs/audits/.reader-mode-public-rollout.json.*.failed
+/docs/audits/.reader-mode-estate-audit.md.*.tmp
+/docs/audits/.reader-mode-estate-audit.md.*.rollback
+/docs/audits/.reader-mode-estate-audit.md.*.displaced
+/docs/audits/.reader-mode-estate-audit.md.*.failed

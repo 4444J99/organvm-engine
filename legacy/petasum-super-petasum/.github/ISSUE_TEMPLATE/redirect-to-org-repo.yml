@@ -1,0 +1,53 @@
+name: Organization-Wide Issue (Redirect)
+description: File an organization-wide issue in the central tracking repository
+title: "[Redirect to Central Repo]"
+labels: ["redirect"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🔀 Organization-Wide Issues
+
+        This repository is part of the **ivi374forivi** organization.
+
+        If your issue affects **multiple repositories** or is an **organization-wide concern**,
+        please file it in our central issue tracking repository instead:
+
+        ### 👉 [File Organization-Wide Issue](https://github.com/ivi374forivi/petasum-super-petasum/issues/new/choose)
+
+        ---
+
+        ### What should be filed in the central repository?
+
+        ✅ **File in central repo:**
+        - Issues affecting multiple repositories
+        - Organization-wide security concerns
+        - Process and workflow improvements
+        - Cross-team coordination issues
+        - Infrastructure and tooling problems
+        - Organization-wide dependencies
+
+        ❌ **File in this repository:**
+        - Issues specific to this repository only
+        - Feature requests for this project
+        - Bugs in this repository's code
+
+        ---
+
+        ### Need help deciding?
+
+        If you're unsure whether your issue is organization-wide:
+        - **Does it affect only this repository?** → File it here
+        - **Does it affect 2+ repositories or the whole org?** → Use the central repo
+
+        You can also start a [discussion](https://github.com/orgs/ivi374forivi/discussions)
+        if you're not sure where to file your issue.
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I understand this issue template is for organization-wide concerns only
+        - label: I have reviewed the guidance above
+        - label: I will file my issue in the appropriate location

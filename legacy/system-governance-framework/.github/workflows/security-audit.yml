@@ -1,0 +1,67 @@
+name: Security and Compliance Audit
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Weekly on Monday at 8:00 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  security-audit:
+    name: Security and Compliance Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Security Scorecard
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload SARIF results to code-scanning
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        with:
+          sarif_file: results.sarif
+
+      - name: Branch Protection Check
+        run: |
+          echo "## Branch Protection Recommendations" >> audit-report.md
+          echo "" >> audit-report.md
+          echo "### Recommended Branch Protection Rules for main:" >> audit-report.md
+          echo "- [ ] Require a pull request before merging" >> audit-report.md
+          echo "- [ ] Require approvals (at least 1-2 reviewers)" >> audit-report.md
+          echo "- [ ] Dismiss stale PR approvals when new commits are pushed" >> audit-report.md
+          echo "- [ ] Require review from CODEOWNERS" >> audit-report.md
+          echo "- [ ] Require status checks to pass before merging" >> audit-report.md
+          echo "- [ ] Require branches to be up to date before merging" >> audit-report.md
+          echo "- [ ] Require signed commits" >> audit-report.md
+          echo "- [ ] Include administrators in restrictions" >> audit-report.md
+          echo "- [ ] Allow force pushes: disabled" >> audit-report.md
+          echo "- [ ] Allow deletions: disabled" >> audit-report.md
+
+      - name: Repository Security Check
+        run: |
+          echo "" >> audit-report.md
+          echo "### Security Features Recommendations:" >> audit-report.md
+          echo "- [ ] Enable Dependabot alerts" >> audit-report.md
+          echo "- [ ] Enable Dependabot security updates" >> audit-report.md
+          echo "- [ ] Enable Dependabot version updates" >> audit-report.md
+          echo "- [ ] Enable private vulnerability reporting" >> audit-report.md
+          echo "- [ ] Enable secret scanning" >> audit-report.md
+          echo "- [ ] Enable push protection for secrets" >> audit-report.md
+          echo "- [ ] Configure security policy (SECURITY.md)" >> audit-report.md
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: security-audit-report
+          path: audit-report.md

@@ -132,7 +132,7 @@ def parse_session(jsonl_path: Path) -> SessionMeta | None:
     first_human = ""
 
     try:
-        with jsonl_path.open(encoding="utf-8") as f:
+        with jsonl_path.open(encoding="utf-8", errors="replace") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -140,6 +140,9 @@ def parse_session(jsonl_path: Path) -> SessionMeta | None:
                 try:
                     msg = json.loads(line)
                 except json.JSONDecodeError:
+                    continue
+
+                if not isinstance(msg, dict):
                     continue
 
                 msg_type = msg.get("type", "")
@@ -438,7 +441,7 @@ def render_prompts(jsonl_path: Path) -> str:
     pending_actions: list[str] = []
     prompt_texts: list[str] = []  # for pattern summary
 
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for raw_line in f:
             raw_line = raw_line.strip()
             if not raw_line:
@@ -574,7 +577,7 @@ def render_transcript(jsonl_path: Path) -> str:
     lines.append("")
 
     turn = 0
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -740,7 +743,7 @@ def render_transcript_unabridged(jsonl_path: Path) -> str:
     lines.append("")
 
     msg_num = 0
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for raw_line in f:
             raw_line = raw_line.strip()
             if not raw_line:
@@ -1168,7 +1171,7 @@ def parse_codex_session(jsonl_path: Path) -> SessionMeta | None:
     first_human = ""
 
     try:
-        with jsonl_path.open(encoding="utf-8") as f:
+        with jsonl_path.open(encoding="utf-8", errors="replace") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -1255,7 +1258,7 @@ def render_codex_transcript(jsonl_path: Path, unabridged: bool = False) -> str:
     ]
 
     msg_num = 0
-    with jsonl_path.open(encoding="utf-8") as f:
+    with jsonl_path.open(encoding="utf-8", errors="replace") as f:
         for raw_line in f:
             raw_line = raw_line.strip()
             if not raw_line:
@@ -1349,23 +1352,22 @@ def render_codex_transcript(jsonl_path: Path, unabridged: bool = False) -> str:
                         lines.append("---")
                         lines.append("")
 
-                elif ptype == "reasoning":
-                    if unabridged:
-                        msg_num += 1
-                        lines.append(f"## [{msg_num}] Reasoning — {ts_short}")
-                        lines.append("")
-                        summary = payload.get("summary", [])
-                        if summary:
-                            for s in summary:
-                                if isinstance(s, dict):
-                                    lines.append(f"- {s.get('text', str(s))}")
-                                else:
-                                    lines.append(f"- {s}")
-                        else:
-                            lines.append("*Reasoning content encrypted — summary not available*")
-                        lines.append("")
-                        lines.append("---")
-                        lines.append("")
+                elif ptype == "reasoning" and unabridged:
+                    msg_num += 1
+                    lines.append(f"## [{msg_num}] Reasoning — {ts_short}")
+                    lines.append("")
+                    summary = payload.get("summary", [])
+                    if summary:
+                        for s in summary:
+                            if isinstance(s, dict):
+                                lines.append(f"- {s.get('text', str(s))}")
+                            else:
+                                lines.append(f"- {s}")
+                    else:
+                        lines.append("*Reasoning content encrypted — summary not available*")
+                    lines.append("")
+                    lines.append("---")
+                    lines.append("")
 
     return "\n".join(lines)
 
@@ -1375,6 +1377,19 @@ def render_codex_transcript(jsonl_path: Path, unabridged: bool = False) -> str:
 
 def detect_agent(file_path: Path) -> str:
     """Detect which agent produced a session file."""
+    from organvm_engine.session.agents import codex_home_dir
+
+    try:
+        resolved_file = file_path.expanduser().resolve()
+        codex_home = codex_home_dir()
+        # Only the Codex session stores count; CODEX_HOME may be an ancestor
+        # of other agents' storage (e.g. $HOME).
+        for sub in ("sessions", "archived_sessions"):
+            if resolved_file.is_relative_to(codex_home / sub):
+                return "codex"
+    except (ValueError, OSError, RuntimeError):
+        pass
+
     path_str = str(file_path)
     if "/.claude/" in path_str:
         return "claude"
@@ -1382,6 +1397,10 @@ def detect_agent(file_path: Path) -> str:
         return "gemini"
     if "/.codex/" in path_str:
         return "codex"
+
+    if file_path.name.startswith("rollout-"):
+        return "codex"
+
     # Fallback: check file format
     if file_path.suffix == ".json":
         return "gemini"
@@ -1433,9 +1452,10 @@ def _parse_iso_ts(ts_str: str | None) -> datetime | None:
 def find_session(session_id: str) -> Path | None:
     """Find a session by full or partial ID across all agents."""
     from organvm_engine.session.agents import (
-        CODEX_ARCHIVED_DIR,
-        CODEX_SESSIONS_DIR,
         GEMINI_TMP_DIR,
+        codex_archived_dir,
+        codex_payload_session_id,
+        codex_sessions_dir,
     )
 
     candidates: list[Path] = []
@@ -1453,11 +1473,15 @@ def find_session(session_id: str) -> Path | None:
                 candidates.append(json_file)
 
     # Codex — session ID is in the JSONL payload, filename contains UUID
-    for codex_dir in (CODEX_SESSIONS_DIR, CODEX_ARCHIVED_DIR):
+    for codex_dir in (codex_sessions_dir(), codex_archived_dir()):
         if codex_dir.exists():
             for jsonl in codex_dir.rglob("rollout-*.jsonl"):
                 if session_id in jsonl.stem:
                     candidates.append(jsonl)
+                else:
+                    payload_id = codex_payload_session_id(jsonl)
+                    if payload_id and session_id in payload_id:
+                        candidates.append(jsonl)
 
     # Deduplicate exact matches
     exact = [c for c in candidates if c.stem == session_id]

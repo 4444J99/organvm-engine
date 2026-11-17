@@ -1,0 +1,71 @@
+name: Process Improvement
+description: Suggest improvements to organization-wide processes or workflows
+title: "[PROCESS] "
+labels: ["process", "org-wide", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to suggest improvements to processes, workflows, or practices that affect the entire organization.
+
+  - type: textarea
+    id: current-process
+    attributes:
+      label: Current Process
+      description: Describe the current process or workflow
+      placeholder: How do things work now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: problems
+    attributes:
+      label: Problems with Current Process
+      description: What issues or inefficiencies exist with the current approach?
+      placeholder: What's not working well?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-improvement
+    attributes:
+      label: Proposed Improvement
+      description: Describe your suggested improvement
+      placeholder: What should we do instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: Expected Benefits
+      description: What benefits would this improvement provide?
+      placeholder: How would this help?
+
+  - type: checkboxes
+    id: affected-areas
+    attributes:
+      label: Affected Areas
+      description: What areas would be impacted by this change?
+      options:
+        - label: Development workflow
+        - label: CI/CD pipeline
+        - label: Code review process
+        - label: Documentation
+        - label: Testing
+        - label: Deployment
+        - label: Communication
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Considerations
+      description: What should be considered when implementing this improvement?
+      placeholder: What needs to be thought about?
+
+  - type: input
+    id: affected-teams
+    attributes:
+      label: Affected Teams
+      description: Which teams would be impacted by this change?
+      placeholder: "e.g., All teams, Backend, Frontend"

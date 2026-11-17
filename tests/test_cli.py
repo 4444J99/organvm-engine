@@ -210,6 +210,27 @@ class TestRegistryCommands:
         names = [item["name"] for item in data]
         assert "recursive-engine" in names
         assert "product-app" in names
+        # Issue #83 acceptance: every entry carries name, organ, status,
+        # tier and public (the payload previously omitted public).
+        for item in data:
+            for key in ("name", "organ", "status", "tier", "public"):
+                assert key in item, f"missing {key} in {item}"
+            assert isinstance(item["public"], bool)
+        by_name = {item["name"]: item for item in data}
+        assert by_name["recursive-engine"]["public"] is True
+        assert by_name["recursive-engine"]["status"] == "ACTIVE"
+        assert by_name["recursive-engine"]["tier"] == "flagship"
+
+    def test_registry_list_json_flag(self, capsys):
+        """--json is the alias for --format json and carries the same keys."""
+        with patch("sys.argv", ["organvm", "--registry", MOCK_REGISTRY, "registry", "list", "--json"]):
+            rc = main()
+        assert rc == 0
+        import json
+        data = json.loads(capsys.readouterr().out)
+        assert isinstance(data, list)
+        assert all("public" in item for item in data)
+        assert {item["name"]: item["public"] for item in data}["recursive-engine"] is True
 
     def test_registry_list_by_organ(self, capsys):
         with patch(

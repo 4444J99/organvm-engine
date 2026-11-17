@@ -2,8 +2,11 @@
 
 from pathlib import Path
 
+import pytest
 import yaml
+from conftest import replace_with_nonregular
 
+from organvm_engine._stable_io import StableReadError
 from organvm_engine.seed.manifest import (
     is_partial_workspace,
     load_workspace_manifest,
@@ -38,6 +41,39 @@ class TestManifestLoading:
 
     def test_full_workspace_not_partial(self):
         assert is_partial_workspace(None) is False
+
+    @pytest.mark.parametrize("replacement_kind", ["fifo", "symlink", "directory"])
+    def test_is_file_to_nonregular_swap_fails_closed_without_blocking(
+        self,
+        tmp_path,
+        monkeypatch,
+        replacement_kind,
+    ):
+        import organvm_engine.seed.manifest as manifest_mod
+
+        manifest_path = tmp_path / "workspace-manifest.yaml"
+        manifest_path.write_text("organs_present: [II]\n", encoding="utf-8")
+        outside = tmp_path / "outside.yaml"
+        outside.write_text("organs_present: [META]\n", encoding="utf-8")
+        real_read = manifest_mod.read_stable_regular_bytes
+        swapped = False
+
+        def swap_after_is_file(path, *args, **kwargs):
+            nonlocal swapped
+            if Path(path) == manifest_path and not swapped:
+                replace_with_nonregular(manifest_path, replacement_kind, outside)
+                swapped = True
+            return real_read(path, *args, **kwargs)
+
+        monkeypatch.setattr(
+            manifest_mod,
+            "read_stable_regular_bytes",
+            swap_after_is_file,
+        )
+
+        with pytest.raises(StableReadError):
+            load_workspace_manifest(manifest_path)
+        assert swapped is True
 
 
 class TestDiscoverWithManifest:

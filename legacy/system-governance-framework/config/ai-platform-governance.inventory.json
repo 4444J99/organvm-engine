@@ -1,0 +1,357 @@
+{
+  "schema_version": "1.0.0",
+  "as_of": "2000-01-01",
+  "purpose": "Synthetic public fixture for the control schema. Accounts, repositories, dates and evidence are examples, not observations of any live platform setting.",
+  "scope": {
+    "organizations": [
+      "example-org"
+    ],
+    "user_accounts": [
+      "example-user"
+    ],
+    "repositories": [
+      "example-org/governance",
+      "example-org/orchestration",
+      "example-org/engine"
+    ]
+  },
+  "controls": [
+    {
+      "id": "GH-AI-001",
+      "name": "Copilot seat allocation and billing",
+      "scopes": [
+        "organization:example-org"
+      ],
+      "owner_role": "GitHub organization owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_admin_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-AI-002",
+      "name": "Copilot model permissions",
+      "scopes": [
+        "organization:example-org"
+      ],
+      "owner_role": "GitHub organization owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_admin_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-AI-003",
+      "name": "Copilot conversation retention",
+      "scopes": [
+        "organization:example-org"
+      ],
+      "owner_role": "Data governance owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_admin_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-AI-004",
+      "name": "Copilot code review default",
+      "scopes": [
+        "organization:example-org"
+      ],
+      "owner_role": "Platform engineering owner",
+      "verification_mode": "mixed",
+      "status": "needs_admin_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-AI-005",
+      "name": "Copilot spend budgets and alerts",
+      "scopes": [
+        "organization:example-org"
+      ],
+      "owner_role": "GitHub billing owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_admin_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-PERSONAL-001",
+      "name": "Personal Copilot plan and billing",
+      "scopes": [
+        "user_account:example-user"
+      ],
+      "owner_role": "Personal GitHub account owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_account_owner_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-PERSONAL-002",
+      "name": "Personal Copilot model access",
+      "scopes": [
+        "user_account:example-user"
+      ],
+      "owner_role": "Personal GitHub account owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_account_owner_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-PERSONAL-003",
+      "name": "Personal Copilot conversation retention",
+      "scopes": [
+        "user_account:example-user"
+      ],
+      "owner_role": "Personal GitHub account owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_account_owner_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-PERSONAL-004",
+      "name": "Personal Copilot code review default",
+      "scopes": [
+        "user_account:example-user"
+      ],
+      "owner_role": "Personal GitHub account owner",
+      "verification_mode": "mixed",
+      "status": "needs_account_owner_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-PERSONAL-005",
+      "name": "Personal Copilot spend boundary",
+      "scopes": [
+        "user_account:example-user"
+      ],
+      "owner_role": "Personal GitHub account owner",
+      "verification_mode": "admin_manual",
+      "status": "needs_account_owner_verification",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-REPO-001",
+      "name": "Repository rulesets: example-org/governance",
+      "scopes": [
+        "repository:example-org/governance"
+      ],
+      "owner_role": "Repository governance maintainer",
+      "verification_mode": "mixed",
+      "status": "blocked",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-REPO-002",
+      "name": "Repository rulesets: example-org/orchestration",
+      "scopes": [
+        "repository:example-org/orchestration"
+      ],
+      "owner_role": "Repository governance maintainer",
+      "verification_mode": "mixed",
+      "status": "blocked",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-REPO-003",
+      "name": "Repository rulesets: example-org/engine",
+      "scopes": [
+        "repository:example-org/engine"
+      ],
+      "owner_role": "Repository governance maintainer",
+      "verification_mode": "mixed",
+      "status": "blocked",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-REPO-004",
+      "name": "Branch protection: example-org/governance",
+      "scopes": [
+        "repository:example-org/governance"
+      ],
+      "owner_role": "GitHub organization owner",
+      "verification_mode": "mixed",
+      "status": "blocked",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-REPO-005",
+      "name": "Branch protection: example-org/orchestration",
+      "scopes": [
+        "repository:example-org/orchestration"
+      ],
+      "owner_role": "GitHub organization owner",
+      "verification_mode": "mixed",
+      "status": "blocked",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    },
+    {
+      "id": "GH-REPO-006",
+      "name": "Branch protection: example-org/engine",
+      "scopes": [
+        "repository:example-org/engine"
+      ],
+      "owner_role": "GitHub organization owner",
+      "verification_mode": "mixed",
+      "status": "blocked",
+      "finding": "Synthetic example only; no live account or repository evidence has been collected for this control.",
+      "evidence": [
+        {
+          "type": "repository_file",
+          "source": "config/ai-platform-governance.inventory.json",
+          "observed_at": "2000-01-01",
+          "result": "Synthetic schema fixture; this placeholder date and record do not represent a live observation."
+        }
+      ],
+      "next_action": "For a real assessment, collect independently authenticated evidence under the named owner role and record its scope, timestamp, limitations and next review date.",
+      "review_due": "2000-02-01"
+    }
+  ],
+  "example_data": true
+}

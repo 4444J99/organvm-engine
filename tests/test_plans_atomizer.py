@@ -265,6 +265,26 @@ class TestClassifyArchetype:
 
 
 class TestPlanParser:
+    def test_duplicate_titles_keep_distinct_stable_ids(self, tmp_path):
+        filepath = tmp_path / "plan.md"
+        parser = PlanParser([], filepath, tmp_path)
+        first = parser._make_task("Repeat", "first", 10, 10)
+        second = parser._make_task("Repeat", "second", 12, 12)
+        assert first.id != second.id
+        again = PlanParser([], filepath, tmp_path)
+        assert first.id == again._make_task("Repeat", "first", 10, 10).id
+        assert second.id == again._make_task("Repeat", "second", 12, 12).id
+
+    def test_writer_rejects_duplicate_ids_before_replacing_file(self, tmp_path):
+        import pytest
+
+        from organvm_engine.plans.atomizer import write_jsonl
+        output = tmp_path / "tasks.jsonl"
+        output.write_text("preserved\n")
+        with pytest.raises(ValueError, match="duplicate"):
+            write_jsonl([{"id": "same"}, {"id": "same"}], output)
+        assert output.read_text() == "preserved\n"
+
     """Test the stateful plan parser."""
 
     def _parse(self, lines: list[str], tmp_path: Path) -> list[AtomicTask]:
@@ -383,3 +403,40 @@ class TestAtomizePlans:
         result = atomize_plans(tmp_path)
         assert result.plans_parsed >= 1
         assert len(result.tasks) >= 1
+
+
+def test_global_plans_with_same_name_have_distinct_ids(tmp_path):
+    from types import SimpleNamespace
+
+    from organvm_engine.plans.atomizer import atomize_plans
+
+    first = tmp_path / 'one' / 'same.md'
+    second = tmp_path / 'two' / 'same.md'
+    for path in (first, second):
+        path.parent.mkdir()
+        path.write_text('# Plan\n\n- [ ] Implement the same useful task\n')
+    files = [SimpleNamespace(path=p, agent='codex', organ=None, repo=None) for p in (first, second)]
+    result = atomize_plans(tmp_path / 'workspace', plan_files_override=files)
+    assert not result.errors
+    assert len(result.tasks) == 2
+    assert len({task['id'] for task in result.tasks}) == 2
+    reverse = atomize_plans(tmp_path / 'workspace', plan_files_override=list(reversed(files)))
+    assert {task['id'] for task in result.tasks} == {task['id'] for task in reverse.tasks}
+
+
+def test_writer_preserves_previous_tasks_if_serialization_fails(tmp_path, monkeypatch):
+    import pytest
+
+    from organvm_engine.plans import atomizer
+
+    output = tmp_path / 'tasks.jsonl'
+    output.write_text('previous\n')
+    original = atomizer.json.dumps
+    def fail_on_second(item, **kwargs):
+        if item['id'] == 'b':
+            raise ValueError('serialization failed')
+        return original(item, **kwargs)
+    monkeypatch.setattr(atomizer.json, 'dumps', fail_on_second)
+    with pytest.raises(ValueError, match='serialization failed'):
+        atomizer.write_jsonl([{'id': 'a'}, {'id': 'b'}], output)
+    assert output.read_text() == 'previous\n'

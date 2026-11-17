@@ -1,0 +1,73 @@
+name: Cross-Repository Notifications
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  notify-repos:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'cross-repo') || contains(github.event.issue.labels.*.name, 'all-repos')
+
+    steps:
+      - name: Notify affected repositories
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Parse the issue body to find affected repositories
+            const issueBody = context.payload.issue.body || '';
+            const issueTitle = context.payload.issue.title;
+            const issueNumber = context.payload.issue.number;
+            const issueUrl = context.payload.issue.html_url;
+
+            console.log(`Processing cross-repo notification for issue #${issueNumber}`);
+
+            // Extract repository mentions from the issue body
+            // Format: owner/repo or @org/repo
+            const repoPattern = /(?:^|\s)(?:@)?([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)(?:\s|$)/g;
+            const matches = [...issueBody.matchAll(repoPattern)];
+            const repos = [...new Set(matches.map(m => m[1]))];
+
+            console.log(`Found ${repos.length} repository references`);
+
+            // Add a comment summarizing the cross-repo notification
+            let comment = `### 🔗 Cross-Repository Notification\n\n`;
+            comment += `This organization-wide issue may affect multiple repositories.\n\n`;
+
+            if (repos.length > 0) {
+              comment += `**Referenced Repositories:**\n`;
+              repos.forEach(repo => {
+                comment += `- ${repo}\n`;
+              });
+              comment += `\n`;
+            }
+
+            comment += `**Actions for Repository Maintainers:**\n`;
+            comment += `1. Review this issue for applicability to your repository\n`;
+            comment += `2. Create a linked issue in your repository if action is needed\n`;
+            comment += `3. Reference this issue as: ${context.repo.owner}/${context.repo.repo}#${issueNumber}\n`;
+            comment += `4. Update this issue with the status of your repository\n\n`;
+            comment += `---\n`;
+            comment += `*To link an issue from your repository, use:*\n`;
+            comment += `\`\`\`\nRelated to ${context.repo.owner}/${context.repo.repo}#${issueNumber}\n\`\`\``;
+
+            await github.rest.issues.createComment({
+              issue_number: issueNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+            console.log('Cross-repo notification comment posted');
+
+      - name: Create workflow summary
+        run: |
+          echo "## 🔗 Cross-Repository Notification Sent" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Issue #${{ github.event.issue.number }} has been tagged for cross-repository coordination." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Repository maintainers have been notified to review and take appropriate action." >> $GITHUB_STEP_SUMMARY

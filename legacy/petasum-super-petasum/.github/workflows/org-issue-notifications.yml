@@ -1,0 +1,75 @@
+name: Organization-Wide Issue Notifications
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  notify:
+    if: contains(github.event.issue.labels.*.name, 'org-wide')
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Classify issue priority
+        id: categorize
+        env:
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          echo "labels=${LABELS}" >> "$GITHUB_OUTPUT"
+          if echo "$LABELS" | grep -Eq "urgent|critical"; then
+            echo "priority=urgent" >> "$GITHUB_OUTPUT"
+            echo "emoji=🚨" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -Eq "high-priority|security"; then
+            echo "priority=high" >> "$GITHUB_OUTPUT"
+            echo "emoji=⚠️" >> "$GITHUB_OUTPUT"
+          else
+            echo "priority=normal" >> "$GITHUB_OUTPUT"
+            echo "emoji=📢" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment notification summary
+        uses: actions/github-script@v9
+        env:
+          PRIORITY: ${{ steps.categorize.outputs.priority }}
+          EMOJI: ${{ steps.categorize.outputs.emoji }}
+          ISSUE_LABELS: ${{ steps.categorize.outputs.labels }}
+        with:
+          script: |
+            const priority = process.env.PRIORITY;
+            const emoji = process.env.EMOJI;
+            const labels = process.env.ISSUE_LABELS;
+            const body = [
+              `${emoji} **Organization-Wide Issue Alert**`,
+              '',
+              `Priority: **${priority}**`,
+              `Labels: ${labels || 'none'}`,
+              '',
+              'This issue has been tagged as organization-wide and logged for cross-repo visibility.'
+            ].join('\\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+      - name: Add run summary
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          PRIORITY: ${{ steps.categorize.outputs.priority }}
+          LABELS: ${{ steps.categorize.outputs.labels }}
+        run: |
+          {
+            echo "## Organization-Wide Issue Notification"
+            echo ""
+            echo "**Issue:** #${ISSUE_NUMBER} - ${ISSUE_TITLE}"
+            echo "**Priority:** ${PRIORITY}"
+            echo "**Labels:** ${LABELS}"
+            echo ""
+            echo "[View issue](${ISSUE_URL})"
+          } >> "$GITHUB_STEP_SUMMARY"

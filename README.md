@@ -37,7 +37,18 @@ organvm dispatch validate payload.json
 # Context
 organvm context sync --dry-run
 organvm context surfaces --workspace ~/Workspace --json
+
+# Reader-mode documentation
+organvm docs validate project-record.yml \
+  --schema path/to/project-record-v1.schema.json \
+  --actual-repository owner/repository
+organvm docs audit . --format markdown
+organvm docs audit --workspace ~/Workspace --format json --output docs-audit.json
 ```
+
+The [2026-08-31 documentation estate audit](docs/audits/reader-mode-estate-audit.md)
+shows how installation-scoped and search-scoped repository inventories are
+normalized without publishing private repository identities.
 
 ## Library Usage
 
@@ -62,10 +73,15 @@ print(result.summary())
 | `metrics` | Compute and propagate system-wide metrics |
 | `dispatch` | Cross-organ event routing and cascade planning |
 | `contextmd` | Sync AI context files and discover exported conversation-corpus surfaces |
+| `documentation` | Validate canonical project records and audit reader-mode documentation across seven dimensions |
 | `mcp` | JSON-serializable tool wrappers exposing the 5 core CLIs to `organvm-mcp-server` |
 
-## Part of the Eight-Organ System
+## Repository authority and system role
 
-This repo belongs to **meta-organvm** (ORGAN VIII) and serves as the operational backbone for the entire system.
+The canonical GitHub authority is
+[`organvm/organvm-engine`](https://github.com/organvm/organvm-engine). The engine
+serves as a cross-organ operational backbone; its historical description as an
+ORGAN VIII/meta-system component describes function, not current repository
+ownership.
 # Webhook test at Thu Feb 26 13:28:17 EST 2026
 # Webhook test 2 at Thu Feb 26 13:28:55 EST 2026

@@ -1,0 +1,320 @@
+name: Enhanced PR Quality Checks
+
+# Module 2: Project Management & Workflow Automation
+# Module 5: Documentation & Knowledge Base Management
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
+jobs:
+  pr-validation:
+    runs-on: ubuntu-latest
+    name: Validate PR Quality
+    continue-on-error: true
+    # Skip bot-authored PRs (Dependabot, Copilot, Renovate, etc.)
+    if: github.actor != 'dependabot[bot]' && github.actor != 'copilot-swe-agent[bot]' && github.actor != 'renovate[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Check PR title format
+        id: title-check
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Check for conventional commit format
+          if echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?:.+'; then
+            echo "status=valid" >> $GITHUB_OUTPUT
+            echo "✅ PR title follows conventional commit format"
+          else
+            echo "status=invalid" >> $GITHUB_OUTPUT
+            echo "message=PR title should follow conventional commit format: type(scope): description" >> $GITHUB_OUTPUT
+            echo "❌ PR title does not follow conventional commit format"
+          fi
+
+      - name: Check PR description
+        id: description-check
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # Check if description is empty or too short
+          if [ -z "$PR_BODY" ] || [ ${#PR_BODY} -lt 50 ]; then
+            echo "status=insufficient" >> $GITHUB_OUTPUT
+            echo "message=PR description is too short. Please provide a detailed description." >> $GITHUB_OUTPUT
+            echo "❌ PR description is insufficient"
+          else
+            echo "status=adequate" >> $GITHUB_OUTPUT
+            echo "✅ PR description is adequate"
+          fi
+
+          # Check for issue reference
+          if echo "$PR_BODY" | grep -qE '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)s? #[0-9]+'; then
+            echo "has_issue_ref=true" >> $GITHUB_OUTPUT
+            echo "✅ PR references an issue"
+          else
+            echo "has_issue_ref=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PR does not reference an issue"
+          fi
+
+      - name: Check for breaking changes
+        id: breaking-check
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Check for breaking change indicators
+          if echo "${PR_BODY}${PR_TITLE}" | grep -qiE '(breaking|breaking.change|BREAKING CHANGE)'; then
+            echo "has_breaking=true" >> $GITHUB_OUTPUT
+            echo "⚠️ PR contains breaking changes"
+
+            # Check if breaking changes are documented
+            if echo "$PR_BODY" | grep -qiE 'breaking.change.*:'; then
+              echo "documented=true" >> $GITHUB_OUTPUT
+              echo "✅ Breaking changes are documented"
+            else
+              echo "documented=false" >> $GITHUB_OUTPUT
+              echo "❌ Breaking changes are not properly documented"
+            fi
+          else
+            echo "has_breaking=false" >> $GITHUB_OUTPUT
+            echo "✅ No breaking changes detected"
+          fi
+
+      - name: Check file changes
+        id: file-check
+        run: |
+          # Get changed files
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt
+
+          # Count different file types (using grep -E with wc -l for cross-platform compatibility)
+          total_files=$(wc -l < changed_files.txt)
+          source_files=$(grep -E '\.(js|ts|jsx|tsx|py|go|rs|java|cs|cpp|c)$' changed_files.txt | wc -l)
+          test_files=$(grep -E '(test|spec)\.(js|ts|jsx|tsx|py|go|rs|java|cs)$' changed_files.txt | wc -l)
+          doc_files=$(grep -E '\.(md|txt|rst|adoc)$' changed_files.txt | wc -l)
+
+          echo "total_files=$total_files" >> $GITHUB_OUTPUT
+          echo "source_files=$source_files" >> $GITHUB_OUTPUT
+          echo "test_files=$test_files" >> $GITHUB_OUTPUT
+          echo "doc_files=$doc_files" >> $GITHUB_OUTPUT
+
+          # Check if tests were added for source changes
+          if [ "$source_files" -gt 0 ] && [ "$test_files" -eq 0 ]; then
+            echo "needs_tests=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Source code changed but no test files modified"
+          else
+            echo "needs_tests=false" >> $GITHUB_OUTPUT
+            echo "✅ Test files were modified"
+          fi
+
+          # Check PR size
+          if [ "$total_files" -gt 50 ]; then
+            echo "size=large" >> $GITHUB_OUTPUT
+            echo "⚠️ Large PR - consider breaking into smaller PRs"
+          elif [ "$total_files" -gt 20 ]; then
+            echo "size=medium" >> $GITHUB_OUTPUT
+            echo "✓ Medium-sized PR"
+          else
+            echo "size=small" >> $GITHUB_OUTPUT
+            echo "✅ Small, focused PR"
+          fi
+
+      - name: Check for sensitive data
+        id: secrets-check
+        run: |
+          # Basic patterns to detect potential secrets
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -qE '(password|api[_-]?key|secret|token|credentials|private[_-]?key)\s*='; then
+            echo "potential_secrets=true" >> $GITHUB_OUTPUT
+            echo "❌ Potential secrets detected in diff"
+          else
+            echo "potential_secrets=false" >> $GITHUB_OUTPUT
+            echo "✅ No obvious secrets detected"
+          fi
+
+      - name: Check documentation updates
+        id: docs-check
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # Check if documentation checklist is completed
+          if echo "$PR_BODY" | grep -q "\- \[x\].*documentation" || \
+             echo "$PR_BODY" | grep -q "\- \[x\].*README"; then
+            echo "docs_updated=true" >> $GITHUB_OUTPUT
+            echo "✅ Documentation update confirmed"
+          else
+            echo "docs_updated=false" >> $GITHUB_OUTPUT
+
+            # Only warn if source files were changed
+            if [ ${{ steps.file-check.outputs.source_files }} -gt 0 ]; then
+              echo "⚠️ Documentation update not confirmed"
+            fi
+          fi
+
+      - name: Analyze code complexity
+        id: complexity-check
+        continue-on-error: true
+        run: |
+          # This is a simple check - in production, use proper complexity tools
+          lines_added=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{sum+=$1} END {print sum}')
+          lines_removed=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{sum+=$2} END {print sum}')
+
+          echo "lines_added=$lines_added" >> $GITHUB_OUTPUT
+          echo "lines_removed=$lines_removed" >> $GITHUB_OUTPUT
+
+          # Calculate net change
+          net_change=$((lines_added - lines_removed))
+          echo "net_change=$net_change" >> $GITHUB_OUTPUT
+
+          if [ $net_change -gt 500 ]; then
+            echo "complexity=high" >> $GITHUB_OUTPUT
+          elif [ $net_change -gt 200 ]; then
+            echo "complexity=medium" >> $GITHUB_OUTPUT
+          else
+            echo "complexity=low" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate PR quality report
+        run: |
+          cat > pr-quality-report.md << 'EOF'
+          ## 🤖 PR Quality Assessment
+
+          ### ✅ Validation Results
+
+          **Title Format:** ${{ steps.title-check.outputs.status == 'valid' && '✅ Valid' || '❌ Invalid' }}
+          ${{ steps.title-check.outputs.status != 'valid' && format('> {0}', steps.title-check.outputs.message) || '' }}
+
+          **Description:** ${{ steps.description-check.outputs.status == 'adequate' && '✅ Adequate' || '⚠️ Needs improvement' }}
+          ${{ steps.description-check.outputs.status != 'adequate' && format('> {0}', steps.description-check.outputs.message) || '' }}
+
+          **Issue Reference:** ${{ steps.description-check.outputs.has_issue_ref == 'true' && '✅ Present' || '⚠️ Missing' }}
+          ${{ steps.description-check.outputs.has_issue_ref != 'true' && '> Consider linking this PR to an issue' || '' }}
+
+          **Breaking Changes:** ${{ steps.breaking-check.outputs.has_breaking == 'true' && '⚠️ Contains breaking changes' || '✅ No breaking changes' }}
+          ${{ steps.breaking-check.outputs.has_breaking == 'true' && steps.breaking-check.outputs.documented != 'true' && '> ❌ Breaking changes not properly documented' || '' }}
+
+          **Secrets Check:** ${{ steps.secrets-check.outputs.potential_secrets == 'true' && '❌ Potential secrets detected' || '✅ No secrets detected' }}
+
+          ### 📊 PR Metrics
+
+          - **Size:** ${{ steps.file-check.outputs.size }}
+          - **Files Changed:** ${{ steps.file-check.outputs.total_files }}
+          - **Source Files:** ${{ steps.file-check.outputs.source_files }}
+          - **Test Files:** ${{ steps.file-check.outputs.test_files }}
+          - **Doc Files:** ${{ steps.file-check.outputs.doc_files }}
+          - **Lines Added:** ${{ steps.complexity-check.outputs.lines_added }}
+          - **Lines Removed:** ${{ steps.complexity-check.outputs.lines_removed }}
+          - **Complexity:** ${{ steps.complexity-check.outputs.complexity }}
+
+          ### 📝 Recommendations
+
+          EOF
+
+          # Add recommendations
+          if [ "${{ steps.file-check.outputs.needs_tests }}" == "true" ]; then
+            echo "- 🧪 Consider adding tests for code changes" >> pr-quality-report.md
+          fi
+
+          if [ "${{ steps.file-check.outputs.size }}" == "large" ]; then
+            echo "- 📦 Large PR detected. Consider breaking into smaller, focused PRs for easier review" >> pr-quality-report.md
+          fi
+
+          if [ "${{ steps.docs-check.outputs.docs_updated }}" == "false" ] && [ ${{ steps.file-check.outputs.source_files }} -gt 0 ]; then
+            echo "- 📖 Consider updating documentation to reflect code changes" >> pr-quality-report.md
+          fi
+
+          if [ "${{ steps.title-check.outputs.status }}" != "valid" ]; then
+            echo "- 📋 Update PR title to follow conventional commit format: \`type(scope): description\`" >> pr-quality-report.md
+          fi
+
+          cat pr-quality-report.md
+
+      - name: Comment on PR
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('pr-quality-report.md', 'utf8');
+
+            // Find existing bot comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('PR Quality Assessment')
+            );
+
+            const commentBody = report + '\n\n---\n*This is an automated check. Please address any issues before requesting review.*';
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+      - name: Add labels based on analysis
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const labels = [];
+
+            // Size labels
+            const size = '${{ steps.file-check.outputs.size }}';
+            labels.push(`size:${size}`);
+
+            // Complexity label
+            const complexity = '${{ steps.complexity-check.outputs.complexity }}';
+            if (complexity) {
+              labels.push(`complexity:${complexity}`);
+            }
+
+            // Breaking change label
+            if ('${{ steps.breaking-check.outputs.has_breaking }}' === 'true') {
+              labels.push('breaking-change');
+            }
+
+            // Needs tests label
+            if ('${{ steps.file-check.outputs.needs_tests }}' === 'true') {
+              labels.push('needs-tests');
+            }
+
+            // Add labels
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labels
+              });
+            }
+
+      - name: Fail if critical issues found
+        if: |
+          steps.secrets-check.outputs.potential_secrets == 'true' ||
+          (steps.breaking-check.outputs.has_breaking == 'true' && steps.breaking-check.outputs.documented != 'true')
+        run: |
+          echo "::warning::Critical issues found in PR. Please address before proceeding."

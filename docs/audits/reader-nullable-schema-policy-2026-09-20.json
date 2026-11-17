@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-20",
+  "owner_issue": 204,
+  "source_parent": "a7d0abffab1e3490f8cdf6395d56ef739bc27ec1",
+  "runtime": "CPython 3.11.2",
+  "scope": "Public-source sandbox registry/policy execution; not full Engine, hosted CI, admitted-host, private generation, merge or runtime acceptance.",
+  "command": "python -m pytest -q tests/test_registry.py tests/test_registry_split.py tests/test_registry_nullable_policy.py tests/test_contextmd_receipt.py -k 'registry or validation_policy or malformed_external_validation_schema'",
+  "results": {"passed": 86, "deselected": 41, "failed": 0, "seconds": 0.24},
+  "negative_control": {"source": "unmodified parent validator", "passed": 9, "failed_as_expected": 4},
+  "ruff_check": "passed on the two changed Python files; unrelated pre-existing formatter change retained untouched",
+  "accepted_schema_ref": "7d24764d3b1ac5916b7ba51e05c02f0a24a25bcf",
+  "accepted_schema_sha256": "76885e7bb313ac34d26ec93e2993c842451ba64a219b0e85899a09c54fc592b4",
+  "accepted_schema_probe": "external-schema without fallback after repair; source bytes unchanged",
+  "sha256": {
+    "src/organvm_engine/registry/validator.py": "8e79469581493c21a3dcf89340a14606a1c7293dbeedb2dcc0f6e317c350af14",
+    "tests/test_registry_nullable_policy.py": "36041929b2a80c9ec5e9139c0b43b686c4b3eb90072ed51cacebe54f285edbb2"
+  },
+  "private_registry_bytes_published": false,
+  "generated_context_changed": false
+}

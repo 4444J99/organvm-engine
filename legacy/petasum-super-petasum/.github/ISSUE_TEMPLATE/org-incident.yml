@@ -1,0 +1,57 @@
+name: Org-wide incident
+description: Track a multi-repo or multi-team incident.
+title: "[Incident][SEV-<1|2|3>] <short title>"
+labels: [org-wide, incident, needs-triage]
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: [SEV-1, SEV-2, SEV-3]
+    validations:
+      required: true
+  - type: input
+    id: started
+    attributes:
+      label: Start time (UTC)
+      placeholder: "YYYY-MM-DD HH:MM"
+    validations:
+      required: true
+  - type: textarea
+    id: detection
+    attributes:
+      label: Detection
+      placeholder: How was this detected?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      placeholder: Users/systems affected, scope, blast radius
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Current status / Mitigation
+      placeholder: Actions taken and next steps
+    validations:
+      required: true
+  - type: textarea
+    id: repos
+    attributes:
+      label: Impacted repositories
+      description: One per line as owner/repo
+    validations:
+      required: true
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline of events
+      placeholder: Time-stamped notes
+  - type: textarea
+    id: followups
+    attributes:
+      label: Follow-up actions
+      placeholder: "- [ ] owner/repo#123 Root cause fix"

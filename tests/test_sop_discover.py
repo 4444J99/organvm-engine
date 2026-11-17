@@ -1,7 +1,12 @@
 """Tests for sop.discover module."""
 
+import stat
 from pathlib import Path
 
+import pytest
+from conftest import replace_with_nonregular
+
+from organvm_engine._stable_io import StableReadError, read_stable_regular_bytes
 from organvm_engine.sop.discover import (
     _derive_sop_name,
     _infer_scope,
@@ -270,6 +275,118 @@ class TestDiscoverSops:
         entries = discover_sops(workspace=tmp_path)
         assert len(entries) == 1
         assert entries[0].phase == "any"
+
+    @pytest.mark.parametrize("replacement_kind", ["fifo", "symlink", "directory"])
+    def test_sop_is_file_to_nonregular_swap_never_blocks(
+        self,
+        tmp_path,
+        monkeypatch,
+        replacement_kind,
+    ):
+        import organvm_engine.sop.discover as discover_mod
+
+        sop_path = _make_sop(
+            tmp_path,
+            "meta-organvm",
+            "praxis-perpetua",
+            "SOP--raced.md",
+            "---\nname: raced\nscope: repo\n---\n# Raced\n",
+        )
+        outside = tmp_path / "outside.md"
+        outside.write_text("# FOREIGN\n", encoding="utf-8")
+        real_read = discover_mod.read_stable_regular_bytes
+        swapped = False
+
+        def swap_after_discovery(path, *args, **kwargs):
+            nonlocal swapped
+            if Path(path) == sop_path and not swapped:
+                replace_with_nonregular(sop_path, replacement_kind, outside)
+                swapped = True
+            return real_read(path, *args, **kwargs)
+
+        monkeypatch.setattr(
+            discover_mod,
+            "read_stable_regular_bytes",
+            swap_after_discovery,
+        )
+
+        entries = discover_sops(workspace=tmp_path)
+
+        assert swapped is True
+        assert len(entries) == 1
+        assert entries[0].title is None
+        assert entries[0].has_canonical_header is False
+
+    def test_repo_root_seed_identity_fifo_swap_never_blocks(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
+        import organvm_engine.sop.discover as discover_mod
+
+        seed = tmp_path / "seed.yaml"
+        seed.write_text("repo: bound-name\norg: bound-org\n", encoding="utf-8")
+        (tmp_path / ".sops").mkdir()
+        (tmp_path / ".sops" / "local.md").write_text("# Local\n", encoding="utf-8")
+        outside = tmp_path / "outside"
+        outside.write_text("unused\n", encoding="utf-8")
+        real_read = discover_mod.read_stable_regular_bytes
+        swapped = False
+
+        def swap_seed(path, *args, **kwargs):
+            nonlocal swapped
+            if Path(path) == seed and not swapped:
+                replace_with_nonregular(seed, "fifo", outside)
+                swapped = True
+            return real_read(path, *args, **kwargs)
+
+        monkeypatch.setattr(discover_mod, "read_stable_regular_bytes", swap_seed)
+
+        entries = discover_sops(workspace=tmp_path)
+
+        assert swapped is True
+        assert len(entries) == 1
+        assert entries[0].org == tmp_path.parent.name
+        assert entries[0].repo == tmp_path.name
+
+
+@pytest.mark.parametrize("replacement_kind", ["fifo", "symlink", "directory"])
+def test_stable_reader_rejects_stat_to_open_nonregular_swap(
+    tmp_path,
+    monkeypatch,
+    replacement_kind,
+) -> None:
+    import organvm_engine._stable_io as stable_io
+
+    source = tmp_path / "input.md"
+    source.write_text("# Bound\n", encoding="utf-8")
+    outside = tmp_path / "outside.md"
+    outside.write_text("# FOREIGN\n", encoding="utf-8")
+    real_open = stable_io.os.open
+    swapped = False
+
+    def swap_at_file_open(name, flags, *args, dir_fd=None, **kwargs):
+        nonlocal swapped
+        if (
+            name == source.name
+            and dir_fd is not None
+            and not flags & getattr(stable_io.os, "O_DIRECTORY", 0)
+            and not swapped
+        ):
+            replace_with_nonregular(source, replacement_kind, outside)
+            swapped = True
+            if replacement_kind == "fifo":
+                assert flags & getattr(stable_io.os, "O_NONBLOCK", 0)
+        return real_open(name, flags, *args, dir_fd=dir_fd, **kwargs)
+
+    monkeypatch.setattr(stable_io.os, "open", swap_at_file_open)
+
+    with pytest.raises(StableReadError):
+        read_stable_regular_bytes(source)
+
+    assert swapped is True
+    if replacement_kind == "fifo":
+        assert stat.S_ISFIFO(source.lstat().st_mode)
 
 
 class TestParseFrontmatter:

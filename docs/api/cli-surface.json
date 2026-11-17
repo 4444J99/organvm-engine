@@ -1,0 +1,7478 @@
+{
+  "commands": {
+    "(root)": {
+      "arguments": {
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "atoms": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "atoms fanout": {
+      "arguments": {
+        "--atoms-dir": {
+          "flags": [
+            "--atoms-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "atoms link": {
+      "arguments": {
+        "--by-thread": {
+          "flags": [
+            "--by-thread"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--prompts": {
+          "flags": [
+            "--prompts"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tasks": {
+          "flags": [
+            "--tasks"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "atoms pipeline": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--reconcile": {
+          "flags": [
+            "--reconcile"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--research-dir": {
+          "flags": [
+            "--research-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--skip-link": {
+          "flags": [
+            "--skip-link"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-narrate": {
+          "flags": [
+            "--skip-narrate"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-reconcile": {
+          "flags": [
+            "--skip-reconcile"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-research": {
+          "flags": [
+            "--skip-research"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "atoms reconcile": {
+      "arguments": {
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "atoms research": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--min-confidence": {
+          "flags": [
+            "--min-confidence"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--research-dir": {
+          "flags": [
+            "--research-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "audit": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "audit absorption": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--verbose": {
+          "flags": [
+            "--verbose"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "audit full": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "audit layer": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "layer": {
+          "choices": [
+            "absorption",
+            "content",
+            "edges",
+            "filesystem",
+            "reconcile",
+            "seeds"
+          ],
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "audit organ": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "organ_key": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "audit repo": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ci": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "ci audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ci mandate": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ci protect": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--execute": {
+          "flags": [
+            "--execute"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ci scaffold": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--lint": {
+          "flags": [
+            "--lint"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--name": {
+          "flags": [
+            "--name"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--test": {
+          "flags": [
+            "--test"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--typecheck": {
+          "flags": [
+            "--typecheck"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "path": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ci triage": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "completion": {
+      "arguments": {
+        "shell": {
+          "choices": [
+            "bash",
+            "fish",
+            "zsh"
+          ],
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "content": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "content list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tag": {
+          "flags": [
+            "--tag"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "content new": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--hook": {
+          "flags": [
+            "--hook"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--session": {
+          "flags": [
+            "--session"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--title": {
+          "flags": [
+            "--title"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "slug": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "content status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "context": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "context diff": {
+      "arguments": {
+        "--last": {
+          "flags": [
+            "--last"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "context rollback": {
+      "arguments": {
+        "--to": {
+          "flags": [
+            "--to"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "context surfaces": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "context sync": {
+      "arguments": {
+        "--diff": {
+          "flags": [
+            "--diff"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--receipt": {
+          "flags": [
+            "--receipt"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "contrib": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "contrib backflow": {
+      "arguments": {
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "contrib list": {
+      "arguments": {}
+    },
+    "contrib status": {
+      "arguments": {}
+    },
+    "corpus": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "corpus coverage": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--verbose": {
+          "flags": [
+            "--verbose",
+            "-v"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus gaps": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--verbose": {
+          "flags": [
+            "--verbose",
+            "-v"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus repo": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus scan": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output",
+            "-o"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus stats": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "corpus trace": {
+      "arguments": {
+        "--corpus-dir": {
+          "flags": [
+            "--corpus-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--graph-file": {
+          "flags": [
+            "--graph-file"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "concept": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "deadlines": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--days": {
+          "flags": [
+            "--days"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "debt": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "debt scan": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--path": {
+          "flags": [
+            "--path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "debt stats": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--path": {
+          "flags": [
+            "--path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "dispatch": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "dispatch validate": {
+      "arguments": {
+        "file": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "docs": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "docs audit": {
+      "arguments": {
+        "--format": {
+          "choices": [
+            "json",
+            "markdown",
+            "table"
+          ],
+          "flags": [
+            "--format"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--strict": {
+          "flags": [
+            "--strict"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "paths": {
+          "nargs": "*",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "docs validate": {
+      "arguments": {
+        "--actual-repository": {
+          "flags": [
+            "--actual-repository"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--assertion-schema": {
+          "flags": [
+            "--assertion-schema"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--require-git-tracked-evidence": {
+          "flags": [
+            "--require-git-tracked-evidence"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--root": {
+          "flags": [
+            "--root"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--schema": {
+          "flags": [
+            "--schema"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "record": {
+          "nargs": "?",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "ecosystem actions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem audit": {
+      "arguments": {}
+    },
+    "ecosystem coverage": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem dna": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--pillar": {
+          "flags": [
+            "--pillar"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem lifecycle": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem list": {
+      "arguments": {}
+    },
+    "ecosystem matrix": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--pillar": {
+          "flags": [
+            "--pillar"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem scaffold": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem scaffold-dna": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem show": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ecosystem staleness": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem sync": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem sync-dna": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ecosystem validate": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "exit-interview": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "exit-interview counter": {
+      "arguments": {
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview discover": {
+      "arguments": {
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "exit-interview full": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "exit-interview generate": {
+      "arguments": {
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview orphans": {
+      "arguments": {
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview plan": {
+      "arguments": {
+        "--format": {
+          "choices": [
+            "issues",
+            "plan",
+            "yaml"
+          ],
+          "flags": [
+            "--format"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "exit-interview rectify": {
+      "arguments": {
+        "--gate": {
+          "flags": [
+            "--gate"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--gate-dir": {
+          "flags": [
+            "--gate-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "fabrica catch": {
+      "arguments": {
+        "--agents": {
+          "flags": [
+            "--agents"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--list": {
+          "flags": [
+            "--list"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organs": {
+          "flags": [
+            "--organs"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--scope": {
+          "flags": [
+            "--scope"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--select": {
+          "flags": [
+            "--select"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--thesis": {
+          "flags": [
+            "--thesis"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica fortify": {
+      "arguments": {
+        "--check": {
+          "flags": [
+            "--check"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--intent-id": {
+          "flags": [
+            "--intent-id"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--record-id": {
+          "flags": [
+            "--record-id"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--verdict": {
+          "flags": [
+            "--verdict"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica handoff": {
+      "arguments": {
+        "--backend": {
+          "flags": [
+            "--backend"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--body": {
+          "flags": [
+            "--body"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--branch": {
+          "flags": [
+            "--branch"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--execute": {
+          "flags": [
+            "--execute"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--labels": {
+          "flags": [
+            "--labels"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--task-id": {
+          "flags": [
+            "--task-id"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--title": {
+          "flags": [
+            "--title"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica heartbeat": {
+      "arguments": {
+        "--install": {
+          "flags": [
+            "--install"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--interval": {
+          "flags": [
+            "--interval"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--uninstall": {
+          "flags": [
+            "--uninstall"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fabrica log": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica release": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--source": {
+          "flags": [
+            "--source"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tags": {
+          "flags": [
+            "--tags"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--text": {
+          "flags": [
+            "--text"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "fabrica status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--packet-id": {
+          "flags": [
+            "--packet-id"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "formation": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "formation invoke": {
+      "arguments": {
+        "--context": {
+          "flags": [
+            "--context"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "name": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "formation list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "formation show": {
+      "arguments": {
+        "name": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "fossil": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "fossil chronicle": {
+      "arguments": {
+        "--epoch": {
+          "flags": [
+            "--epoch"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--regenerate": {
+          "flags": [
+            "--regenerate"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil drift": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil epochs": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil excavate": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil intentions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--scan": {
+          "flags": [
+            "--scan"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil stratum": {
+      "arguments": {
+        "--archetype": {
+          "flags": [
+            "--archetype"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fossil witness": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "fossil witness install": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "fossil witness record": {
+      "arguments": {
+        "--fossil-path": {
+          "flags": [
+            "--fossil-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo-path": {
+          "flags": [
+            "--repo-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "fossil witness status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "functions": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "functions list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "functions resolve": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "key": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "git": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "git add-submodule": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--url": {
+          "flags": [
+            "--url"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git diff-pinned": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git init-superproject": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "git install-hooks": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git reproduce-workspace": {
+      "arguments": {
+        "--manifest": {
+          "flags": [
+            "--manifest"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--shallow": {
+          "flags": [
+            "--shallow"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--target": {
+          "flags": [
+            "--target"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "git status": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "git sync-all": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "git sync-organ": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--message": {
+          "flags": [
+            "--message"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "governance audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--rules": {
+          "flags": [
+            "--rules"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--self-knowledge": {
+          "flags": [
+            "--self-knowledge"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--signal-closure": {
+          "flags": [
+            "--signal-closure"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance authorize": {
+      "arguments": {
+        "--enforce": {
+          "flags": [
+            "--enforce"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "actor": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 1,
+          "required": true,
+          "takes_value": true
+        },
+        "target": {
+          "nargs": "1",
+          "position": 2,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance check-deps": {
+      "arguments": {}
+    },
+    "governance dictums": {
+      "arguments": {
+        "--check": {
+          "flags": [
+            "--check"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--id": {
+          "flags": [
+            "--id"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--level": {
+          "choices": [
+            "axiom",
+            "organ",
+            "repo"
+          ],
+          "flags": [
+            "--level"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance excavate": {
+      "arguments": {
+        "--families": {
+          "flags": [
+            "--families"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--register": {
+          "flags": [
+            "--register"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--severity": {
+          "choices": [
+            "critical",
+            "info",
+            "warning"
+          ],
+          "flags": [
+            "--severity"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--type": {
+          "choices": [
+            "cross_organ_family",
+            "extractable_module",
+            "misplaced_governance",
+            "sub_package"
+          ],
+          "flags": [
+            "--type"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance graph-history": {
+      "arguments": {
+        "--at": {
+          "flags": [
+            "--at"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--data": {
+          "flags": [
+            "--data"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--from": {
+          "flags": [
+            "--from"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--snapshot": {
+          "flags": [
+            "--snapshot"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--to": {
+          "flags": [
+            "--to"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance impact": {
+      "arguments": {
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance placement": {
+      "arguments": {
+        "--audit": {
+          "flags": [
+            "--audit"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "governance promote": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--reason": {
+          "flags": [
+            "--reason"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        },
+        "target": {
+          "nargs": "1",
+          "position": 1,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "governance promotion-queue": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "choices": [
+            "blocked",
+            "ready",
+            "unverified"
+          ],
+          "flags": [
+            "--status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "handoff": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "handoff clean": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--older-than": {
+          "flags": [
+            "--older-than"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "handoff list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--stale-after": {
+          "flags": [
+            "--stale-after"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "index": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "index bridge": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "index scan": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "index show": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "index stats": {
+      "arguments": {}
+    },
+    "irf": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "irf add": {
+      "arguments": {
+        "--action": {
+          "flags": [
+            "--action"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--blocker": {
+          "flags": [
+            "--blocker"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--domain": {
+          "flags": [
+            "--domain"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--id": {
+          "flags": [
+            "--id"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--owner": {
+          "flags": [
+            "--owner"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--priority": {
+          "flags": [
+            "--priority"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--source": {
+          "flags": [
+            "--source"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "irf complete": {
+      "arguments": {
+        "--done": {
+          "flags": [
+            "--done"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--note": {
+          "flags": [
+            "--note"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--session": {
+          "flags": [
+            "--session"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "item_id": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "irf list": {
+      "arguments": {
+        "--domain": {
+          "flags": [
+            "--domain"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--owner": {
+          "flags": [
+            "--owner"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--priority": {
+          "flags": [
+            "--priority"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "irf stats": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "irf status": {
+      "arguments": {
+        "item_id": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ledger": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "ledger checkpoint": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ledger genesis": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ledger log": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--type": {
+          "flags": [
+            "--type"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ledger repair": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ledger status": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ledger verify": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--event": {
+          "flags": [
+            "--event"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "lint-vars": {
+      "arguments": {
+        "--strict": {
+          "flags": [
+            "--strict"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "metrics": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "metrics calculate": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "metrics count-words": {
+      "arguments": {}
+    },
+    "metrics propagate": {
+      "arguments": {
+        "--cross-repo": {
+          "flags": [
+            "--cross-repo"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--targets": {
+          "flags": [
+            "--targets"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "metrics refresh": {
+      "arguments": {
+        "--cross-repo": {
+          "flags": [
+            "--cross-repo"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--targets": {
+          "flags": [
+            "--targets"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "network": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "network log": {
+      "arguments": {
+        "--action": {
+          "choices": [
+            "contribution",
+            "dialogue",
+            "invitation",
+            "presence"
+          ],
+          "flags": [
+            "--action"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--detail": {
+          "flags": [
+            "--detail"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--lens": {
+          "choices": [
+            "kinship",
+            "parallel",
+            "technical"
+          ],
+          "flags": [
+            "--lens"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--outcome": {
+          "flags": [
+            "--outcome"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tags": {
+          "flags": [
+            "--tags"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--url": {
+          "flags": [
+            "--url"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "project": {
+          "nargs": "1",
+          "position": 1,
+          "required": true,
+          "takes_value": true
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "network map": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "network scan": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "network status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "network suggest": {
+      "arguments": {}
+    },
+    "network synthesize": {
+      "arguments": {
+        "--period": {
+          "choices": [
+            "all-time",
+            "monthly",
+            "weekly"
+          ],
+          "flags": [
+            "--period"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "omega": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "omega check": {
+      "arguments": {}
+    },
+    "omega status": {
+      "arguments": {}
+    },
+    "omega update": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "ontologia bootstrap": {
+      "arguments": {
+        "--store-dir": {
+          "flags": [
+            "--store-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia events": {
+      "arguments": {
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia health": {
+      "arguments": {
+        "--entity": {
+          "flags": [
+            "--entity"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia history": {
+      "arguments": {
+        "entity": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--type": {
+          "flags": [
+            "--type"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia merge": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--name": {
+          "flags": [
+            "--name"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "sources": {
+          "nargs": "+",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia policies": {
+      "arguments": {
+        "--evaluate": {
+          "flags": [
+            "--evaluate"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia reclassify": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        },
+        "new_type": {
+          "nargs": "1",
+          "position": 1,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia relocate": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        },
+        "new_parent": {
+          "nargs": "1",
+          "position": 1,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia resolve": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "query": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia revisions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia runbooks": {
+      "arguments": {
+        "--generate": {
+          "flags": [
+            "--generate"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--verify": {
+          "flags": [
+            "--verify"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia sense": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--sensor": {
+          "flags": [
+            "--sensor"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia snapshot": {
+      "arguments": {
+        "--compare": {
+          "flags": [
+            "--compare"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "ontologia split": {
+      "arguments": {
+        "--deprecate": {
+          "flags": [
+            "--deprecate"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--descendants": {
+          "flags": [
+            "--descendants"
+          ],
+          "nargs": "+",
+          "required": true,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "source": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "ontologia status": {
+      "arguments": {}
+    },
+    "ontologia tensions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "organism": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--omega": {
+          "flags": [
+            "--omega"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "organism snapshot": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--omega": {
+          "flags": [
+            "--omega"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pitch": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "pitch generate": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pitch sync": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "plans atomize": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--plans-dir": {
+          "flags": [
+            "--plans-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--summary": {
+          "flags": [
+            "--summary"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans audit": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--stale-days": {
+          "flags": [
+            "--stale-days"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans index": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "plans overlaps": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--severity": {
+          "choices": [
+            "conflict",
+            "info",
+            "warning"
+          ],
+          "flags": [
+            "--severity"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans sweep": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--stale-days": {
+          "flags": [
+            "--stale-days"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "plans tidy": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--include-review": {
+          "flags": [
+            "--include-review"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--stale-days": {
+          "flags": [
+            "--stale-days"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "portal": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "portal backflow": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--out-dir": {
+          "flags": [
+            "--out-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--outcome": {
+          "choices": [
+            "declined",
+            "dormant",
+            "merged"
+          ],
+          "flags": [
+            "--outcome"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "external": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal candidate": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--kind": {
+          "flags": [
+            "--kind"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--rationale": {
+          "flags": [
+            "--rationale"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--testability": {
+          "flags": [
+            "--testability"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tractability": {
+          "flags": [
+            "--tractability"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal convergences": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--min-repos": {
+          "flags": [
+            "--min-repos"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "portal import-stars": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "portal metabolize": {
+      "arguments": {
+        "--budget": {
+          "flags": [
+            "--budget"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--no-absorb": {
+          "flags": [
+            "--no-absorb"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--out-dir": {
+          "flags": [
+            "--out-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--state-dir": {
+          "flags": [
+            "--state-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "portal package": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--ref": {
+          "flags": [
+            "--ref"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal prepare": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--out-dir": {
+          "flags": [
+            "--out-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal propose": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "external": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        },
+        "target": {
+          "nargs": "1",
+          "position": 1,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "portal status": {
+      "arguments": {
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "portal submit": {
+      "arguments": {
+        "--approve": {
+          "flags": [
+            "--approve"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--checks-passing": {
+          "flags": [
+            "--checks-passing"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--db": {
+          "flags": [
+            "--db"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--execute": {
+          "flags": [
+            "--execute"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "external": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "primitive guardian": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "primitive guardian add-watch": {
+      "arguments": {
+        "--alert-window": {
+          "flags": [
+            "--alert-window"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--description": {
+          "flags": [
+            "--description"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--direction": {
+          "flags": [
+            "--direction"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--threshold": {
+          "flags": [
+            "--threshold"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--watched-value": {
+          "flags": [
+            "--watched-value"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive guardian check": {
+      "arguments": {}
+    },
+    "primitive guardian watchlist": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive inspect": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "name": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive invoke": {
+      "arguments": {
+        "--context": {
+          "flags": [
+            "--context"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--frame": {
+          "flags": [
+            "--frame"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--stakes": {
+          "flags": [
+            "--stakes"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "name": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "primitive ledger": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "primitive ledger entries": {
+      "arguments": {
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive ledger record": {
+      "arguments": {
+        "--amount": {
+          "flags": [
+            "--amount"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--counterparty": {
+          "flags": [
+            "--counterparty"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--description": {
+          "flags": [
+            "--description"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--direction": {
+          "flags": [
+            "--direction"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--frequency": {
+          "flags": [
+            "--frequency"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--recurring": {
+          "flags": [
+            "--recurring"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive ledger snapshot": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "primitive list": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "prompts": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "prompts audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--noise-only": {
+          "flags": [
+            "--noise-only"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "prompts clipboard": {
+      "arguments": {
+        "--db-path": {
+          "flags": [
+            "--db-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json-only": {
+          "flags": [
+            "--json-only"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--md-only": {
+          "flags": [
+            "--md-only"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "prompts distill": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--input": {
+          "flags": [
+            "--input"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--scaffold": {
+          "flags": [
+            "--scaffold"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "prompts narrate": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--gap-hours": {
+          "flags": [
+            "--gap-hours"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--summary": {
+          "flags": [
+            "--summary"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "pulse advisories": {
+      "arguments": {
+        "--ack": {
+          "flags": [
+            "--ack"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--unacked": {
+          "flags": [
+            "--unacked"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse ammoi": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse blast": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse briefing": {
+      "arguments": {
+        "--hours": {
+          "flags": [
+            "--hours"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse clusters": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse density": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse ecosystem": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse edges": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      },
+      "subcommand_required": false
+    },
+    "pulse edges sync": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse emit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--payload": {
+          "flags": [
+            "--payload"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--source": {
+          "flags": [
+            "--source"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "event_type": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse entity-memory": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--no-continuity": {
+          "flags": [
+            "--no-continuity"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-insights": {
+          "flags": [
+            "--no-insights"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-metrics": {
+          "flags": [
+            "--no-metrics"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-ontologia": {
+          "flags": [
+            "--no-ontologia"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-pulse": {
+          "flags": [
+            "--no-pulse"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse events": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--since-days": {
+          "flags": [
+            "--since-days"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--type": {
+          "flags": [
+            "--type"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse flow": {
+      "arguments": {
+        "--hours": {
+          "flags": [
+            "--hours"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse history": {
+      "arguments": {
+        "--days": {
+          "flags": [
+            "--days"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse memory": {
+      "arguments": {
+        "--agent": {
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--category": {
+          "flags": [
+            "--category"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--summary": {
+          "flags": [
+            "--summary"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse mood": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse nerve": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse relations": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-indexer": {
+          "flags": [
+            "--no-indexer"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-ontologia": {
+          "flags": [
+            "--no-ontologia"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-seed": {
+          "flags": [
+            "--no-seed"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "entity": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse scan": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-sensors": {
+          "flags": [
+            "--no-sensors"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse show": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse start": {
+      "arguments": {
+        "--interval": {
+          "flags": [
+            "--interval"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse stop": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "pulse temporal": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--window": {
+          "flags": [
+            "--window"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "pulse tensions": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "refresh": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-atoms": {
+          "flags": [
+            "--skip-atoms"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-context": {
+          "flags": [
+            "--skip-context"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-legacy": {
+          "flags": [
+            "--skip-legacy"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-organism": {
+          "flags": [
+            "--skip-organism"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-plans": {
+          "flags": [
+            "--skip-plans"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--skip-sop": {
+          "flags": [
+            "--skip-sop"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "registry": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "registry deps": {
+      "arguments": {
+        "--both": {
+          "flags": [
+            "--both"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--max-depth": {
+          "flags": [
+            "--max-depth"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--reverse": {
+          "flags": [
+            "--reverse"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--transitive": {
+          "flags": [
+            "--transitive"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry list": {
+      "arguments": {
+        "--archived": {
+          "flags": [
+            "--archived"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--dependency-of": {
+          "flags": [
+            "--dependency-of"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--depends-on": {
+          "flags": [
+            "--depends-on"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--desc": {
+          "flags": [
+            "--desc"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--format": {
+          "choices": [
+            "json",
+            "table"
+          ],
+          "flags": [
+            "--format"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--name-contains": {
+          "flags": [
+            "--name-contains"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--platinum": {
+          "flags": [
+            "--platinum"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--promotion-status": {
+          "flags": [
+            "--promotion-status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--public": {
+          "flags": [
+            "--public"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--sort-by": {
+          "flags": [
+            "--sort-by"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--unarchived": {
+          "flags": [
+            "--unarchived"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      },
+      "exclusive_groups": [
+        {
+          "members": [
+            "--archived",
+            "--unarchived"
+          ],
+          "required": false
+        }
+      ]
+    },
+    "registry merge": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "input_dir": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry search": {
+      "arguments": {
+        "--case-sensitive": {
+          "flags": [
+            "--case-sensitive"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--desc": {
+          "flags": [
+            "--desc"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--exact": {
+          "flags": [
+            "--exact"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--field": {
+          "flags": [
+            "--field"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--promotion-status": {
+          "flags": [
+            "--promotion-status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--public": {
+          "flags": [
+            "--public"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--sort-by": {
+          "flags": [
+            "--sort-by"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--status": {
+          "flags": [
+            "--status"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "flags": [
+            "--tier"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "query": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry show": {
+      "arguments": {
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry split": {
+      "arguments": {
+        "output_dir": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry stats": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "registry update": {
+      "arguments": {
+        "--reason": {
+          "flags": [
+            "--reason"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "field": {
+          "nargs": "1",
+          "position": 1,
+          "required": true,
+          "takes_value": true
+        },
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        },
+        "value": {
+          "nargs": "1",
+          "position": 2,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "registry validate": {
+      "arguments": {}
+    },
+    "resolve": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--fallback": {
+          "flags": [
+            "--fallback"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "query": {
+          "nargs": "?",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "seed": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "seed discover": {
+      "arguments": {}
+    },
+    "seed graph": {
+      "arguments": {}
+    },
+    "seed ownership": {
+      "arguments": {
+        "repo": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "seed validate": {
+      "arguments": {}
+    },
+    "session": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "session agents": {
+      "arguments": {}
+    },
+    "session analyze": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--full": {
+          "flags": [
+            "--full"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session archive": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--force": {
+          "flags": [
+            "--force"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--no-raw": {
+          "flags": [
+            "--no-raw"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "nargs": "?",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session debrief": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--latest": {
+          "flags": [
+            "--latest"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "nargs": "?",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session export": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--slug": {
+          "flags": [
+            "--slug"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "session_id": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "session list": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini",
+            "opencode"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--directory": {
+          "flags": [
+            "--directory"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--limit": {
+          "flags": [
+            "--limit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session plans": {
+      "arguments": {
+        "--agent": {
+          "choices": [
+            "claude",
+            "codex",
+            "gemini",
+            "governance"
+          ],
+          "flags": [
+            "--agent"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--audit": {
+          "flags": [
+            "--audit"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--matrix": {
+          "flags": [
+            "--matrix"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--since": {
+          "flags": [
+            "--since"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session projects": {
+      "arguments": {}
+    },
+    "session prompts": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "session review": {
+      "arguments": {
+        "--latest": {
+          "flags": [
+            "--latest"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--project": {
+          "flags": [
+            "--project"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "session_id": {
+          "nargs": "?",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "session show": {
+      "arguments": {
+        "session_id": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "session transcript": {
+      "arguments": {
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--unabridged": {
+          "flags": [
+            "--unabridged"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "session_id": {
+          "nargs": "1",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
+    "sop": {
+      "arguments": {
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "sop audit": {
+      "arguments": {
+        "--include-fresh": {
+          "flags": [
+            "--include-fresh"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--mapping": {
+          "flags": [
+            "--mapping"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--stale": {
+          "flags": [
+            "--stale"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "sop check": {
+      "arguments": {
+        "--strict": {
+          "flags": [
+            "--strict"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "sop discover": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "sop init": {
+      "arguments": {
+        "--name": {
+          "flags": [
+            "--name"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--scope": {
+          "choices": [
+            "organ",
+            "repo"
+          ],
+          "flags": [
+            "--scope"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "sop resolve": {
+      "arguments": {
+        "--phase": {
+          "choices": [
+            "any",
+            "foundation",
+            "genesis",
+            "graduation",
+            "hardening",
+            "sustaining"
+          ],
+          "flags": [
+            "--phase"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "name": {
+          "nargs": "?",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "status": {
+      "arguments": {}
+    },
+    "study": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "study audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output": {
+          "flags": [
+            "--output"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "study consilience": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "study feedback": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--polarity": {
+          "choices": [
+            "negative",
+            "positive"
+          ],
+          "flags": [
+            "--polarity"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "taxonomy": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "taxonomy audit": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "taxonomy classify": {
+      "arguments": {
+        "--dry-run": {
+          "flags": [
+            "--dry-run"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "testament": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "testament bridge": {
+      "arguments": {
+        "--host": {
+          "flags": [
+            "--host"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--per-message": {
+          "flags": [
+            "--per-message"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--port": {
+          "flags": [
+            "--port"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--send": {
+          "flags": [
+            "--send"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament candidate-testament": {
+      "arguments": {
+        "--max-artifact-bytes": {
+          "flags": [
+            "--max-artifact-bytes"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--max-input-bytes": {
+          "flags": [
+            "--max-input-bytes"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--max-units": {
+          "flags": [
+            "--max-units"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--snapshot-bundle": {
+          "flags": [
+            "--snapshot-bundle"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament cascade": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament catalog": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "testament gallery": {
+      "arguments": {
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament iceberg-atlas": {
+      "arguments": {
+        "--actor": {
+          "flags": [
+            "--actor"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--cursor": {
+          "flags": [
+            "--cursor"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--event-spine": {
+          "flags": [
+            "--event-spine"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--max-artifact-bytes": {
+          "flags": [
+            "--max-artifact-bytes"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--max-children": {
+          "flags": [
+            "--max-children"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--max-input-bytes": {
+          "flags": [
+            "--max-input-bytes"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--snapshot-bundle": {
+          "flags": [
+            "--snapshot-bundle"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--source-organ": {
+          "flags": [
+            "--source-organ"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--source-repo": {
+          "flags": [
+            "--source-repo"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament play": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--osc": {
+          "flags": [
+            "--osc"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--yaml": {
+          "flags": [
+            "--yaml"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament record-session": {
+      "arguments": {
+        "--from-commit": {
+          "flags": [
+            "--from-commit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--spine-path": {
+          "flags": [
+            "--spine-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--to-commit": {
+          "flags": [
+            "--to-commit"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament render": {
+      "arguments": {
+        "--all-repos": {
+          "flags": [
+            "--all-repos"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "testament status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "topology": {
+      "arguments": {},
+      "subcommand_required": false
+    },
+    "topology build": {
+      "arguments": {
+        "--verbose": {
+          "flags": [
+            "--verbose"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium": {
+      "arguments": {
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "trivium dialects": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium essays": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--tier": {
+          "choices": [
+            "all",
+            "analogical",
+            "formal",
+            "structural"
+          ],
+          "flags": [
+            "--tier"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium matrix": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--organ": {
+          "flags": [
+            "--organ"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "trivium scan": {
+      "arguments": {
+        "--all": {
+          "flags": [
+            "--all"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "organ_a": {
+          "nargs": "?",
+          "position": 0,
+          "required": false,
+          "takes_value": true
+        },
+        "organ_b": {
+          "nargs": "?",
+          "position": 1,
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "trivium status": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "trivium synthesize": {
+      "arguments": {
+        "--output-dir": {
+          "flags": [
+            "--output-dir"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "verify": {
+      "arguments": {
+        "--workspace": {
+          "flags": [
+            "--workspace"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      },
+      "subcommand_required": false
+    },
+    "verify contracts": {
+      "arguments": {
+        "--event": {
+          "flags": [
+            "--event"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    },
+    "verify ledger": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "verify system": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        }
+      }
+    },
+    "verify temporal": {
+      "arguments": {
+        "--event": {
+          "flags": [
+            "--event"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        }
+      }
+    }
+  },
+  "schema_version": 2
+}

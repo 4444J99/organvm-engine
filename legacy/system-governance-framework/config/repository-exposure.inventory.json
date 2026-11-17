@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "example_data": true,
+  "as_of": "2000-01-01",
+  "source": "Synthetic public schema fixture. Names, counts, dates and dispositions are examples; no live repository inventory or release approval is represented.",
+  "coverage": {
+    "repositories": 8,
+    "public": 3,
+    "private": 5
+  },
+  "default_public_license": "Apache-2.0",
+  "reference_split": {
+    "public": "example-org/sample-product",
+    "private": "example-org/sample-product-operations-private",
+    "status": "completed_split"
+  },
+  "dispositions": {
+    "completed_split": [
+      "example-org/sample-product-operations-private"
+    ],
+    "split_required": [
+      "example-org/sample-mixed-project"
+    ],
+    "public_candidate": [
+      "example-org/sample-candidate"
+    ],
+    "keep_private": [
+      "example-org/sample-private-operations"
+    ],
+    "archived_private": [
+      "example-org/sample-private-archive"
+    ]
+  },
+  "decision_rule": "Example data does not authorize a visibility change. A real release needs its own content/history audit and exact-source approval.",
+  "next_tranche": {
+    "name": "synthetic-candidate-example",
+    "repositories": [
+      "example-org/sample-candidate"
+    ],
+    "status": "pending_content_and_history_audit"
+  }
+}

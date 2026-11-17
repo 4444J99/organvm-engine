@@ -1,0 +1,52 @@
+# OS and Editor files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+*.sublime-*
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+*.bak
+.~lock.*
+
+# Logs
+*.log
+logs/
+
+# Local development
+.env
+.env.local
+.env.*.local
+*.local
+
+# Dependencies (if any get added in future)
+node_modules/
+vendor/
+
+# Build artifacts (if any)
+/dist/
+/build/
+/out/
+dist/
+build/
+*.pyc
+__pycache__/
+
+# Test coverage
+coverage/
+.coverage
+*.cover
+uv.lock
+*.egg-info/
+.venv/

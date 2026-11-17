@@ -24,12 +24,9 @@ FIXTURES = Path(__file__).parent / "fixtures" / "gate-contracts"
 
 
 @pytest.fixture
-def workspace_root():
-    """Use the actual workspace root for testing against real files."""
-    ws = Path.home() / "Workspace"
-    if not ws.is_dir():
-        pytest.skip("Workspace not found — skip filesystem-dependent tests")
-    return ws
+def workspace_root(engine_workspace):
+    """Temp workspace whose engine repo is the checkout under test."""
+    return engine_workspace
 
 
 @pytest.fixture

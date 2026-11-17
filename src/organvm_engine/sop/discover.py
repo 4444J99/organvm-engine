@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
 
+from organvm_engine._stable_io import StableReadError, read_stable_regular_bytes
 from organvm_engine.organ_config import ORGANS
 from organvm_engine.paths import workspace_root
 
@@ -54,6 +56,9 @@ class SOPEntry:
     overrides: str | None = None
     complements: list[str] = field(default_factory=list)
     sop_name: str | None = None  # from frontmatter 'name' or derived from filename
+    source_bytes: int | None = None
+    source_sha256: str | None = None
+    source_snapshot_attempted: bool = False
 
 
 def _parse_frontmatter(path: Path) -> dict:
@@ -62,23 +67,27 @@ def _parse_frontmatter(path: Path) -> dict:
     Looks for content between opening and closing '---' markers.
     Returns empty dict if no frontmatter found or on parse error.
     """
-    try:
-        with path.open(encoding="utf-8", errors="replace") as f:
-            first_line = f.readline().strip()
-            if first_line != "---":
-                return {}
-            lines = []
-            for raw in f:
-                line = raw.rstrip("\n")
-                if line.strip() == "---":
-                    break
-                lines.append(line)
-            else:
-                # Never found closing ---
-                return {}
-        return yaml.safe_load("\n".join(lines)) or {}
-    except (OSError, yaml.YAMLError):
+    text = _read_discovery_text(path)
+    if text is None:
         return {}
+    return _parse_frontmatter_text(text)
+
+
+def _parse_frontmatter_text(text: str) -> dict:
+    """Parse frontmatter from one already bound discovery snapshot."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}
+    frontmatter: list[str] = []
+    for line in lines[1:]:
+        if line.strip() == "---":
+            try:
+                parsed = yaml.safe_load("\n".join(frontmatter)) or {}
+            except yaml.YAMLError:
+                return {}
+            return parsed if isinstance(parsed, dict) else {}
+        frontmatter.append(line)
+    return {}
 
 
 def _derive_sop_name(filename: str) -> str:
@@ -143,27 +152,43 @@ def _should_skip(path: Path) -> bool:
 
 def _extract_title(path: Path) -> str | None:
     """Extract title from first heading line (first 10 lines)."""
-    try:
-        with path.open(encoding="utf-8", errors="replace") as f:
-            for i, raw_line in enumerate(f):
-                if i >= 10:
-                    break
-                line = raw_line.strip()
-                if line.startswith("# "):
-                    return line[2:].strip()
-    except OSError:
-        pass
+    text = _read_discovery_text(path)
+    if text is None:
+        return None
+    return _extract_title_text(text)
+
+
+def _extract_title_text(text: str) -> str | None:
+    for raw_line in text.splitlines()[:10]:
+        line = raw_line.strip()
+        if line.startswith("# "):
+            return line[2:].strip()
     return None
 
 
 def _has_canonical_header(path: Path) -> bool:
     """Check if file starts with canonical location blockquote."""
+    text = _read_discovery_text(path)
+    return _has_canonical_header_text(text) if text is not None else False
+
+
+def _has_canonical_header_text(text: str) -> bool:
+    first_line = text.splitlines()[0].strip() if text.splitlines() else ""
+    return first_line.startswith("> **Canonical location:**")
+
+
+def _read_discovery_text(path: Path) -> str | None:
+    """Return one stable bounded SOP snapshot, or fail closed to no metadata."""
+    payload = _read_discovery_payload(path)
+    return payload.decode("utf-8", errors="replace") if payload is not None else None
+
+
+def _read_discovery_payload(path: Path) -> bytes | None:
+    """Return one stable bounded SOP byte snapshot, or fail closed."""
     try:
-        with path.open(encoding="utf-8", errors="replace") as f:
-            first_line = f.readline().strip()
-            return first_line.startswith("> **Canonical location:**")
-    except OSError:
-        return False
+        return read_stable_regular_bytes(path)
+    except StableReadError:
+        return None
 
 
 def _classify_doc_type(filename: str) -> str:
@@ -260,8 +285,8 @@ def _repo_root_identity(path: Path) -> tuple[str, str] | None:
     seed_path = path / "seed.yaml"
     if seed_path.is_file():
         try:
-            data = yaml.safe_load(seed_path.read_text()) or {}
-        except (OSError, yaml.YAMLError):
+            data = yaml.safe_load(read_stable_regular_bytes(seed_path)) or {}
+        except (StableReadError, yaml.YAMLError):
             data = {}
         if isinstance(data, dict):
             seed_org = data.get("org") or data.get("organ")
@@ -343,7 +368,13 @@ def _build_entry(
     doc_type_override: str | None = None,
 ) -> SOPEntry:
     """Build a fully-enriched SOPEntry from a file path."""
-    fm = _parse_frontmatter(item)
+    source_payload = _read_discovery_payload(item)
+    text = (
+        source_payload.decode("utf-8", errors="replace")
+        if source_payload is not None
+        else None
+    )
+    fm = _parse_frontmatter_text(text) if text is not None else {}
     scope_from_fm = fm.get("scope")
     scope = scope_from_fm if scope_from_fm in ("system", "organ", "repo") else _infer_scope(
         item, workspace,
@@ -356,16 +387,25 @@ def _build_entry(
         org=org_name,
         repo=repo_name,
         filename=item.name,
-        title=_extract_title(item),
+        title=_extract_title_text(text) if text is not None else None,
         doc_type=doc_type_override or _classify_doc_type(item.name),
         canonical=_is_in_praxis_standards(item, workspace),
-        has_canonical_header=_has_canonical_header(item),
+        has_canonical_header=(
+            _has_canonical_header_text(text) if text is not None else False
+        ),
         scope=scope,
         phase=phase,
         triggers=fm.get("triggers") or [],
         overrides=fm.get("overrides"),
         complements=fm.get("complements") or [],
         sop_name=sop_name,
+        source_bytes=len(source_payload) if source_payload is not None else None,
+        source_sha256=(
+            "sha256:" + hashlib.sha256(source_payload).hexdigest()
+            if source_payload is not None
+            else None
+        ),
+        source_snapshot_attempted=True,
     )
 
 

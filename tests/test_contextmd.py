@@ -8,6 +8,7 @@ from organvm_engine.contextmd import AUTO_END, AUTO_START
 from organvm_engine.contextmd.generator import (
     _build_variable_context,
     _read_omega_counts,
+    _system_library_stats,
     generate_organ_section,
     generate_repo_section,
     generate_workspace_section,
@@ -111,6 +112,29 @@ class TestInjectSection:
 
 
 class TestGenerateRepoSection:
+    def test_external_system_library_has_no_machine_specific_path_or_counts(
+        self, tmp_path, monkeypatch,
+    ):
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        external = tmp_path / "external"
+        library = external / "praxis-perpetua" / "library"
+        (library / "chains").mkdir(parents=True)
+        (library / "chains" / "example.yaml").write_text("name: example\n")
+        monkeypatch.setattr("organvm_engine.paths.workspace_root", lambda: workspace)
+        monkeypatch.setattr("organvm_engine.paths.corpus_dir", lambda: external / "corpus")
+
+        _system_library_stats.cache_clear()
+        try:
+            assert _system_library_stats() == (
+                "unknown",
+                "unknown",
+                "unknown",
+                "unavailable outside current workspace",
+            )
+        finally:
+            _system_library_stats.cache_clear()
+
     def test_generates_valid_section(self, registry):
         section = generate_repo_section("recursive-engine", "organvm-i-theoria", registry)
         assert AUTO_START in section
@@ -298,7 +322,12 @@ class TestSyncRepo:
         assert result["change"]["action"] == "created"
         content = (repo_path / "CLAUDE.md").read_text()
         assert AUTO_START in content
-        assert "recursive-engine" in content
+        assert "docs/organvm-context.md" in content
+        # The generated text is in the shared document, not in the instruction file.
+        document = (repo_path / "docs" / "organvm-context.md").read_text()
+        assert result["context_document"]["action"] == "created"
+        assert "recursive-engine" in document
+        assert "recursive-engine" not in content
 
     def test_sync_updates_existing(self, tmp_path, registry):
         repo_path = tmp_path / "recursive-engine"
@@ -310,6 +339,7 @@ class TestSyncRepo:
         content = claude_md.read_text()
         assert "## Keep This" in content
         assert "## Old" not in content
+        assert "docs/organvm-context.md" in content
 
     def test_sync_flags_stale_handoff(self, tmp_path, registry):
         from datetime import datetime, timedelta, timezone
@@ -332,7 +362,8 @@ class TestSyncRepo:
         result = sync_repo(repo_path, "recursive-engine", "organvm-i-theoria", registry)
 
         assert result["action"] == "created"
-        content = (repo_path / "CLAUDE.md").read_text()
-        assert "## Active Handoff Status" in content
-        assert "**STALE**" in content
-        assert "verify constraints" in content
+        document = (repo_path / "docs" / "organvm-context.md").read_text()
+        assert "## Active Handoff Status" in document
+        assert "**STALE**" in document
+        assert "verify constraints" in document
+        assert "STALE" not in (repo_path / "CLAUDE.md").read_text()

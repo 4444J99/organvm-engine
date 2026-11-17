@@ -1,0 +1,31 @@
+{
+  "repository_id": 1160447354,
+  "revision": "3cfb12c7db85456373cd94efe0480ac5bf79436b",
+  "complete": true,
+  "files": {
+    ".github/workflows/ci.yml": "0b5ad4ffd281a43da0184b2f1410d23b4fb61a88ecea3330573e8e70330474fc",
+    ".github/workflows/cla.yml": "7058c6ed079a70fe72207ec578b3e74b473eae1e45f02b781c69ad0661243468",
+    ".github/workflows/dependabot-auto-merge.yml": "fcc794ff8ad38f7320344479a95b9dbc62d0de139d8d96a7b0a3f2518806a97f",
+    ".github/workflows/ecosystem-sync-check.yml": "e23ef75f5e7da27e1b2098ea26a946af8f82498dafab5448f078d82b07ebb829",
+    ".github/workflows/ecosystem-verify-contracts.yml": "f403fd9ffa9f8d994821b9cadce4007033b1a8180dfb0bbb17b4825b90b42988",
+    ".github/workflows/monthly-infrastructure-audit.yml": "5942bc31bdf9369413ba3b8434dc11e857aea94672e28d04bfce33dea9898446",
+    ".github/workflows/release-drafter.yml": "c539de0e0c7223f883e57366ce4a84eb0ab953a39919deacda96a2241ab73e74",
+    ".github/workflows/secret-scan.yml": "cee3a51b7f2dfc474ec9d63170c40e44e3c3795913f4c2647851b74367a6d77c",
+    ".github/workflows/spec-compliance.yml": "c9b5e22dee8a24383034b6433fb2b85b79493bd03780b4d26466740f353b1fd4",
+    ".github/workflows/stale.yml": "9216127b6a9688827090aa6ebf6f80dffaa190147ef0fbce4279202763cfe730",
+    ".github/workflows/testament-render.yml": "5ee66dc2e8487ff602ffa0c1de365f9632e03569e9a614e897dd624f1d1a6a10"
+  },
+  "snapshot_sha256": "86c2762aaf6f995e7d08fa41f5a4cf5cddadbe16bae2c21eeed19842c6baa862",
+  "serialization": "json.dumps(snapshot, indent=2) plus one newline",
+  "shape": {
+    "repository_id": 1160447354,
+    "revision": "3cfb12c7db85456373cd94efe0480ac5bf79436b",
+    "observations": {
+      "files": {
+        "status": "OK",
+        "complete": true,
+        "data": "map of each tracked workflow path to UTF-8 git blob content"
+      }
+    }
+  }
+}

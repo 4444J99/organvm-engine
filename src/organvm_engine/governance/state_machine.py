@@ -191,6 +191,7 @@ def execute_transition(
     enforce_infrastructure: bool = True,
     registry_entry: dict | None = None,
     reason: str = "",
+    dry_run: bool = False,
 ) -> tuple[bool, str]:
     """Validate and execute a state transition, emitting events on success.
 
@@ -215,6 +216,8 @@ def execute_transition(
             When provided, a ``promotion_history`` record is appended
             on successful transition (F-002).
         reason: Optional human-readable reason for the transition.
+        dry_run: If True, run every validation but emit no events and record
+            no promotion_history (a pure eligibility check).
 
     Returns:
         (valid, message) tuple — same semantics as check_transition.
@@ -280,6 +283,9 @@ def execute_transition(
                 )
         except Exception:
             logger.debug("Authorization check failed (non-fatal)", exc_info=True)
+
+    if dry_run:
+        return ok, f"{msg} (dry run: no event emitted, nothing recorded)"
 
     # Emit constitutional event via EventSpine
     _emit_spine_event(

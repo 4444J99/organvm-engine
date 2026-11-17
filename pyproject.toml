@@ -19,13 +19,17 @@ schema = []
 completion = ["argcomplete>=3.1"]
 ontologia = ["organvm-ontologia>=0.1.0"]
 neon = ["psycopg[binary]>=3.1"]
-dev = ["pytest>=8.0", "ruff>=0.4", "pyright>=1.1"]
+audit = ["ipykernel>=6.0", "nbclient>=0.10", "nbformat>=5.10", "pandas>=2.0"]
+dev = ["pytest>=8.0", "ruff>=0.4", "pyright>=1.1", "nbclient>=0.10", "nbformat>=5.10"]
 
 [project.scripts]
 organvm = "organvm_engine.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"organvm_engine.documentation" = ["schemas/*.json", "schemas/README.md"]
 
 [tool.ruff]
 line-length = 100

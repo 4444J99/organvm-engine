@@ -1,0 +1,240 @@
+name: Annual Principles Audit
+description: Conduct yearly review of organization commandments and principle conflicts framework
+title: "[Audit] Annual Principles Review - Q[X] [YYYY]"
+labels: [governance, principles-audit, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Annual Principles Audit Process
+
+        Use this template to conduct the yearly review of our organization commandments and conflict resolution framework. This ensures our principles remain relevant and effective.
+
+        **Audit Period**: Document the time period being reviewed.
+
+  - type: input
+    id: audit-period
+    attributes:
+      label: Audit Period
+      description: The year or quarter being reviewed
+      placeholder: "Q4 2025 (October - December)"
+    validations:
+      required: true
+
+  - type: input
+    id: auditor
+    attributes:
+      label: Lead Auditor(s)
+      description: GitHub usernames of people conducting this audit
+      placeholder: "@username1, @username2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: commandments-review
+    attributes:
+      label: Commandments Relevance Review
+      description: Review each of the 16 commandments in COMMANDMENTS.md
+      placeholder: |
+        For each commandment, assess:
+        - Still relevant? (Yes/No/Needs revision)
+        - Being followed in practice? (Yes/Partially/No)
+        - Evidence or examples
+
+        Example:
+        **Commandment #1: Free & Open Source**
+        - Relevant: Yes
+        - Followed: Yes
+        - Evidence: All templates remain MIT licensed, no proprietary dependencies added
+
+        **Commandment #2: Privacy & Security First**
+        - Relevant: Yes
+        - Followed: Partially
+        - Evidence: Token security documented, but no monitoring added yet
+    validations:
+      required: true
+
+  - type: textarea
+    id: principle-conflicts-discovered
+    attributes:
+      label: New Principle Conflicts Discovered
+      description: Document any new conflicts between principles encountered this year
+      placeholder: |
+        List any new conflicts not covered in PRINCIPLE_CONFLICTS.md:
+
+        1. **Conflict**: [Brief description]
+           - **Principles in tension**: [e.g., Performance vs. Quality]
+           - **Context**: [When did this arise?]
+           - **How resolved**: [What decision was made?]
+           - **Should be added to PRINCIPLE_CONFLICTS.md**: Yes/No
+
+        2. [Add more as needed]
+    validations:
+      required: false
+
+  - type: textarea
+    id: case-studies-to-add
+    attributes:
+      label: Proposed New Case Studies
+      description: Real-world scenarios that should be documented as precedent
+      placeholder: |
+        List scenarios from this year that should become case studies:
+
+        1. **Case Study Title**: [Short name]
+           - **What happened**: [Summary]
+           - **Principles involved**: [Which commandments]
+           - **Resolution**: [How was it resolved]
+           - **Precedent value**: [Why is this useful for future decisions]
+    validations:
+      required: false
+
+  - type: textarea
+    id: retired-principles
+    attributes:
+      label: Principles to Retire or Revise
+      description: Commandments that should be removed or significantly changed
+      placeholder: |
+        List any commandments that should be retired or revised:
+
+        - **Commandment #X**: [Name]
+          - **Reason for change**: [Why retire or revise?]
+          - **Proposed revision**: [If revising, what should it say instead?]
+          - **Impact assessment**: [What changes if we make this change?]
+    validations:
+      required: false
+
+  - type: textarea
+    id: new-principles-proposed
+    attributes:
+      label: New Principles to Add
+      description: Propose new commandments based on lessons learned
+      placeholder: |
+        Propose new principles to add to COMMANDMENTS.md:
+
+        - **Proposed Commandment**: [Short name]
+          - **Statement**: [Clear principle statement]
+          - **Rationale**: [Why is this needed?]
+          - **Examples**: [How would this apply?]
+          - **Category**: [Which section: Semgrep Philosophy / TensorFlow Principles / Schema.org Standards / New category]
+    validations:
+      required: false
+
+  - type: textarea
+    id: framework-effectiveness
+    attributes:
+      label: Conflict Resolution Framework Effectiveness
+      description: Assess how well the PRINCIPLE_CONFLICTS.md framework worked this year
+      placeholder: |
+        Rate and comment on the effectiveness of our conflict resolution framework:
+
+        - **Usage frequency**: [How often was it consulted? Never / Rarely / Occasionally / Frequently]
+        - **Helpfulness**: [Rate 1-5, where 5 is very helpful]
+        - **What worked well**: [List]
+        - **What didn't work**: [List]
+        - **Gaps or missing guidance**: [What conflicts arose that weren't covered?]
+    validations:
+      required: true
+
+  - type: textarea
+    id: adoption-metrics
+    attributes:
+      label: Adoption & Compliance Metrics
+      description: Quantitative assessment of how well principles are being followed
+      placeholder: |
+        Provide metrics where available:
+
+        - **Template usage rate**: [X issues created using templates / Y total issues]
+        - **Label consistency**: [% of org-wide issues properly labeled]
+        - **Security compliance**: [All PATs rotated? Y/N. Monitoring added? Y/N]
+        - **Documentation quality**: [Docs updated within X days of changes]
+        - **Community engagement**: [# of contributions from non-maintainers]
+    validations:
+      required: false
+
+  - type: textarea
+    id: violations-or-concerns
+    attributes:
+      label: Principle Violations or Concerns
+      description: Document any instances where principles were violated
+      placeholder: |
+        List any concerning patterns or violations:
+
+        1. **Violation**: [What happened]
+           - **Principle violated**: [Which commandment]
+           - **Context**: [Why did it happen]
+           - **Impact**: [What was the consequence]
+           - **Remediation**: [What was done to address it]
+           - **Prevention**: [How to prevent recurrence]
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: action-items
+    attributes:
+      label: Required Follow-up Actions
+      description: Check all actions that need to be taken based on this audit
+      options:
+        - label: Update COMMANDMENTS.md with revisions
+        - label: Add new case studies to PRINCIPLE_CONFLICTS.md
+        - label: Retire outdated principles
+        - label: Add new principles
+        - label: Improve conflict resolution framework
+        - label: Create training materials for new principles
+        - label: Communicate changes to organization
+        - label: Schedule next audit
+        - label: No changes needed (all principles remain effective)
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Implementation Timeline
+      description: When will follow-up actions be completed?
+      placeholder: |
+        - **Week 1**: [Actions]
+        - **Week 2**: [Actions]
+        - **Week 3**: [Actions]
+        - **By end of quarter**: [Actions]
+    validations:
+      required: false
+
+  - type: dropdown
+    id: next-audit
+    attributes:
+      label: Schedule Next Audit
+      description: When should the next principles audit occur?
+      options:
+        - "Q1 (January - March)"
+        - "Q2 (April - June)"
+        - "Q3 (July - September)"
+        - "Q4 (October - December)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: recommendations
+    attributes:
+      label: Recommendations for Next Year
+      description: Advice for future auditors
+      placeholder: |
+        What should next year's auditors know?
+
+        - **Things to pay attention to**: [Areas of focus]
+        - **Data to collect**: [Metrics that would be helpful]
+        - **Process improvements**: [How to make audits more effective]
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        ## After Completing This Audit
+
+        1. Share this issue with engineering leadership for review
+        2. Create follow-up issues/PRs for action items
+        3. Update COMMANDMENTS.md and PRINCIPLE_CONFLICTS.md as needed
+        4. Communicate significant changes to the organization
+        5. Schedule next year's audit
+
+        **Reference**: See [PRINCIPLE_CONFLICTS.md](../../PRINCIPLE_CONFLICTS.md) for current framework.

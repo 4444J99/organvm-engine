@@ -1,0 +1,24 @@
+# CODEOWNERS for Organization-Wide Issue Repository
+# This file defines who should be notified for different types of issues
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# REQUIRED: Create the following teams in your organization before using this file:
+#   - engineering (or your preferred development team name)
+#   - docs (or your preferred documentation team name)
+# Replace all instances of @ivi374forivi/TEAM-NAME-HERE with your actual team names.
+
+# Default owners for everything in the repo
+# REQUIRED: Replace @org-name/TEAM-NAME-HERE with your actual team
+* @ORG-NAME-HERE/TEAM-NAME-HERE
+
+# Issue templates - notify when templates are modified
+/.github/ISSUE_TEMPLATE/ @ivi374forivi/TEAM-NAME-HERE
+
+# Workflows - notify when automation is changed
+/.github/workflows/ @ivi374forivi/TEAM-NAME-HERE
+
+# Documentation - notify documentation team
+*.md @ivi374forivi/TEAM-NAME-HERE
+
+# Labels configuration
+/.github/labels.yml @ivi374forivi/TEAM-NAME-HERE

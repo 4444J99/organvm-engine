@@ -1,0 +1,72 @@
+{
+  "schema_version": "reader-mode-input-manifest.v1",
+  "audit_date": "2026-08-31",
+  "generated_at": "2026-08-31T23:58:17.371128Z",
+  "raw_inputs_committed": false,
+  "authorized_inputs_required": true,
+  "reproduction_note": "Rerunning requires the seven separately retained authorized exports. Match each file to its SHA-256 digest before execution; the public repository does not contain row-level private inputs.",
+  "sources": [
+    {
+      "source_segment": "personal",
+      "filename": "personal.json",
+      "rows": 24,
+      "public": 11,
+      "private": 13,
+      "sha256": "80ca9ee7ae1866b3b82a08da3a12e7fc91e4e42ee86cc398ba035eb94bdf8c17"
+    },
+    {
+      "source_segment": "ergon",
+      "filename": "ergon.json",
+      "rows": 52,
+      "public": 48,
+      "private": 4,
+      "sha256": "5b4bdca5b9aa6b9eb819bad5e055d7ad9927d5b64a225900096f6080ecb9fb5f"
+    },
+    {
+      "source_segment": "theoria_poiesis",
+      "filename": "theoria-poiesis.json",
+      "rows": 30,
+      "public": 28,
+      "private": 2,
+      "sha256": "b4c7abaf469224fc9fbdfafabd9fefdd8ee12ee040f15282dfadf4b653be61d9"
+    },
+    {
+      "source_segment": "governance_comms",
+      "filename": "governance-comms.json",
+      "rows": 47,
+      "public": 37,
+      "private": 10,
+      "sha256": "4eb3ee47152a184dfa005a0cdf9002ec3c0c1a00a6ff770453a8bf956383a4cf"
+    },
+    {
+      "source_segment": "umbrella_core",
+      "filename": "umbrella-core.json",
+      "rows": 51,
+      "public": 43,
+      "private": 8,
+      "sha256": "be97b84b9caf1ffe5aa7b8ea86abdc0d55172f5c66cfaa51aa3afbb8179cd4a3"
+    },
+    {
+      "source_segment": "umbrella_extended",
+      "filename": "umbrella-extended.json",
+      "rows": 49,
+      "public": 38,
+      "private": 11,
+      "sha256": "5e3323392ad0c5a0cdfc782568916ca2929b833e250280b26f327e81058470c7"
+    },
+    {
+      "source_segment": "organvm_gap",
+      "filename": "organvm-gap.json",
+      "rows": 70,
+      "public": 34,
+      "private": 36,
+      "sha256": "f7af09cd82bec0f2490d29e5a1d7ba09f1915a30c545cec777b2ecdb683eca4b"
+    }
+  ],
+  "totals": {
+    "source_segments": 7,
+    "repositories": 323,
+    "public": 239,
+    "private": 84
+  }
+}

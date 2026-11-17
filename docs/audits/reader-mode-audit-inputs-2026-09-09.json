@@ -1,0 +1,37 @@
+{
+  "receipt_type": "reader-mode-audit-input-boundary-acceptance",
+  "recorded_at": "2026-09-09T12:57:51.532804+00:00",
+  "repository": "organvm/organvm-engine",
+  "owner_pr": 175,
+  "parent_commit": "0659e5a77ba3b6d7e89a3f664d8b456b09fac8b9",
+  "repairs": [
+    "Evidence README bonuses require the same contained, no-symlink file predicate as the audited corpus.",
+    "Audience directory bonuses reject symlinks in every path component, including inside-repository aliases.",
+    "All audit file preflight checks reject symlinked parent directories, matching stable-reader traversal policy."
+  ],
+  "source_and_test_sha256": {
+    "src/organvm_engine/documentation/audit.py": "sha256:640668ab4933678847f269bb4584dfd65076a38558e913081ab54f17b1760e5a",
+    "tests/test_documentation_record_hardening.py": "sha256:c433335461252bfa0ab13abb7ba4f226f30f126cb55363ffdd14a0f5155f5f50"
+  },
+  "verification": {
+    "command": "pytest -q tests/test_documentation.py tests/test_documentation_record_hardening.py tests/test_reader_acceptance_boundaries.py",
+    "passed": 413,
+    "failed": 0,
+    "duration_seconds": 20.71,
+    "new_cases": 10,
+    "baseline_counterexamples": "Initial six direct-file/directory cases failed at parent; independent review reproduced two inside-repository ancestor variants failing the first repair. All ten variants pass final candidate.",
+    "ruff": "PASS",
+    "independent_review": {
+      "reviewer": "Codex peer /root/product_backlog",
+      "additional_finding": "A safe leaf can still be reached through an internal symlinked parent; shared file predicate now rejects the parent path too."
+    }
+  },
+  "review_threads": [
+    "PRRT_kwDORSsFes6gqEiy",
+    "PRRT_kwDORSsFes6gqEjF"
+  ],
+  "preserved_evidence": "Context receipt source is unchanged from afab6a0 and retains its prior scoped505-case acceptance; supplemental45 cases also retain their original parent binding. Audit custody source is unchanged from0659e5a and its46-case acceptance, also covered by the current documentation batch. No complete-suite run is claimed.",
+  "merge_gate_owner": "Existing Engine #175; governed_public shared-writer rail remains blocked before queue by absent gh and documented exact-repository credentials. Bootstrap attempts and next command are homed in reader-mode-audit-custody-2026-09-09.json.",
+  "downstream": "Editorial #12 generated context still awaits actual Engine merge; Limen #2553 published sourcefc14f633 keeps its original dependency and About metadata pre-merge gates.",
+  "boundary": "Source verification only; no installed activation, no hosted execution claim for this head, no private corpus regeneration."
+}

@@ -1,0 +1,54 @@
+name: License Compliance Check
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly on Monday at 9:00 AM UTC
+
+jobs:
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: FOSSA Scan
+        uses: fossas/fossa-action@29693cc50323968e039056be419b32989fc5880c # v2
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+          run-tests: true
+        continue-on-error: true
+
+      - name: License Check with Licensee
+        run: |
+          gem install licensee
+          licensee detect --json > license-report.json
+          echo "## License Detection Results" >> $GITHUB_STEP_SUMMARY
+          licensee detect >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for LICENSE file
+        run: |
+          if [ ! -f LICENSE ] && [ ! -f LICENSE.md ] && [ ! -f LICENSE.txt ]; then
+            echo "::warning::No LICENSE file found in repository root"
+            echo "Please add a LICENSE file to comply with open source best practices"
+          else
+            echo "✅ LICENSE file found"
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: license-report
+          path: license-report.json
+        if: always()

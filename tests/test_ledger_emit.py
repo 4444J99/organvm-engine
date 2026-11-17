@@ -39,11 +39,13 @@ class TestTestamentEmitHelper:
         assert data["event_type"] == "governance.audit"
         assert data["hash"].startswith("sha256:")
 
-    def test_emit_never_raises_on_error(self):
-        """Even with a bogus path, testament_emit returns None, never raises."""
+    def test_emit_never_raises_on_error(self, tmp_path):
+        """A file used as the parent is invalid even for a privileged process."""
+        blocked_parent = tmp_path / "not-a-directory"
+        blocked_parent.write_text("occupied", encoding="utf-8")
         with patch(
             "organvm_engine.ledger.emit._CHAIN_PATH",
-            "/nonexistent/deep/path/that/cannot/exist/chain.jsonl",
+            blocked_parent / "chain.jsonl",
         ):
             result = _testament_emit(event_type="test", entity_uid="e")
         assert result is None  # Should return None, not raise
