@@ -103,6 +103,7 @@ from organvm_engine.cli.content import (
 )
 from organvm_engine.cli.context import (
     cmd_context_diff,
+    cmd_context_migrate_legacy,
     cmd_context_rollback,
     cmd_context_surfaces,
     cmd_context_sync,
@@ -1214,6 +1215,29 @@ def build_parser() -> argparse.ArgumentParser:
             "Also create missing CLAUDE.md/GEMINI.md/AGENTS.md and append the pointer to "
             "ones without AUTO markers (default: only files that already carry both markers)"
         ),
+    )
+    c_migrate = ctx_sub.add_parser(
+        "migrate-legacy",
+        help=(
+            "Move legacy full AUTO blocks out of CLAUDE.md/GEMINI.md/AGENTS.md into "
+            "docs/organvm-context.md and leave the pointer (dry-run by default)"
+        ),
+    )
+    c_migrate.add_argument(
+        "paths",
+        nargs="+",
+        metavar="PATH",
+        help="Instruction files or directories to scan",
+    )
+    c_migrate.add_argument(
+        "--write",
+        action="store_true",
+        help="Apply the migration (default: report only)",
+    )
+    c_migrate.add_argument(
+        "--json",
+        action="store_true",
+        help="Output the full report as JSON",
     )
     c_diff = ctx_sub.add_parser(
         "diff",
@@ -3704,6 +3728,7 @@ def main() -> int:
         ("context", "surfaces"): cmd_context_surfaces,
         ("context", "diff"): cmd_context_diff,
         ("context", "rollback"): cmd_context_rollback,
+        ("context", "migrate-legacy"): cmd_context_migrate_legacy,
         ("handoff", "list"): cmd_handoff_list,
         ("handoff", "clean"): cmd_handoff_clean,
         ("omega", "status"): cmd_omega_status,
