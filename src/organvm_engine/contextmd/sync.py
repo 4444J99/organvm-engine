@@ -65,8 +65,15 @@ def sync_all(
     organs: list[str] | None = None,
     additional_workspace_roots: list[Path] | None = None,
     receipt_path: Path | str | None = None,
+    create_instruction_files: bool = False,
 ) -> dict[str, Any]:
-    """Sync auto-generated sections across all context files."""
+    """Write each directory's context document and point its instruction files at it.
+
+    An instruction file (CLAUDE.md, GEMINI.md, AGENTS.md) receives the pointer only
+    when it already exists and already carries both AUTO markers; the sync never
+    creates or grows one. ``create_instruction_files=True`` is the explicit opt-in
+    that also creates missing files and appends the pointer to files without markers.
+    """
     if receipt_path is not None and dry_run:
         raise ValueError("receipt publication is incompatible with dry-run context sync")
     from organvm_engine.paths import additional_workspace_roots as resolve_additional_roots
@@ -276,6 +283,7 @@ def sync_all(
     updated = []
     created = []
     skipped = []
+    declined: list[dict[str, str]] = []
     errors = []
     changes = []
     expected_output_bindings: list[dict[str, str | int]] = []
@@ -362,6 +370,8 @@ def sync_all(
                     errors=errors,
                     expected_output_bindings=expected_output_bindings,
                     failed_output_paths=failed_output_paths,
+                    declined=declined,
+                    create_instruction_files=create_instruction_files,
                     target_preimages=target_preimages,
                     target_preimage_map=target_preimage_map,
                     receipt_workspace=ws if receipt_enabled else None,
@@ -392,6 +402,8 @@ def sync_all(
                         rendered_remote_references=rendered_remote_references,
                         expected_output_bindings=expected_output_bindings,
                         failed_output_paths=failed_output_paths,
+                        declined=declined,
+                        create_instruction_files=create_instruction_files,
                         target_preimages=target_preimages,
                         target_preimage_map=target_preimage_map,
                         receipt_workspace_identity=receipt_workspace_identity,
@@ -430,6 +442,8 @@ def sync_all(
                         rendered_remote_references=rendered_remote_references,
                         expected_output_bindings=expected_output_bindings,
                         failed_output_paths=failed_output_paths,
+                        declined=declined,
+                        create_instruction_files=create_instruction_files,
                         target_preimages=target_preimages,
                         target_preimage_map=target_preimage_map,
                         receipt_workspace_identity=receipt_workspace_identity,
@@ -465,6 +479,8 @@ def sync_all(
             errors=errors,
             expected_output_bindings=expected_output_bindings,
             failed_output_paths=failed_output_paths,
+            declined=declined,
+            create_instruction_files=create_instruction_files,
             target_preimages=target_preimages,
             target_preimage_map=target_preimage_map,
             receipt_workspace=ws if receipt_enabled else None,
@@ -489,6 +505,7 @@ def sync_all(
         "updated": updated,
         "created": created,
         "skipped": skipped,
+        "declined": declined,
         "errors": errors,
         "dry_run": dry_run,
         "changes": changes,
@@ -531,9 +548,13 @@ def sync_all(
             bound_output_labels = {
                 str(binding["path"]) for binding in expected_output_bindings
             }
+            declined_labels = {
+                _receipt_path_label(Path(item["path"]), ws) for item in declined
+            }
             for missing_label in sorted(
                 {str(binding["path"]) for binding in target_preimages}
-                - bound_output_labels,
+                - bound_output_labels
+                - declined_labels,
             ):
                 errors.append(
                     {
@@ -814,6 +835,8 @@ def _sync_repo_context_files(
     rendered_remote_references: list[dict[str, str]],
     expected_output_bindings: list[dict[str, str | int]],
     failed_output_paths: list[Path],
+    declined: list[dict[str, str]],
+    create_instruction_files: bool,
     target_preimages: list[dict[str, Any]],
     target_preimage_map: dict[str, dict[str, Any]],
     receipt_workspace_identity: dict[str, int] | None,
@@ -907,6 +930,8 @@ def _sync_repo_context_files(
         errors=errors,
         expected_output_bindings=expected_output_bindings,
         failed_output_paths=failed_output_paths,
+        declined=declined,
+        create_instruction_files=create_instruction_files,
         target_preimages=target_preimages,
         target_preimage_map=target_preimage_map,
         receipt_workspace=receipt_workspace,
@@ -929,6 +954,8 @@ def _sync_context_outputs(
     errors: list[dict[str, str]],
     expected_output_bindings: list[dict[str, str | int]],
     failed_output_paths: list[Path],
+    declined: list[dict[str, str]],
+    create_instruction_files: bool,
     target_preimages: list[dict[str, Any]],
     target_preimage_map: dict[str, dict[str, Any]],
     receipt_workspace: Path | None,
@@ -943,6 +970,9 @@ def _sync_context_outputs(
     pointer, so a failed document write never leaves a pointer to a missing file
     (a legacy full block stays in place instead). Every write, document and
     pointers alike, goes through the same ``_inject_section_result`` custody path.
+    A pointer goes only into an instruction file that already carries both AUTO
+    markers (reported under ``declined`` otherwise) unless
+    ``create_instruction_files`` opts in to creating and appending.
     """
     document_path = directory / CONTEXT_DOCUMENT_RELPATH
     custody = {
@@ -993,6 +1023,7 @@ def _sync_context_outputs(
                 generate_context_pointer(timestamp),
                 dry_run,
                 refresh_timestamp=refresh_stamp,
+                markers_required=not create_instruction_files,
                 **custody,
             )
             _record_sync_result(
@@ -1003,6 +1034,7 @@ def _sync_context_outputs(
                 changes,
                 expected_output_bindings,
                 target_preimages,
+                declined=declined,
             )
         except Exception as e:
             _record_sync_error(
@@ -1068,11 +1100,13 @@ def sync_repo(
     include_live_context: bool = True,
     expected_input_bindings: dict[str, dict[str, Any]] | None = None,
     custody_root_identity: dict[str, int] | None = None,
+    create_instruction_files: bool = False,
 ) -> dict[str, Any]:
     """Sync a single repo: its context document, then the pointer in ``filename``.
 
-    The result describes the pointer file; the document write is reported under
-    ``context_document`` in the same shape.
+    The result describes the pointer file (action ``declined`` when the file is
+    missing or has no AUTO markers and ``create_instruction_files`` is off); the
+    document write is reported under ``context_document`` in the same shape.
     """
     document = _render_repo_context_document(
         repo_name,
@@ -1101,11 +1135,13 @@ def sync_repo(
         generate_context_pointer(timestamp),
         dry_run,
         refresh_timestamp=document_res["action"] != "unchanged",
+        markers_required=not create_instruction_files,
         **custody,
     )
     return {
         "path": res["path"],
         "action": res["action"],
+        "reason": res.get("reason"),
         "dry_run": dry_run,
         "change": res.get("change"),
         "output_binding": res.get("output_binding"),
@@ -1135,13 +1171,17 @@ def _inject_section_result(
     *,
     whole_file: bool = False,
     refresh_timestamp: bool = False,
+    markers_required: bool = False,
 ) -> dict[str, Any]:
     """Inject or replace the auto-generated section and describe the generated diff.
 
     With ``whole_file`` the text is the entire generator-owned file (no markers,
     no surrounding manual content); it is replaced as a whole. With
     ``refresh_timestamp`` a differing ``Last synced`` stamp counts as a change
-    instead of being ignored.
+    instead of being ignored. With ``markers_required`` the file is touched only if
+    it exists and already carries both AUTO markers; otherwise nothing is written
+    and the result action is ``declined`` (with a ``reason``). The preflight
+    binding checks above still run first.
     """
     import re
 
@@ -1202,6 +1242,19 @@ def _inject_section_result(
                 raise RuntimeError(
                     f"context target changed after receipted preflight: {output_label}",
                 )
+
+    if markers_required and not whole_file and (
+        content is None or AUTO_START not in content or AUTO_END not in content
+    ):
+        return {
+            "path": str(file_path),
+            "action": "declined",
+            "reason": "absent" if content is None else "no-markers",
+            "dry_run": dry_run,
+            "change": None,
+            "output_binding": None,
+            "input_binding": input_binding,
+        }
 
     if whole_file:
         action, rendered, change = _render_generated_file(file_path, content, new_section)
@@ -3168,11 +3221,15 @@ def _record_sync_result(
     changes: list[dict[str, Any]] | None,
     output_bindings: list[dict[str, str | int]] | None = None,
     input_bindings: list[dict[str, Any]] | None = None,
+    declined: list[dict[str, str]] | None = None,
 ) -> None:
     """Route an injection result into sync counters and changelog entries."""
     action = res["action"]
     path = res["path"]
-    if action == "created":
+    if action == "declined":
+        if declined is not None:
+            declined.append({"path": path, "reason": str(res.get("reason", ""))})
+    elif action == "created":
         created.append(path)
     elif action == "updated":
         updated.append(path)

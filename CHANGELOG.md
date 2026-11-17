@@ -6,7 +6,10 @@
   `docs/organvm-context.md` per directory (repo, organ, workspace) and leaves only a short
   pointer, with its `Last synced` stamp, between the `ORGANVM:AUTO` markers of `CLAUDE.md`,
   `GEMINI.md` and `AGENTS.md`, so agents that auto-load those files no longer carry the
-  generated text. A legacy full block is migrated to the pointer on the next sync. The
+  generated text. A legacy full block is migrated to the pointer on the next sync. The sync
+  never creates or grows an instruction file: only one that already carries both markers
+  receives the pointer (others are reported as `declined`), unless
+  `--create-instruction-files` / `create_instruction_files=True` opts in. The
   receipted (`--receipt`) transaction layer covers the new file like any other output; its
   preflight creates a missing `docs/` first and a rollback removes it again. The changelog
   rollback understands whole-file records, and `contextmd.reader.read_generated_context`

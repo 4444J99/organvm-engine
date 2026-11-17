@@ -85,6 +85,7 @@ def test_sync_all_exposes_an_exact_machine_readable_receipt(tmp_path, monkeypatc
         registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[],
         receipt_path=receipt_path,
+        create_instruction_files=True,
     )
 
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -188,12 +189,14 @@ def test_receipted_sync_does_not_bootstrap_a_phantom_corpus_between_runs(
         registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[],
         receipt_path=workspace / "receipt-1.json",
+        create_instruction_files=True,
     )
     second = sync_all(
         workspace=workspace,
         registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[],
         receipt_path=workspace / "receipt-2.json",
+        create_instruction_files=True,
     )
 
     first_receipt = json.loads((workspace / "receipt-1.json").read_text())
@@ -486,7 +489,7 @@ def test_receipt_fails_if_generated_output_changes_before_binding(
     original_build = receipt_mod.build_context_sync_receipt
 
     def mutate_before_binding(**kwargs):
-        (workspace / "AGENTS.md").write_text("tampered\n", encoding="utf-8")
+        (workspace / "docs" / "organvm-context.md").write_text("tampered\n", encoding="utf-8")
         return original_build(**kwargs)
 
     monkeypatch.setattr(receipt_mod, "build_context_sync_receipt", mutate_before_binding)
@@ -769,6 +772,7 @@ def test_receipted_sync_binds_sop_sources_and_resolved_semantics(
         additional_workspace_roots=[],
         organs=["ORGAN-I"],
         receipt_path=workspace / "receipt-1.json",
+        create_instruction_files=True,
     )
     first = json.loads((workspace / "receipt-1.json").read_text())
 
@@ -779,6 +783,7 @@ def test_receipted_sync_binds_sop_sources_and_resolved_semantics(
         additional_workspace_roots=[],
         organs=["ORGAN-I"],
         receipt_path=workspace / "receipt-2.json",
+        create_instruction_files=True,
     )
     second = json.loads((workspace / "receipt-2.json").read_text())
 
@@ -986,6 +991,7 @@ def test_receipted_sync_rejects_oversize_render_before_install(
         registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[],
         receipt_path=workspace / "receipt.json",
+        create_instruction_files=True,
     )
     receipt = json.loads((workspace / "receipt.json").read_text())
 
@@ -1022,12 +1028,14 @@ def test_receipted_sync_preserves_outputs_across_distinct_run_times(
         registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[],
         receipt_path=workspace / "receipt-1.json",
+        create_instruction_files=True,
     )
     second = sync_all(
         workspace=workspace,
         registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[],
         receipt_path=workspace / "receipt-2.json",
+        create_instruction_files=True,
     )
     first_receipt = json.loads((workspace / "receipt-1.json").read_text())
     second_receipt = json.loads((workspace / "receipt-2.json").read_text())
@@ -2107,6 +2115,7 @@ def test_failed_sync_receipt_has_no_unbound_post_install_effect(
         registry_path=str(FIXTURES / "registry-minimal.json"),
         additional_workspace_roots=[],
         receipt_path=workspace / "receipt.json",
+        create_instruction_files=True,
     )
     receipt = json.loads((workspace / "receipt.json").read_text())
 

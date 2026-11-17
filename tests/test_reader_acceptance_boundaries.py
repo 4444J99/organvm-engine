@@ -124,7 +124,7 @@ def test_relative_workspace_parent_spelling_still_receipts(tmp_path, monkeypatch
     caller = tmp_path / "caller"
     caller.mkdir()
     monkeypatch.chdir(caller)
-    result = sync_all(workspace="../estate", registry_path=str(FIXTURES / "registry-minimal.json"), additional_workspace_roots=[], receipt_path=workspace / "receipt.json")
+    result = sync_all(workspace="../estate", registry_path=str(FIXTURES / "registry-minimal.json"), additional_workspace_roots=[], receipt_path=workspace / "receipt.json", create_instruction_files=True)
     assert result["errors"] == []
     assert (workspace / "receipt.json").is_file()
     assert (workspace / "CLAUDE.md").is_file()
@@ -182,7 +182,7 @@ def test_post_install_failure_preserves_receipt_bound_context(tmp_path, monkeypa
 
     monkeypatch.setattr(os, "close", fail_parent_close)
     with pytest.raises(RuntimeError, match="receipt installed"):
-        sync_all(workspace=workspace, registry_path=str(FIXTURES / "registry-minimal.json"), additional_workspace_roots=[], receipt_path=target)
+        sync_all(workspace=workspace, registry_path=str(FIXTURES / "registry-minimal.json"), additional_workspace_roots=[], receipt_path=target, create_instruction_files=True)
     assert failed
     receipt = json.loads(target.read_text())
     for binding in receipt["outputs"]:

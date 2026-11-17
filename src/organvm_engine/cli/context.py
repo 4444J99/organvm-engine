@@ -38,6 +38,7 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
         dry_run=dry_run,
         organs=organs,
         receipt_path=getattr(args, "receipt", None),
+        create_instruction_files=bool(getattr(args, "create_instruction_files", False)),
     )
 
     print("System Context Sync Results")
@@ -45,6 +46,9 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
     print(f"  Updated: {len(result['updated'])}")
     print(f"  Created: {len(result['created'])}")
     print(f"  Skipped: {len(result['skipped'])}")
+    declined = result.get("declined") or []
+    if declined:
+        print(f"  Declined (instruction file absent or without markers): {len(declined)}")
     if result["errors"]:
         print(f"  Errors:  {len(result['errors'])}")
         for e in result["errors"]:
@@ -75,6 +79,84 @@ def cmd_context_sync(args: argparse.Namespace) -> int:
         print(f"\nReceipt: {result['receipt_path']} ({result['receipt_sha256']})")
 
     return 1 if result["errors"] else 0
+
+
+def cmd_context_migrate_legacy(args: argparse.Namespace) -> int:
+    """Move legacy full AUTO blocks into docs/organvm-context.md, leaving the pointer."""
+    from collections import defaultdict
+
+    from organvm_engine.contextmd.migrate import migrate_legacy
+
+    write = bool(getattr(args, "write", False))
+    report = migrate_legacy(list(args.paths), write=write)
+
+    if getattr(args, "json", False):
+        print(json.dumps(report.to_dict(), indent=2))
+        return 1 if report.by_action("error") else 0
+
+    mode = "WRITE" if write else "DRY RUN"
+    print(f"Legacy context migration [{mode}]")
+    print("─" * 40)
+    markers = {"migrate": "M" if write else "would M"}
+    for item in report.files:
+        if item.action == "migrate":
+            extras = []
+            if item.document:
+                extras.append(f"docs {item.document}")
+            if item.differing:
+                extras.append("differing from the document source")
+            suffix = f"  [{'; '.join(extras)}]" if extras else ""
+            print(
+                f"  {markers[item.action]} {item.path}  "
+                f"words {item.words_before} -> {item.words_after}{suffix}",
+            )
+        elif item.action == "error":
+            extras = []
+            if item.document:
+                extras.append(f"docs {item.document}")
+            extras.append(item.reason)
+            print(f"  ! {item.path}  [{'; '.join(extras)}]")
+
+    migrated = report.by_action("migrate")
+    if migrated:
+        print("\nBy repository")
+        print("─" * 40)
+        grouped: dict[str, list] = defaultdict(list)
+        for item in migrated:
+            grouped[item.repo].append(item)
+        for repo in sorted(grouped):
+            items = grouped[repo]
+            removed = sum(i.words_before - i.words_after for i in items)
+            print(f"  {repo}: {len(items)} files, {removed} words removed")
+
+    skipped = report.by_action("skipped")
+    reasons: dict[str, int] = defaultdict(int)
+    for item in skipped:
+        reasons[item.reason] += 1
+    if reasons or report.skipped_directories:
+        print("\nSkipped")
+        print("─" * 40)
+        for reason in sorted(reasons):
+            print(f"  {reason}: {reasons[reason]} files")
+        if report.skipped_directories:
+            print(f"  symlinked-directory: {len(report.skipped_directories)} directories")
+
+    unchanged = report.by_action("unchanged")
+    errors = report.by_action("error")
+    removed_total = sum(i.words_before - i.words_after for i in migrated)
+    print("\nTotals")
+    print("─" * 40)
+    print(f"  {'Migrated' if write else 'Would migrate'}: {len(migrated)} files")
+    print(f"  Block words removed: {removed_total}")
+    print(f"  Already pointers: {len(unchanged)}")
+    print(f"  Skipped: {len(skipped)} files")
+    if errors:
+        print(f"  Errors: {len(errors)}")
+        for item in errors:
+            print(f"    - {item.path}: {item.reason}")
+    if not write:
+        print("\n[DRY RUN] No files were modified.")
+    return 1 if errors else 0
 
 
 def _change_marker(action: str) -> str:
