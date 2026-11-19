@@ -18,9 +18,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from organvm_engine.session.agents import (
+    SessionScanDiagnostic,
     UnreadableSession,
     agent_summary,
     discover_all_sessions,
@@ -35,7 +37,13 @@ from organvm_engine.session.parser import (
     render_any_prompts,
     render_any_transcript,
 )
-from organvm_engine.session.plans import discover_plans
+from organvm_engine.session.plans import (
+    PLAN_SCAN_BUDGET_SECONDS,
+    PLAN_SCAN_PROGRESS_SECONDS,
+    PlanScanBudgetExceeded,
+    PlanScanDiagnostic,
+    discover_plans,
+)
 
 _MAX_UNREADABLE_SESSION_DIAGNOSTICS = 10
 
@@ -405,10 +413,18 @@ def cmd_session_plans(args: argparse.Namespace) -> int:
     organ = getattr(args, "organ", None)
     matrix = getattr(args, "matrix", False)
 
-    plans = discover_plans(
-        project_filter=project, since=since,
-        agent=agent, organ=organ,
-    )
+    plan_diagnostics: list[PlanScanDiagnostic] = []
+    try:
+        plans = discover_plans(
+            project_filter=project, since=since,
+            agent=agent, organ=organ,
+            diagnostics=plan_diagnostics,
+            scan_budget_seconds=PLAN_SCAN_BUDGET_SECONDS,
+        )
+    except PlanScanBudgetExceeded as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    _print_slow_scan_summary(plan_diagnostics, [])
 
     if matrix:
         print(render_plan_matrix(plans))
@@ -447,6 +463,33 @@ def cmd_session_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_slow_scan_summary(
+    plan_diagnostics: list[PlanScanDiagnostic],
+    session_diagnostics: list[SessionScanDiagnostic],
+) -> None:
+    """Print one stderr line per slow discovery scan (over the progress threshold).
+
+    Fast scans stay silent so normal output is unchanged; a slow scan is
+    visible with its counts instead of looking like a hang (issue #70).
+    """
+    for diagnostic in plan_diagnostics:
+        if diagnostic.elapsed_seconds > PLAN_SCAN_PROGRESS_SECONDS:
+            print(
+                f"plan scan took {diagnostic.elapsed_seconds:.1f}s over "
+                f"{diagnostic.directories_scanned} directories "
+                f"({diagnostic.directories_pruned} pruned, "
+                f"{diagnostic.plan_dirs_found} plan dirs) under {diagnostic.root}",
+                file=sys.stderr,
+            )
+    slow_sessions = [
+        d for d in session_diagnostics if d.elapsed_seconds > PLAN_SCAN_PROGRESS_SECONDS
+    ]
+    if slow_sessions:
+        total = sum(d.elapsed_seconds for d in slow_sessions)
+        detail = ", ".join(f"{d.agent} {d.elapsed_seconds:.1f}s" for d in slow_sessions)
+        print(f"session discovery took {total:.1f}s ({detail})", file=sys.stderr)
+
+
 def _print_unreadable_sessions(diagnostics: list[UnreadableSession]) -> None:
     """Print bounded machine-readable diagnostics for skipped session files."""
     if not diagnostics:
@@ -473,12 +516,14 @@ def cmd_session_review(args: argparse.Namespace) -> int:
     session_id = getattr(args, "session_id", None)
     latest = getattr(args, "latest", False)
     project = getattr(args, "project", None)
+    session_diagnostics: list[SessionScanDiagnostic] = []
 
     if latest:
         diagnostics: list[UnreadableSession] = []
         sessions = discover_all_sessions(
             project_filter=project,
             diagnostics=diagnostics,
+            scan_diagnostics=session_diagnostics,
         )
         _print_unreadable_sessions(diagnostics)
         if not sessions:
@@ -543,9 +588,23 @@ def cmd_session_review(args: argparse.Namespace) -> int:
         print(f"  ... and {len(prompt_lines) - 10} more")
     print()
 
-    # Find related plans
-    project_slug = meta.project_dir or meta.cwd
-    plans = discover_plans(project_filter=project_slug)
+    # Find related plans. Prefer the decoded cwd: project_dir is the
+    # encoded session-store directory name (e.g. "-Users-4jp-Workspace-foo"),
+    # which never resolves to the project, so the lookup used to report "No
+    # plans found" for projects that have plans. Fall back to project_dir
+    # when the session carries no cwd.
+    project_slug = meta.cwd or meta.project_dir
+    plan_diagnostics: list[PlanScanDiagnostic] = []
+    try:
+        plans = discover_plans(
+            project_filter=project_slug,
+            diagnostics=plan_diagnostics,
+            scan_budget_seconds=PLAN_SCAN_BUDGET_SECONDS,
+        )
+    except PlanScanBudgetExceeded as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    _print_slow_scan_summary(plan_diagnostics, session_diagnostics)
 
     if plans:
         print(f"Plans in this project ({len(plans)} total):")

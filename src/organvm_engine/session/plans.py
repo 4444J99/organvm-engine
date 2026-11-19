@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import os
 import re
+import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,6 +47,74 @@ PLAN_SEARCH_PRUNE_DIRS = {
     "venv",
     "vendor",
 }
+
+# Plan-scan diagnostics (issue #70): the discovery walk is the path that
+# hung (unbounded rglob before #227). A slow scan must be visible while it
+# runs, and a scan that never finishes must fail with an actionable message
+# instead of hanging silently ("commands should either complete or fail with
+# actionable diagnostics").
+PLAN_SCAN_PROGRESS_SECONDS = 10.0
+PLAN_SCAN_BUDGET_SECONDS = 120
+_PLAN_SCAN_CHECK_EVERY_DIRS = 128
+
+
+@dataclass
+class PlanScanDiagnostic:
+    """Counts + timing for one project-walk scan of the plan discovery walk.
+
+    Recorded per search root so a slow scan can be explained after the fact:
+    how many directories the walker visited, how many it pruned, and how
+    long the walk took.
+    """
+
+    root: str
+    directories_scanned: int
+    directories_pruned: int
+    plan_dirs_found: int
+    elapsed_seconds: float
+    budget_seconds: float | None
+    over_budget: bool
+
+    def to_dict(self) -> dict[str, str | int | float | bool | None]:
+        """Return a stable CLI-facing representation of the diagnostic."""
+        return {
+            "status": "plan-scan",
+            "root": self.root,
+            "directories_scanned": self.directories_scanned,
+            "directories_pruned": self.directories_pruned,
+            "plan_dirs_found": self.plan_dirs_found,
+            "elapsed_seconds": round(self.elapsed_seconds, 3),
+            "budget_seconds": self.budget_seconds,
+            "over_budget": self.over_budget,
+        }
+
+
+class PlanScanBudgetExceeded(Exception):
+    """The plan discovery walk exceeded its scan budget.
+
+    Raised instead of hanging silently: the message names the root, the
+    elapsed time, and the directories scanned, and tells the caller how to
+    narrow the scan.
+    """
+
+    def __init__(
+        self,
+        root: Path,
+        elapsed_seconds: float,
+        directories_scanned: int,
+        budget_seconds: float,
+    ) -> None:
+        self.root = str(root)
+        self.elapsed_seconds = elapsed_seconds
+        self.directories_scanned = directories_scanned
+        self.budget_seconds = budget_seconds
+        super().__init__(
+            f"plan scan exceeded its {budget_seconds:g}s budget: "
+            f"{directories_scanned} directories in {elapsed_seconds:.1f}s under "
+            f"{root} — the scan was stopped instead of hanging; narrow it with "
+            f"--project <path> or check for an unpruned directory tree under "
+            f"the root",
+        )
 
 
 @dataclass
@@ -184,6 +254,10 @@ def discover_plans(
     agent: str | None = None,
     organ: str | None = None,
     include_governance: bool = False,
+    *,
+    diagnostics: list[PlanScanDiagnostic] | None = None,
+    scan_budget_seconds: float | None = None,
+    progress_every_seconds: float = PLAN_SCAN_PROGRESS_SECONDS,
 ) -> list[PlanFile]:
     """Find all plan files across workspace and global dirs.
 
@@ -197,6 +271,16 @@ def discover_plans(
         agent: Filter to a specific agent (claude, gemini, codex, governance).
         organ: Filter to a specific organ key (I, II, ..., META).
         include_governance: Include praxis-perpetua governance plans.
+        diagnostics: Optional list receiving one PlanScanDiagnostic per
+            project-walk root (the unbounded walk; the global/governance
+            sections are single-directory globs and are not timed).
+        scan_budget_seconds: Optional hard budget for the project walk.
+            When set and the walk overruns it, PlanScanBudgetExceeded is
+            raised instead of hanging silently. None keeps the previous
+            unbounded behaviour for library callers; the CLI passes
+            PLAN_SCAN_BUDGET_SECONDS.
+        progress_every_seconds: Emit a stderr progress line at most this
+            often while the project walk is running.
     """
     results: list[PlanFile] = []
 
@@ -226,6 +310,9 @@ def discover_plans(
             ws,
             agents_to_scan,
             search_root=project_search_root,
+            diagnostics=diagnostics,
+            scan_budget_seconds=scan_budget_seconds,
+            progress_every_seconds=progress_every_seconds,
         ):
             project_path = str(plans_dir.parent.parent)
             if (
@@ -317,6 +404,10 @@ def _iter_project_plan_dirs(
     workspace: Path,
     agents_to_scan: dict[str, str],
     search_root: Path | None = None,
+    *,
+    diagnostics: list[PlanScanDiagnostic] | None = None,
+    scan_budget_seconds: float | None = None,
+    progress_every_seconds: float = PLAN_SCAN_PROGRESS_SECONDS,
 ) -> list[tuple[str, Path]]:
     """Find project-local agent plan directories without unbounded rglob.
 
@@ -324,6 +415,13 @@ def _iter_project_plan_dirs(
     build, and VCS directory in large repos before it can report a result.
     This walker checks each directory for the fixed agent-plan shapes and
     prunes directories that cannot contain authored plan inventories.
+
+    The walk reports progress to stderr while it runs (at most once per
+    ``progress_every_seconds``) and raises PlanScanBudgetExceeded when
+    ``scan_budget_seconds`` is set and overrun, so a future stall fails
+    with an actionable message instead of hanging silently (issue #70).
+    One PlanScanDiagnostic per search root is appended to ``diagnostics``
+    when provided.
     """
     roots = [search_root if search_root is not None else workspace]
     agent_roots = {Path(rel).parts[0] for rel in agents_to_scan.values()}
@@ -332,6 +430,12 @@ def _iter_project_plan_dirs(
     for root in roots:
         if not root.is_dir():
             continue
+
+        started = time.monotonic()
+        last_progress = 0.0  # elapsed seconds at the last progress line
+        directories_scanned = 0
+        directories_pruned = 0
+        found_before_root = len(results)
 
         for current, dirnames, _filenames in os.walk(root, topdown=True, followlinks=False):
             current_path = Path(current)
@@ -345,11 +449,45 @@ def _iter_project_plan_dirs(
                 if plans_dir.is_dir():
                     results.append((agent_name, plans_dir))
 
-            dirnames[:] = [
+            kept = [
                 name
                 for name in dirnames
                 if name not in PLAN_SEARCH_PRUNE_DIRS and name not in agent_roots
             ]
+            directories_pruned += len(dirnames) - len(kept)
+            dirnames[:] = kept
+            directories_scanned += 1
+
+            if directories_scanned % _PLAN_SCAN_CHECK_EVERY_DIRS == 0:
+                elapsed = time.monotonic() - started
+                if scan_budget_seconds is not None and elapsed > scan_budget_seconds:
+                    raise PlanScanBudgetExceeded(
+                        root, elapsed, directories_scanned, scan_budget_seconds,
+                    )
+                if elapsed - last_progress >= progress_every_seconds:
+                    print(
+                        f"plan scan: {root} — {directories_scanned} directories "
+                        f"in {elapsed:.1f}s (still scanning; narrow with "
+                        f"--project <path> to skip unrelated trees)",
+                        file=sys.stderr,
+                    )
+                    last_progress = elapsed
+
+        if diagnostics is not None:
+            elapsed = time.monotonic() - started
+            diagnostics.append(
+                PlanScanDiagnostic(
+                    root=str(root),
+                    directories_scanned=directories_scanned,
+                    directories_pruned=directories_pruned,
+                    plan_dirs_found=len(results) - found_before_root,
+                    elapsed_seconds=elapsed,
+                    budget_seconds=scan_budget_seconds,
+                    over_budget=(
+                        scan_budget_seconds is not None and elapsed > scan_budget_seconds
+                    ),
+                ),
+            )
 
     return results
 
