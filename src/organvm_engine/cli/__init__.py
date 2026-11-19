@@ -111,6 +111,7 @@ from organvm_engine.cli.context import (
 from organvm_engine.cli.corpus import (
     cmd_corpus_coverage,
     cmd_corpus_gaps,
+    cmd_corpus_render,
     cmd_corpus_repo,
     cmd_corpus_scan,
     cmd_corpus_stats,
@@ -983,6 +984,30 @@ def build_parser() -> argparse.ArgumentParser:
     corpus_repo.add_argument("repo", help="Repo name (e.g. organvm-engine)")
     for flag, kwargs in _corpus_common.items():
         corpus_repo.add_argument(flag, **kwargs)
+
+    corpus_render = corpus_sub.add_parser(
+        "render", help="Render the graph as six markdown indices (IRF-SYS-104)",
+    )
+    corpus_render.add_argument(
+        "--corpus-dir", default="post-flood",
+        help="Path to post-flood/ directory",
+    )
+    corpus_render.add_argument(
+        "--workspace", default=None,
+        help="Path to ~/Workspace/",
+    )
+    corpus_render.add_argument(
+        "--graph-file", default=None,
+        help="Load graph from saved JSON instead of scanning",
+    )
+    corpus_render.add_argument(
+        "--output", "-o", default="docs/corpus/",
+        help="Directory for the six index files (default: docs/corpus/)",
+    )
+    corpus_render.add_argument(
+        "--concept", default=None,
+        help="Render a single-concept subset (e.g. AMMOI, evolution_law)",
+    )
 
     # ci
     ci = sub.add_parser("ci", help="CI health operations")
@@ -3717,6 +3742,7 @@ def main() -> int:
         ("corpus", "trace"): cmd_corpus_trace,
         ("corpus", "coverage"): cmd_corpus_coverage,
         ("corpus", "repo"): cmd_corpus_repo,
+        ("corpus", "render"): cmd_corpus_render,
         ("ci", "triage"): cmd_ci_triage,
         ("ci", "audit"): cmd_ci_audit,
         ("ci", "mandate"): cmd_ci_mandate,
