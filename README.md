@@ -8,6 +8,18 @@ Core governance, registry, and orchestration engine for the organvm eight-organ 
 pip install -e .
 ```
 
+## Verify a release
+
+Versioned artifacts ship as GitHub Releases: [Releases](https://github.com/4444J99/organvm-engine/releases). To verify a release, install its wheel (not the source tree) and run the smoke commands:
+
+```bash
+pip install <wheel-url-from-the-release>
+organvm --help
+organvm --registry tests/fixtures/registry-minimal.json registry validate
+```
+
+The first real versioned release is cut by pushing a `v*` tag after the release workflow lands; until then the Releases page holds only the draft `v0.0.1` with no assets.
+
 ## CLI
 
 ```bash
