@@ -458,3 +458,74 @@ class TestDeriveSopName:
 
     def test_single_hyphen_sop(self):
         assert _derive_sop_name("sop-doctoral-dissertation.md") == "doctoral-dissertation"
+
+
+class TestDedupeSopEntries:
+    """organvm-engine #76: a canonical SOP plus a legacy copy is one entry."""
+
+    def _write_pair(self, tmp_path, name):
+        canon_dir = tmp_path / "meta-organvm" / "praxis-perpetua" / "standards"
+        canon_dir.mkdir(parents=True, exist_ok=True)
+        canon = canon_dir / f"SOP--{name}.md"
+        canon.write_text(f"# {name}\n\nCanonical.\n")
+        legacy_dir = tmp_path / "4444J99" / "legacy-repo" / "docs"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        legacy = legacy_dir / f"SOP--{name}.md"
+        legacy.write_text(
+            "> **Canonical location:** `praxis-perpetua/standards/SOP--"
+            f"{name}.md`\n\n# {name}\n\nLegacy copy.\n",
+        )
+        return canon, legacy
+
+    def test_canonical_and_legacy_collapse_to_one(self, tmp_path):
+        canon, legacy = self._write_pair(tmp_path, "pitch-deck-rollout")
+        entries = discover_sops(workspace=tmp_path)
+        assert len(entries) == 1
+        assert entries[0].sop_name == "pitch-deck-rollout"
+        assert entries[0].scope == "system"
+        assert entries[0].canonical is True
+        assert entries[0].superseded_paths == [str(legacy)]
+
+    def test_three_named_sops_each_render_once(self, tmp_path):
+        for name in (
+            "pitch-deck-rollout",
+            "document-audit-feature-extraction",
+            "ira-grade-norming",
+        ):
+            self._write_pair(tmp_path, name)
+        entries = discover_sops(workspace=tmp_path)
+        assert len(entries) == 3
+        assert {e.sop_name for e in entries} == {
+            "pitch-deck-rollout",
+            "document-audit-feature-extraction",
+            "ira-grade-norming",
+        }
+        assert all(e.scope == "system" for e in entries)
+        assert all(len(e.superseded_paths) == 1 for e in entries)
+
+    def test_governed_tiers_stay_additive(self, tmp_path):
+        # Same name in three governed scopes is three directives by design
+        # (T4 repo + T3 organ + T2 system); only unknown-scope shadows drop.
+        canon_dir = tmp_path / "meta-organvm" / "praxis-perpetua" / "standards"
+        canon_dir.mkdir(parents=True)
+        (canon_dir / "SOP--shared.md").write_text("# Shared\n")
+        _make_sops_dir(
+            tmp_path, "meta-organvm", None, "shared.md",
+            "---\nname: shared\n---\n# Shared\n",
+        )
+        _make_sops_dir(
+            tmp_path, "meta-organvm", "engine", "shared.md",
+            "---\nname: shared\n---\n# Shared\n",
+        )
+        entries = discover_sops(workspace=tmp_path)
+        assert len(entries) == 3
+        assert {e.scope for e in entries} == {"system", "organ", "repo"}
+
+    def test_unknown_only_sop_survives(self, tmp_path):
+        legacy_dir = tmp_path / "meta-organvm" / "repo" / "docs"
+        legacy_dir.mkdir(parents=True)
+        (legacy_dir / "SOP--old.md").write_text("# Old\n")
+        entries = discover_sops(workspace=tmp_path)
+        assert len(entries) == 1
+        assert entries[0].scope == "unknown"
+        assert entries[0].superseded_paths == []

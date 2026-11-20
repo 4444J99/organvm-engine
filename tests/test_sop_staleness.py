@@ -174,3 +174,70 @@ def test_sop_audit_stale_json_output(tmp_path, capsys):
     data = json.loads(capsys.readouterr().out)
     assert data["staleness"][0]["sop"] == "cli-module-pattern"
     assert data["staleness"][0]["status"] == "stale"
+
+
+def _sop_entry(path, name, scope, canonical=False, has_header=False, org="meta-organvm", repo="praxis-perpetua"):
+    from organvm_engine.sop.discover import SOPEntry
+
+    return SOPEntry(
+        path=path,
+        org=org,
+        repo=repo,
+        filename=path.name,
+        title=f"SOP: {name}",
+        doc_type="SOP",
+        canonical=canonical,
+        has_canonical_header=has_header,
+        scope=scope,
+        sop_name=name,
+    )
+
+
+def _staleness_mapping(name, repo=None, org=None):
+    from organvm_engine.sop.staleness import SOPCodeMapping
+
+    return SOPCodeMapping(
+        sop_name=name,
+        paths=("src/",),
+        source=Path("/ws/sop-governance.yaml"),
+        base_dir=Path("/ws"),
+        org=org,
+        repo=repo,
+    )
+
+
+def test_audit_resolves_mapping_to_canonical_entry(tmp_path):
+    """organvm-engine #76 step 3: the canonical copy wins over the legacy copy."""
+    canon = tmp_path / "meta-organvm" / "praxis-perpetua" / "standards" / "SOP--pitch-deck-rollout.md"
+    canon.parent.mkdir(parents=True)
+    canon.write_text("# Pitch Deck Rollout\n")
+    legacy = tmp_path / "4444J99" / "legacy-repo" / "docs" / "SOP--pitch-deck-rollout.md"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text("> **Canonical location:** `praxis-perpetua/standards/SOP--pitch-deck-rollout.md`\n")
+    entries = [
+        _sop_entry(legacy, "pitch-deck-rollout", "unknown", has_header=True, org="4444J99", repo="legacy-repo"),
+        _sop_entry(canon, "pitch-deck-rollout", "system", canonical=True),
+    ]
+    results = audit_sop_staleness(entries, [_staleness_mapping("pitch-deck-rollout")])
+    assert results[0].sop_entry is not None
+    assert results[0].sop_entry.path == canon
+
+
+def test_audit_canonical_wins_even_when_mapping_names_legacy_repo(tmp_path):
+    """The canonical pin is unconditional: a mapping naming the legacy repo
+    still resolves to the canonical copy."""
+    canon = tmp_path / "meta-organvm" / "praxis-perpetua" / "standards" / "SOP--pitch-deck-rollout.md"
+    canon.parent.mkdir(parents=True)
+    canon.write_text("# Pitch Deck Rollout\n")
+    legacy = tmp_path / "4444J99" / "legacy-repo" / "docs" / "SOP--pitch-deck-rollout.md"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text("# Pitch Deck Rollout\n")
+    entries = [
+        _sop_entry(legacy, "pitch-deck-rollout", "unknown", org="4444J99", repo="legacy-repo"),
+        _sop_entry(canon, "pitch-deck-rollout", "system", canonical=True),
+    ]
+    results = audit_sop_staleness(
+        entries, [_staleness_mapping("pitch-deck-rollout", repo="legacy-repo", org="4444J99")],
+    )
+    assert results[0].sop_entry is not None
+    assert results[0].sop_entry.path == canon
