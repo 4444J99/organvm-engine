@@ -388,12 +388,16 @@ def _select_sop_entry(mapping: SOPCodeMapping, discovered: list[SOPEntry]) -> SO
     if not matches:
         return None
 
-    def sort_key(entry: SOPEntry) -> tuple[int, int, int, int, str]:
+    def sort_key(entry: SOPEntry) -> tuple[int, int, int, int, int, str]:
+        # The canonical copy is the governed source of truth for the SOP
+        # name, so it wins outright — pinned here rather than left to the
+        # ordering of the remaining keys.
+        canonical_first = int(not entry.canonical)
         repo_mismatch = int(bool(mapping.repo) and entry.repo != mapping.repo)
         org_mismatch = int(bool(mapping.org) and entry.org != mapping.org)
         reference_copy = int(entry.has_canonical_header)
         scope_priority = _SCOPE_PRIORITY.get(entry.scope, 99)
-        return (repo_mismatch, org_mismatch, reference_copy, scope_priority, str(entry.path))
+        return (canonical_first, repo_mismatch, org_mismatch, reference_copy, scope_priority, str(entry.path))
 
     return sorted(matches, key=sort_key)[0]
 

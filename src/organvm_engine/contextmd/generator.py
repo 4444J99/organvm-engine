@@ -690,6 +690,15 @@ def _build_sop_directives(sop_entries: list | None) -> str:
     if not sop_entries:
         return ""
 
+    # Defense in depth: callers may pass raw discovery output, which can
+    # carry an unknown-scope shadow copy of a governed SOP. Drop the shadow
+    # here too, so a future duplicate can never double-render in CLAUDE.md
+    # even if discovery regresses. (discover_sops already applies the same
+    # rule; the call is idempotent.)
+    from organvm_engine.sop.discover import dedupe_sop_entries
+
+    sop_entries = dedupe_sop_entries(list(sop_entries))
+
     rows = []
     all_complements: list[str] = []
     for e in sop_entries:

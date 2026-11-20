@@ -59,6 +59,57 @@ class SOPEntry:
     source_bytes: int | None = None
     source_sha256: str | None = None
     source_snapshot_attempted: bool = False
+    # Paths of unknown-scope shadow copies of this SOP dropped by
+    # dedupe_sop_entries; the audit trail for the dropped duplicates.
+    superseded_paths: list[str] = field(default_factory=list)
+
+
+# Scopes that name a governed tier (system/organ/repo). An "unknown"-scope
+# entry is a legacy copy, not a tier.
+_GOVERNED_SCOPES = frozenset({"system", "organ", "repo"})
+_SCOPE_PRIORITY = {"repo": 0, "organ": 1, "system": 2, "unknown": 3}
+
+
+def dedupe_sop_entries(entries: list[SOPEntry]) -> list[SOPEntry]:
+    """Drop unknown-scope shadow copies when a governed entry shares the name.
+
+    Why this rule, and why only this rule: same-name entries in distinct
+    governed scopes are additive tiers by design (a repo SOP named X and a
+    system SOP named X are different directives; see
+    test_resolve_additive_no_override), so discovery must not collapse them.
+    An ``unknown``-scope copy is a legacy duplicate of the governed text,
+    not a tier — it is the copy the resolver already drops in ``resolve_all``
+    / ``resolve_sop``. Dropping it here, once, means every consumer (audit,
+    staleness, directives, receipt, prompts coverage) stops seeing the
+    phantom duplicate. The dropped paths are recorded on the surviving
+    winner so the audit trail is not lost.
+    """
+    by_name: dict[str | None, list[SOPEntry]] = {}
+    for entry in entries:
+        by_name.setdefault(entry.sop_name, []).append(entry)
+    drop: set[int] = set()
+    for name, group in by_name.items():
+        if not name:
+            continue
+        governed = [e for e in group if e.scope in _GOVERNED_SCOPES]
+        shadows = [e for e in group if e.scope == "unknown"]
+        if not governed or not shadows:
+            continue
+        winner = min(
+            governed,
+            key=lambda e: (
+                not e.canonical,
+                _SCOPE_PRIORITY.get(e.scope, 99),
+                str(e.path),
+            ),
+        )
+        winner.superseded_paths = sorted(
+            {*winner.superseded_paths, *(str(e.path) for e in shadows)},
+        )
+        drop.update(id(e) for e in shadows)
+    if not drop:
+        return list(entries)
+    return [e for e in entries if id(e) not in drop]
 
 
 def _parse_frontmatter(path: Path) -> dict:
@@ -240,7 +291,7 @@ def discover_sops(
         entries: list[SOPEntry] = []
         _scan_repo(ws, org_name, repo_name, ws, entries)
         _scan_sops_dir(ws, org_name, repo_name, ws / ".sops", entries)
-        return sorted(entries, key=lambda e: (e.org, e.repo, e.filename))
+        return dedupe_sop_entries(sorted(entries, key=lambda e: (e.org, e.repo, e.filename)))
 
     if organ:
         org_meta = ORGANS.get(organ.upper())
@@ -270,7 +321,7 @@ def discover_sops(
             # Scan repo-level .sops/ directory (T4)
             _scan_sops_dir(ws, org_name, repo_dir.name, repo_dir / ".sops", entries)
 
-    return sorted(entries, key=lambda e: (e.org, e.repo, e.filename))
+    return dedupe_sop_entries(sorted(entries, key=lambda e: (e.org, e.repo, e.filename)))
 
 
 def _repo_root_identity(path: Path) -> tuple[str, str] | None:
