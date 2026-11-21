@@ -189,6 +189,7 @@ from organvm_engine.cli.irf import (
 )
 from organvm_engine.cli.ledger import (
     cmd_ledger_checkpoint,
+    cmd_ledger_export_feed,
     cmd_ledger_genesis,
     cmd_ledger_log,
     cmd_ledger_repair,
@@ -2336,6 +2337,14 @@ def build_parser() -> argparse.ArgumentParser:
     ledger_repair.add_argument("--write", action="store_true", help="Execute repair")
     ledger_repair.add_argument("--chain-path", default=None)
 
+    ledger_export = ledger_sub.add_parser(
+        "export-feed", help="Export chain as portal JSON feed",
+    )
+    ledger_export.add_argument(
+        "--out", required=True, help="Where to write the JSON feed",
+    )
+    ledger_export.add_argument("--chain-path", default=None)
+
     # ecosystem
     eco = sub.add_parser(
         "ecosystem",
@@ -3887,6 +3896,7 @@ def main() -> int:
             "log": cmd_ledger_log,
             "checkpoint": cmd_ledger_checkpoint,
             "repair": cmd_ledger_repair,
+            "export-feed": cmd_ledger_export_feed,
         }
         handler = ledger_dispatch.get(getattr(args, "subcommand", "") or "")
         if handler:
