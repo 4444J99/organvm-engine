@@ -227,6 +227,67 @@ def test_review_shows_plans(tmp_path, capsys):
         assert "same day" in captured.out
 
 
+def test_review_latest_shows_plans_for_decoded_cwd(tmp_path, capsys):
+    """Review finds the session project's plans via the decoded cwd.
+
+    Regression for the #70 build: project_slug used to prefer the encoded
+    session-store directory name, which never resolves to the project, so
+    review reported "No plans found" for projects that have plans.
+    """
+    project = tmp_path / "project"
+    plans_dir = project / ".claude" / "plans"
+    plans_dir.mkdir(parents=True)
+    (plans_dir / "2026-03-06-feature-plan.md").write_text("# Feature Plan\n")
+
+    jsonl = tmp_path / "session-abc123.jsonl"
+    messages = [
+        {
+            "type": "user",
+            "sessionId": "session-abc123",
+            "slug": "repro",
+            "cwd": str(project),
+            "gitBranch": "main",
+            "timestamp": "2026-03-06T10:00:00Z",
+            "message": {"role": "user", "content": "Implement the feature"},
+        },
+        {
+            "type": "assistant",
+            "sessionId": "session-abc123",
+            "slug": "repro",
+            "cwd": str(project),
+            "gitBranch": "main",
+            "timestamp": "2026-03-06T10:05:00Z",
+            "message": {"role": "assistant", "content": [{"type": "text", "text": "Done."}]},
+        },
+    ]
+    with jsonl.open("w") as f:
+        for m in messages:
+            f.write(json.dumps(m) + "\n")
+
+    from organvm_engine.session.agents import AgentSession
+
+    mock_session = AgentSession(
+        agent="claude",
+        session_id="session-abc123",
+        file_path=jsonl,
+        project_dir="-tmp-project",  # encoded name: must NOT drive the lookup
+        started=datetime(2026, 3, 6, 10, 0, tzinfo=timezone.utc),
+        ended=datetime(2026, 3, 6, 10, 5, tzinfo=timezone.utc),
+        size_bytes=jsonl.stat().st_size,
+    )
+
+    with patch(
+        "organvm_engine.cli.session.discover_all_sessions",
+        return_value=[mock_session],
+    ):
+        result = cmd_session_review(_FakeArgs(latest=True))
+
+    assert result == 0
+    captured = capsys.readouterr()
+    assert "Plans in this project" in captured.out
+    assert "Feature Plan" in captured.out
+
+
 def test_review_unparseable_session(tmp_path, capsys):
     bad_jsonl = tmp_path / "bad.jsonl"
     bad_jsonl.write_text("not valid json\n")

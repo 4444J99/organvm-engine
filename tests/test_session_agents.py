@@ -469,6 +469,27 @@ class TestDiscovery:
         agents = {s.agent for s in sessions}
         assert agents == {"claude", "gemini", "codex"}
 
+    def test_discover_all_reports_scan_diagnostics(self, tmp_path, monkeypatch):
+        """Each attempted agent store records timing (issue #70).
+
+        Even with no stores present, the review path can show discovery
+        completed instead of hanging silently.
+        """
+        monkeypatch.setattr("organvm_engine.session.agents.CLAUDE_PROJECTS_DIR", tmp_path / "no-claude")
+        monkeypatch.setattr("organvm_engine.session.agents.GEMINI_TMP_DIR", tmp_path / "no-gemini")
+        monkeypatch.setattr("organvm_engine.session.agents.CODEX_SESSIONS_DIR", tmp_path / "no-codex")
+        monkeypatch.setattr("organvm_engine.session.agents.CODEX_ARCHIVED_DIR", tmp_path / "no-archive")
+        monkeypatch.setattr("organvm_engine.session.agents.OPENCODE_DB", tmp_path / "no-opencode.db")
+
+        scan_diagnostics: list = []
+        sessions = discover_all_sessions(scan_diagnostics=scan_diagnostics)
+
+        assert sessions == []
+        assert [d.agent for d in scan_diagnostics] == ["claude", "gemini", "codex", "opencode"]
+        assert all(d.elapsed_seconds >= 0 for d in scan_diagnostics)
+        assert all(d.sessions_found == 0 for d in scan_diagnostics)
+        assert scan_diagnostics[0].to_dict()["status"] == "session-scan"
+
     def test_discover_with_agent_filter(self, tmp_path, monkeypatch):
         claude_dir = tmp_path / "claude"
         claude_dir.mkdir()
