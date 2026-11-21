@@ -267,3 +267,38 @@ def cmd_ledger_repair(args: argparse.Namespace) -> int:
     print()
 
     return 0 if post.valid else 1
+
+
+def cmd_ledger_export_feed(args: argparse.Namespace) -> int:
+    """Export the Testament Chain as a portal-ingestible JSON event feed.
+
+    Reads the chain (verifying it first — a corrupt chain refuses to
+    export), projects every record into the stakeholder portal's
+    ``TestamentEvent`` shape, and writes deterministic JSON to ``--out``.
+    The chain lives on the operator machine, so the operator runs this
+    where the chain lives and carries the JSON into the portal repo as a
+    checked-in feed file; CI cannot produce the live feed. See
+    ``organvm_engine.ledger.feed`` for the feed-hash and checkpoint-root
+    rules (feed-level hashes, portal ``verifyCheckpoint`` batch rule).
+    """
+    from organvm_engine.ledger.feed import FeedExportError, write_feed
+
+    path = _chain_path(args)
+    out = getattr(args, "out", None)
+    if not out:
+        print("  --out is required: where to write the JSON feed.")
+        return 1
+    if not path.is_file():
+        print("  No chain found.")
+        return 1
+
+    try:
+        events = write_feed(path, out)
+    except FeedExportError as exc:
+        print(f"  Refusing to export: {exc}")
+        return 1
+
+    print(f"\n  Testament feed exported — {len(events)} events")
+    print(f"  Chain: {path}")
+    print(f"  Wrote: {out}\n")
+    return 0

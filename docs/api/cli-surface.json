@@ -689,6 +689,32 @@
         }
       }
     },
+    "context migrate-legacy": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--write": {
+          "flags": [
+            "--write"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "paths": {
+          "nargs": "+",
+          "position": 0,
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
     "context rollback": {
       "arguments": {
         "--to": {
@@ -723,6 +749,14 @@
     },
     "context sync": {
       "arguments": {
+        "--create-instruction-files": {
+          "flags": [
+            "--create-instruction-files"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
         "--diff": {
           "flags": [
             "--diff"
@@ -3202,6 +3236,26 @@
           "nargs": "0",
           "required": false,
           "takes_value": false
+        }
+      }
+    },
+    "ledger export-feed": {
+      "arguments": {
+        "--chain-path": {
+          "flags": [
+            "--chain-path"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--out": {
+          "flags": [
+            "--out"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
         }
       }
     },
