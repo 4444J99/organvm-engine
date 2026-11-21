@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- `organvm corpus render` publishes the corpus knowledge graph as six
+  navigable markdown indices (`concept-index`, `provenance-map`,
+  `spec-coverage`, `tag-analysis`, `cross-corpus-bridges`, `gaps`), by
+  default into `docs/corpus/`, from a scan or a saved graph (`--graph-file`),
+  with `--concept` for a single-concept subset. Rendering is deterministic
+  (sorted output, no timestamps) so re-renders diff cleanly, and every index
+  reuses the graph's own queries (`trace_concept`, `coverage_depth`,
+  `concepts_without_implementation`), so the indices agree with the `trace`,
+  `coverage` and `gaps` commands. This closes #81: the graph core and CLI
+  verbs already shipped on mainline; the render surface was the missing
+  piece. The CLI surface baseline is refreshed for the additive `corpus
+  render` command (and two earlier unrecorded additive changes: `context
+  migrate-legacy` and `context sync --create-instruction-files`).
 - `organvm context sync` writes the full generated context to one generator-owned
   `docs/organvm-context.md` per directory (repo, organ, workspace) and leaves only a short
   pointer, with its `Last synced` stamp, between the `ORGANVM:AUTO` markers of `CLAUDE.md`,

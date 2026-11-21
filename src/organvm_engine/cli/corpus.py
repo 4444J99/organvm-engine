@@ -4,6 +4,51 @@ import argparse
 import json
 
 
+def cmd_corpus_render(args: argparse.Namespace) -> int:
+    """Render the corpus knowledge graph as six markdown indices."""
+    from pathlib import Path
+
+    from organvm_engine.corpus.graph import CorpusGraph
+    from organvm_engine.corpus.render import RENDER_FILES, render_all
+    from organvm_engine.corpus.scanner import scan_corpus
+
+    if args.graph_file:
+        graph_path = Path(args.graph_file)
+        if not graph_path.is_file():
+            print(f"Error: {graph_path} not found")
+            return 1
+        graph = CorpusGraph.load(graph_path)
+    else:
+        corpus_dir = Path(args.corpus_dir).resolve()
+        ws_root = Path(args.workspace).resolve() if args.workspace else None
+        if not corpus_dir.is_dir():
+            print(f"Error: {corpus_dir} is not a directory")
+            return 1
+        graph = scan_corpus(corpus_dir, workspace_root=ws_root)
+
+    try:
+        rendered = render_all(graph, concept=args.concept)
+    except ValueError as exc:
+        print(f"Error: {exc}")
+        return 1
+
+    out_dir = Path(args.output)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for name in RENDER_FILES:
+        (out_dir / name).write_text(rendered[name], encoding="utf-8")
+
+    stats = graph.stats()
+    scope = f"concept '{args.concept}'" if args.concept else "full graph"
+    print(f"\n  Corpus indices ({scope})")
+    print(f"  {'═' * 50}")
+    print(f"  Nodes: {stats['total_nodes']}")
+    print(f"  Edges: {stats['total_edges']}")
+    print(f"\n  Written to {out_dir}:")
+    for name in RENDER_FILES:
+        print(f"    - {name}")
+    return 0
+
+
 def cmd_corpus_scan(args: argparse.Namespace) -> int:
     """Scan the post-flood corpus and produce a knowledge graph."""
     from pathlib import Path
