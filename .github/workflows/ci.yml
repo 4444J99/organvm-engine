@@ -16,13 +16,13 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       # Repository-scoped read-only key; fork PRs do not receive this secret.
       - name: Fetch pinned private dependency
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: 4444J99/organvm-ontologia
           ref: ecc7ff7e3048562164a8973281d6794db5c16029
