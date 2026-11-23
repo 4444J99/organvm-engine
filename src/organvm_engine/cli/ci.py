@@ -211,6 +211,86 @@ def cmd_ci_evidence(args: argparse.Namespace) -> int:
     return 0 if report["decision"] == "executed_pass" else 1
 
 
+def cmd_ci_workflow_inventory(args: argparse.Namespace) -> int:
+    """Collect one revision-pinned workflow inventory cycle (#190).
+
+    Fetches the workflow set at the caller-pinned revision through the
+    environment-supplied token (``GITHUB_TOKEN``/``GH_TOKEN``), verifies
+    each file against Git object identity, and runs the existing
+    ``inventory()`` on the fetched files. With ``--restore-from``, rebuilds
+    the snapshot from a retained cycle artifact and reports whether the
+    digest matches. Exit 0 only when coverage is ``complete`` (or the
+    restore matches); 1 when coverage is partial (or the restore
+    mismatches); 2 when the input, registry, or fetch is invalid. The
+    envelope never authorizes execution, a check, or a release.
+    """
+    from pathlib import Path
+
+    from organvm_engine.ci import workflow_ingest
+
+    if getattr(args, "restore_from", None):
+        try:
+            artifact = json.loads(Path(args.restore_from).read_text(encoding="utf-8"))
+            _, rebuilt_digest = workflow_ingest.rebuild_snapshot(artifact)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            print(f"Error: {exc}")
+            return 2
+        recorded = artifact.get("snapshot_digest") if isinstance(artifact, dict) else None
+        match = rebuilt_digest == recorded
+        print(f"\nRestore from retained evidence — {args.restore_from}\n")
+        print(f"  Rebuilt digest:  {rebuilt_digest}")
+        print(f"  Recorded digest: {recorded}")
+        print(f"  Match: {match}\n")
+        return 0 if match else 1
+
+    if "/" not in args.repo:
+        print("Error: --repo must be OWNER/NAME")
+        return 2
+    owner, repo = args.repo.split("/", 1)
+    registry = None
+    if getattr(args, "registry", None):
+        try:
+            from organvm_engine.registry.loader import load_registry
+
+            registry = load_registry(args.registry)
+        except (OSError, ValueError) as exc:
+            print(f"Error: {exc}")
+            return 2
+    try:
+        envelope = workflow_ingest.collect_workflow_inventory(
+            owner=owner,
+            repo=repo,
+            revision=args.revision,
+            expected_repository_id=args.repository_id,
+            registry=registry,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Error: {exc}")
+        return 2
+
+    if args.out:
+        Path(args.out).write_text(json.dumps(envelope, indent=2, sort_keys=True) + "\n",
+                                  encoding="utf-8")
+    snapshot = envelope["snapshot"]
+    if args.json:
+        print(json.dumps(envelope, indent=2, sort_keys=True))
+    else:
+        print(f"\nWorkflow inventory — {args.repo} @ {args.revision[:8]} "
+              f"(tree {envelope['tree_sha'][:8]})\n")
+        print(f"  Coverage: {snapshot['coverage']} "
+              f"({snapshot['analyzed_count']}/{snapshot['enumerated_count']} analyzed)")
+        for path in envelope["expected_paths"]:
+            state = envelope["collection"][path]["state"]
+            owners = envelope["ownership"][path]["owners"]
+            print(f"    - {path}: {state}"
+                  + (f" (owners: {', '.join(owners)})" if owners else " (owners: unknown)"))
+        print(f"  Freshness: {envelope['freshness']['status']} "
+              f"(age {envelope['freshness']['age_seconds']}s)")
+        print(f"  Snapshot digest: {envelope['snapshot_digest']}")
+        print("  Authorizes release: False; authorizes execution: False\n")
+    return 0 if snapshot["coverage"] == "complete" else 1
+
+
 def cmd_ci_mandate(args: argparse.Namespace) -> int:
     """Verify CI workflow files exist on disk (mandate check)."""
     from organvm_engine.ci.mandate import verify_ci_mandate

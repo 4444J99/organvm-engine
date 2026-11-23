@@ -1,0 +1,63 @@
+name: Workflow Inventory
+
+# One observed collection cycle per run (organvm-engine #190): pin the
+# revision, enumerate the workflow set from its tree, verify each file
+# against Git object identity, and run the existing inventory() on the
+# fetched files. The snapshot + retained file bytes upload as an artifact,
+# so drift() between two cycles and restore-from-evidence can both be
+# checked without a second source of truth. Runs monthly like the
+# infrastructure audit, and on demand for an observed cycle.
+on:
+  schedule:
+    - cron: "0 8 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-inventory:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "organvm-ontologia @ git+https://github.com/meta-organvm/organvm-ontologia.git"
+          pip install -e .
+
+      - name: Collect workflow inventory
+        id: inventory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p workflow-inventory-results
+          organvm ci workflow-inventory --repo "$GITHUB_REPOSITORY" --revision "$GITHUB_SHA" --repository-id "${{ github.repository_id }}" --out workflow-inventory-results/workflow-inventory.json --json > workflow-inventory-results/workflow-inventory-stdout.json
+
+      - name: Upload inventory snapshot
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: workflow-inventory-${{ github.run_id }}
+          path: workflow-inventory-results/
+          retention-days: 90
+
+      - name: Post summary
+        if: always()
+        run: |
+          python3 -c "
+          import json
+          env = json.load(open('workflow-inventory-results/workflow-inventory.json'))
+          snap = env['snapshot']
+          print('## Workflow Inventory')
+          print()
+          print('**Revision:** ' + env['revision'])
+          print('**Coverage:** ' + snap['coverage'] + ' (' + str(snap['analyzed_count']) + '/' + str(snap['enumerated_count']) + ' analyzed)')
+          print('**Freshness:** ' + env['freshness']['status'])
+          print('**Snapshot digest:** ' + env['snapshot_digest'])
+          " >> "$GITHUB_STEP_SUMMARY" || echo "(no envelope captured)" >> "$GITHUB_STEP_SUMMARY"

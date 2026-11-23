@@ -639,6 +639,66 @@
         }
       }
     },
+    "ci workflow-inventory": {
+      "arguments": {
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--out": {
+          "flags": [
+            "--out"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--registry": {
+          "flags": [
+            "--registry"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--repository-id": {
+          "flags": [
+            "--repository-id"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--restore-from": {
+          "flags": [
+            "--restore-from"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--revision": {
+          "flags": [
+            "--revision"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
     "completion": {
       "arguments": {
         "shell": {
