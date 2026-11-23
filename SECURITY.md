@@ -5,7 +5,7 @@
 **Please do not report security vulnerabilities through public GitHub issues,
 discussions, or pull requests.**
 
-Instead, please use [GitHub Security Advisories](https://github.com/meta-organvm/organvm-engine/security/advisories/new)
+Instead, please use [GitHub Security Advisories](https://github.com/4444J99/organvm-engine/security/advisories/new)
 to report vulnerabilities privately. This allows us to assess the risk and
 prepare a fix before public disclosure.
 

@@ -4,7 +4,7 @@ Thank you for your interest in contributing to this project.
 
 ## Overview
 
-Organvm Engine is the system engine for the organvm meta-org. It provides registry validation, metrics calculation, and system-level tooling that operates across all eight organs. It reads from registry-v2.json and coordinates cross-org operations.
+Organvm Engine is the system engine for the organvm meta-org. It provides registry validation, metrics calculation, and system-level tooling that operates across all eight organs. It reads the canonical `repo-registry.json` (from the corpus repo by default; pass `--registry <path>` or set `ORGANVM_CORPUS_DIR` on a machine without that checkout) and coordinates cross-org operations.
 
 **Stack:** Python (system engine, registry validation, metrics)
 
@@ -25,8 +25,8 @@ cd organvm-engine
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (from pyproject.toml — there is no requirements.txt)
+pip install -e ".[dev]"
 ```
 
 The full suite needs two packages a bare checkout does not have: the private
@@ -35,6 +35,10 @@ install it from a checkout of that commit) and the `dev` extra
 (`pip install -e ".[dev]"`, which provides `nbformat`). Without them the
 ontologia bridge tests and the reader-mode audit tests fail at import, not on
 behavior.
+
+For the verified first-run walkthrough on a fresh machine (including the
+representative workflow and troubleshooting), see
+[docs/quickstart.md](docs/quickstart.md).
 
 The suite is host-independent: `tests/conftest.py` clears `ORGANVM_*` /
 `LIMEN_GOV_*` environment variables and the host's global git config and ignore
@@ -102,4 +106,4 @@ and building in public. We follow the
 
 Open an issue on this repository or start a discussion if discussions are
 enabled. For system-wide questions, see
-[orchestration-start-here](https://github.com/organvm-iv-taxis/orchestration-start-here).
+[orchestration-start-here](https://github.com/4444J99/orchestration-start-here).
