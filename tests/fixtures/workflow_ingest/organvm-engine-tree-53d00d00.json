@@ -1,0 +1,104 @@
+{
+ "sha": "53d00d00b015ef304896bddca2d564ce8166b763",
+ "truncated": false,
+ "tree": [
+  {
+   "path": ".github/workflows/ci.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "7369e520a13059d44309a9a6937906ab248f1206",
+   "size": 1855
+  },
+  {
+   "path": ".github/workflows/cla.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "010f660ddfc2afecd90f18c33a472b71e0203c72",
+   "size": 1436
+  },
+  {
+   "path": ".github/workflows/dependabot-auto-merge.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "88e3b8ab8ecdd94d80b2968adf5aaf1b721ca1dd",
+   "size": 766
+  },
+  {
+   "path": ".github/workflows/ecosystem-sync-check.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "fb8bfd066923ec5fd4fcb547aa087479974d536e",
+   "size": 593
+  },
+  {
+   "path": ".github/workflows/ecosystem-verify-contracts.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "0d814f41704a3d89f5c259f4448f0dce4aaee986",
+   "size": 597
+  },
+  {
+   "path": ".github/workflows/governance-toolkit-ci.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "e28b1183b032a7cdff12b0767e59a4ebe3f8bf88",
+   "size": 1779
+  },
+  {
+   "path": ".github/workflows/monthly-infrastructure-audit.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "d5ae3290c5a84898c455c1484ff5822b68edd984",
+   "size": 2009
+  },
+  {
+   "path": ".github/workflows/release-drafter.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "19ee9a3e36529cc9b87047fd0509cf5c7b098a29",
+   "size": 417
+  },
+  {
+   "path": ".github/workflows/release.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "6352c5fd89861ba767b19c52ba005927b30a6807",
+   "size": 2850
+  },
+  {
+   "path": ".github/workflows/secret-scan.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "c3f5e423e33331cb07a60cd56667949ac314faa8",
+   "size": 808
+  },
+  {
+   "path": ".github/workflows/spec-compliance.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "975d565b40acd74517ccb071fe65b9fa548faf7c",
+   "size": 9542
+  },
+  {
+   "path": ".github/workflows/stale.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "0e8371c55422c6b0b0b1370e6b4df2333813e52d",
+   "size": 972
+  },
+  {
+   "path": ".github/workflows/standards-warning.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "d42180c6c0365f665f1737857018b9b1a4edae33",
+   "size": 384
+  },
+  {
+   "path": ".github/workflows/testament-render.yml",
+   "mode": "100644",
+   "type": "blob",
+   "sha": "e60cb4139715d84cef8fb6693c12f9bfa1fc9bdd",
+   "size": 1858
+  }
+ ]
+}

@@ -62,6 +62,7 @@ from organvm_engine.cli.ci import (
     cmd_ci_protect,
     cmd_ci_scaffold,
     cmd_ci_triage,
+    cmd_ci_workflow_inventory,
 )
 from organvm_engine.cli.cmd_audit import (
     cmd_audit_absorption,
@@ -1153,6 +1154,45 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Output machine-readable JSON",
+    )
+    ci_workflow_inventory = ci_sub.add_parser(
+        "workflow-inventory",
+        help="Collect one revision-pinned workflow inventory cycle (#190)",
+    )
+    ci_workflow_inventory.add_argument(
+        "--repo",
+        required=True,
+        help="Repository as OWNER/NAME",
+    )
+    ci_workflow_inventory.add_argument(
+        "--revision",
+        required=True,
+        help="Expected head SHA (40/64 hex) the inventory must match",
+    )
+    ci_workflow_inventory.add_argument(
+        "--repository-id",
+        required=True,
+        type=int,
+        help="Expected GitHub repository id the inventory must match",
+    )
+    ci_workflow_inventory.add_argument(
+        "--registry",
+        default=None,
+        help="Optional canonical registry path for the tier/dependency join",
+    )
+    ci_workflow_inventory.add_argument(
+        "--out",
+        help="Write the full envelope JSON to this path",
+    )
+    ci_workflow_inventory.add_argument(
+        "--json",
+        action="store_true",
+        help="Output machine-readable JSON",
+    )
+    ci_workflow_inventory.add_argument(
+        "--restore-from",
+        default=None,
+        help="Rebuild the snapshot from a retained cycle artifact instead of collecting",
     )
 
     # omega
@@ -3785,6 +3825,7 @@ def main() -> int:
         ("ci", "scaffold"): cmd_ci_scaffold,
         ("ci", "protect"): cmd_ci_protect,
         ("ci", "evidence"): cmd_ci_evidence,
+        ("ci", "workflow-inventory"): cmd_ci_workflow_inventory,
         ("pitch", "generate"): cmd_pitch_generate,
         ("pitch", "sync"): cmd_pitch_sync,
         ("context", "sync"): cmd_context_sync,

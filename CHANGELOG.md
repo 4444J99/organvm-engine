@@ -18,6 +18,21 @@
   the live `organvm` command tree, compares it with the committed baseline
   `docs/api/cli-surface.json`, and classifies drift as breaking or compatible; a test keeps the
   baseline current. Draft version policy in `docs/api/VERSIONING.md` (issue #194).
+- Workflow-ingest collector (`organvm ci workflow-inventory`, issue #190):
+  the minimal trusted collector for the `ci/workflow_intelligence.py`
+  `inventory()` / `drift()` primitives, which had zero production callers —
+  it pins repository identity (API id vs the caller-pinned
+  `--repository-id`) and revision, enumerates the workflow set from the
+  pinned tree (a truncated listing fails the collection), verifies each
+  file's bytes against Git object identity (contents blob SHA must equal
+  the tree entry's), and hands the fetched files to the existing
+  `inventory()`; CODEOWNERS and (optionally, `--registry`) tier/dependency
+  data join with explicit unknowns, and `--restore-from` rebuilds a
+  snapshot from a retained cycle artifact and compares digests. A new
+  `.github/workflows/workflow-inventory.yml` (monthly schedule +
+  `workflow_dispatch`) hosts the cycle and uploads the envelope as an
+  artifact (90-day retention). Freshness budget: a snapshot is stale after
+  35 days (one monthly cycle plus grace); at most 3 cycles are retained.
 - Execution-evidence collector (`organvm ci evidence`, issue #189): the minimal trusted
   collector for the `ci/runtime_evidence.py` adapter — fetches one Actions run and its jobs
   pages through the environment-supplied token (`GITHUB_TOKEN`/`GH_TOKEN`, never minted,
