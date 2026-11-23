@@ -57,6 +57,7 @@ from organvm_engine.cli.atoms import (
 )
 from organvm_engine.cli.ci import (
     cmd_ci_audit,
+    cmd_ci_evidence,
     cmd_ci_mandate,
     cmd_ci_protect,
     cmd_ci_scaffold,
@@ -1097,6 +1098,58 @@ def build_parser() -> argparse.ArgumentParser:
         help="Generate full gh api commands",
     )
     ci_protect.add_argument(
+        "--json",
+        action="store_true",
+        help="Output machine-readable JSON",
+    )
+    ci_evidence = ci_sub.add_parser(
+        "evidence",
+        help="Collect one run's execution evidence and evaluate it (#189)",
+    )
+    ci_evidence.add_argument(
+        "--repo",
+        required=True,
+        help="Repository as OWNER/NAME",
+    )
+    ci_evidence.add_argument(
+        "--run-id",
+        required=True,
+        type=int,
+        help="Actions run id to collect",
+    )
+    ci_evidence.add_argument(
+        "--revision",
+        required=True,
+        help="Expected head SHA (40/64 hex) the run must match",
+    )
+    ci_evidence.add_argument(
+        "--repository-id",
+        required=True,
+        type=int,
+        help="Expected GitHub repository id the run must match",
+    )
+    ci_evidence.add_argument(
+        "--workflow-id",
+        required=True,
+        type=int,
+        help="Expected workflow id the run must match",
+    )
+    ci_evidence.add_argument(
+        "--attempt",
+        type=int,
+        default=1,
+        help="Expected run attempt (default 1)",
+    )
+    ci_evidence.add_argument(
+        "--required-steps",
+        required=True,
+        help="JSON contract file mapping job names to required step names",
+    )
+    ci_evidence.add_argument(
+        "--out",
+        help="Write the full report JSON to this path",
+    )
+    ci_evidence.add_argument(
         "--json",
         action="store_true",
         help="Output machine-readable JSON",
@@ -3731,6 +3784,7 @@ def main() -> int:
         ("ci", "mandate"): cmd_ci_mandate,
         ("ci", "scaffold"): cmd_ci_scaffold,
         ("ci", "protect"): cmd_ci_protect,
+        ("ci", "evidence"): cmd_ci_evidence,
         ("pitch", "generate"): cmd_pitch_generate,
         ("pitch", "sync"): cmd_pitch_sync,
         ("context", "sync"): cmd_context_sync,

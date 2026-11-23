@@ -152,6 +152,65 @@ def cmd_ci_audit(args: argparse.Namespace) -> int:
     return 0 if report.non_compliant_repos == 0 else 1
 
 
+def cmd_ci_evidence(args: argparse.Namespace) -> int:
+    """Collect one run's execution evidence and evaluate it (organvm-engine #189).
+
+    Fetches the run and its jobs pages through the environment-supplied token
+    (``GITHUB_TOKEN``/``GH_TOKEN``), evaluates them against caller-pinned
+    expectations from the reviewed workflow contract, and prints the report.
+    Exit 0 only when the decision is ``executed_pass``; 1 for any other
+    decision; 2 when the input, contract, or fetch is invalid. The report
+    never authorizes execution, a check, or a release.
+    """
+    from pathlib import Path
+
+    from organvm_engine.ci import evidence_collector
+
+    if "/" not in args.repo:
+        print("Error: --repo must be OWNER/NAME")
+        return 2
+    owner, repo = args.repo.split("/", 1)
+    try:
+        required_steps, contract = evidence_collector.load_required_steps(
+            Path(args.required_steps),
+        )
+        report = evidence_collector.collect_run_evidence(
+            owner=owner,
+            repo=repo,
+            run_id=args.run_id,
+            expected_repository_id=args.repository_id,
+            expected_revision=args.revision,
+            expected_workflow_id=args.workflow_id,
+            expected_run_id=args.run_id,
+            expected_attempt=args.attempt,
+            required_steps=required_steps,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Error: {exc}")
+        return 2
+
+    report["contract"] = contract
+    if args.out:
+        Path(args.out).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n",
+                                  encoding="utf-8")
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print(f"\nExecution evidence — {args.repo} run {args.run_id} "
+              f"(attempt {args.attempt})\n")
+        print(f"  Decision: {report['decision']}")
+        print(f"  Jobs: {report['observed_job_count']}/{report['reported_job_count']} "
+              f"(enumeration complete: {report['enumeration_complete']})")
+        for job in report["jobs"]:
+            print(f"    - {job['name']}: {job['state']} "
+                  f"(runner {job.get('runner_id')}, "
+                  f"executed {job['executed_required']}/{job['required_count']} required steps)")
+        print(f"  Sources: {report['collection']['run_source']}")
+        print(f"  Observed at: {report['collection']['observed_at']}")
+        print("  Authorizes release: False; authorizes execution: False\n")
+    return 0 if report["decision"] == "executed_pass" else 1
+
+
 def cmd_ci_mandate(args: argparse.Namespace) -> int:
     """Verify CI workflow files exist on disk (mandate check)."""
     from organvm_engine.ci.mandate import verify_ci_mandate

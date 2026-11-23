@@ -421,6 +421,82 @@
         }
       }
     },
+    "ci evidence": {
+      "arguments": {
+        "--attempt": {
+          "flags": [
+            "--attempt"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--json": {
+          "flags": [
+            "--json"
+          ],
+          "nargs": "0",
+          "required": false,
+          "takes_value": false
+        },
+        "--out": {
+          "flags": [
+            "--out"
+          ],
+          "nargs": "1",
+          "required": false,
+          "takes_value": true
+        },
+        "--repo": {
+          "flags": [
+            "--repo"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--repository-id": {
+          "flags": [
+            "--repository-id"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--required-steps": {
+          "flags": [
+            "--required-steps"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--revision": {
+          "flags": [
+            "--revision"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--run-id": {
+          "flags": [
+            "--run-id"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        },
+        "--workflow-id": {
+          "flags": [
+            "--workflow-id"
+          ],
+          "nargs": "1",
+          "required": true,
+          "takes_value": true
+        }
+      }
+    },
     "ci mandate": {
       "arguments": {
         "--json": {
