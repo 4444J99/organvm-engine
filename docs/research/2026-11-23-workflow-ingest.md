@@ -90,7 +90,27 @@ the one narrow call site, with `--restore-from` for the restore proof.
 
 ## Observed cycles
 
-Two `workflow-inventory` runs dispatched on the PR branch (run ids in the
-PR body). Each uploaded a `workflow-inventory-<run_id>` artifact holding
-the envelope + retained file bytes; `drift()` between the two snapshots and
-the restore-from-artifact rebuild are both recorded in the PR.
+Two observed collection cycles ran live against the API (in-process, token
+never printed), because the GitHub-hosted form cannot run pre-merge: the
+dispatch API 404s on `workflow-inventory.yml` while it exists only on the
+PR branch — GitHub registers workflows from the default branch — and
+nothing may be pushed to default before merge. The monthly schedule runs
+the cycle on default after merge.
+
+- Cycle 1: main `53d00d00` — coverage `complete`, 14/14 analyzed, snapshot
+  digest `58061a94...` (observed 2026-11-23; digest varies with
+  `observed_at`, so the recorded digest is per-cycle).
+- Cycle 2: PR head `dd76fc53` — coverage `complete`, 15/15 analyzed; the
+  new workflow inventories itself.
+- `drift()` between the two snapshots reports exactly one change:
+  `.github/workflows/workflow-inventory.yml` `added`. The 14 shared files
+  are byte-identical across the two revisions.
+- `rebuild_snapshot()` on the cycle-2 retained envelope reproduces its
+  snapshot digest-for-digest (restore match).
+
+Side observation while dispatching: GitHub's workflows registry lists 17
+file-based workflows for the repo, but the pinned tree at `53d00d00` holds
+only 14 — `codeql.yml`, `reader-ci-diagnosis.yml` and
+`reader-ci-repair.yml` are registered from elsewhere, not from the default
+tree. The tree, not the registry listing, is the revision-pinned expected
+set — which is why the collector enumerates from the tree.
