@@ -1,0 +1,12 @@
+{
+  "capture": "fetched live via organvm_engine.ci.evidence_collector against the GitHub API; run and jobs pages recorded verbatim",
+  "job_coverage": "three returned unique rows / total_count three",
+  "jobs_source": "https://api.github.com/repos/4444J99/organvm-engine/actions/runs/44909979065/jobs?per_page=100&page=1",
+  "no_authentication_claim_from_adapter": true,
+  "no_merge": true,
+  "no_rerun": true,
+  "observation_time": "2026-11-23T17:29:09.560998Z",
+  "requirements": "step names read from .github/workflows/ci.yml at pinned base 1e4bec99 (blob 7369e520a13059d44309a9a6937906ab248f1206)",
+  "run_source": "https://api.github.com/repos/4444J99/organvm-engine/actions/runs/44909979065",
+  "workflow_source_blob": "7369e520a13059d44309a9a6937906ab248f1206"
+}

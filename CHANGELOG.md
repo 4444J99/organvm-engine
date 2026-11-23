@@ -18,6 +18,16 @@
   the live `organvm` command tree, compares it with the committed baseline
   `docs/api/cli-surface.json`, and classifies drift as breaking or compatible; a test keeps the
   baseline current. Draft version policy in `docs/api/VERSIONING.md` (issue #194).
+- Execution-evidence collector (`organvm ci evidence`, issue #189): the minimal trusted
+  collector for the `ci/runtime_evidence.py` adapter — fetches one Actions run and its jobs
+  pages through the environment-supplied token (`GITHUB_TOKEN`/`GH_TOKEN`, never minted,
+  stored, or logged), evaluates them against caller-pinned expectations from a reviewed
+  workflow contract (`tests/fixtures/ci_evidence/organvm-engine-ci-required-steps.json`),
+  and reports `executed_pass` / `executed_failure` / `not_executed` / `pending` /
+  `incomplete` without authorizing execution, a check, or a release. The September zero-step
+  failure (run 34762163480) still reproduces as `not_executed` through the wired path, and
+  the current main run (44909979065 at `1e4bec99`) reports `executed_pass` with its three
+  required jobs on real runners.
 - Tests are host-independent: `ORGANVM_*`/`LIMEN_GOV_*` env vars and the host's global
   git config/ignore no longer leak into the suite, and the exit-interview tests
   use a temp workspace pointing at the checkout under test instead of `~/Workspace`.
