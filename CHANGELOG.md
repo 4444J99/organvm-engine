@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Onboarding repair (issue #196): README and CONTRIBUTING now document the
+  one install path (`pip install -e ".[dev]"`; there is no
+  `requirements.txt`), every README CLI example is verified against the live
+  CLI at main (registry/seed/governance/metrics/dispatch/context/docs forms
+  all take an explicit `--registry` fixture path or `ORGANVM_WORKSPACE_DIR`,
+  since the corpus defaults do not exist on a fresh machine), the canonical
+  repository link is `4444J99/organvm-engine` (README, SECURITY.md
+  advisories, CONTRIBUTING), and the stray `# Webhook test` lines are gone
+  from README. New `docs/quickstart.md` (verified first-run walkthrough)
+  and `docs/root-inventory.md` (34-entry root classification + relocation
+  map); the dead `organvm-engine` gitlink is removed and the superseded
+  `patch2.diff` is relocated to `docs/history/` with its landing evidence.
+  `load_registry()` now fails closed with a diagnostic naming the missing
+  registry path and the `--registry` / `ORGANVM_CORPUS_DIR` escape hatches
+  instead of a bare traceback. CLAUDE.md's domain-module table is regenerated
+  to the live 47 packages and `ecosystem.yaml` counts are corrected
+  (47 modules, ~6,800 tests, 49 command groups).
 - `organvm context sync` writes the full generated context to one generator-owned
   `docs/organvm-context.md` per directory (repo, organ, workspace) and leaves only a short
   pointer, with its `Last synced` stamp, between the `ORGANVM:AUTO` markers of `CLAUDE.md`,

@@ -356,7 +356,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--registry",
         default=str(_default_registry_path()),
-        help="Path to registry-v2.json",
+        help="Path to repo-registry.json",
     )
     sub = parser.add_subparsers(dest="command")
 

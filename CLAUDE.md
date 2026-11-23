@@ -7,7 +7,10 @@ Core Python package for the ORGANVM eight-organ system: registry, governance, se
 ## Commands
 
 ```bash
-# Install (use the workspace venv at meta-organvm/.venv)
+# Install (repo-local venv; the meta-organvm workspace venv is an alternative
+# if you have that workspace checked out)
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
 
 # Test
@@ -15,8 +18,8 @@ pytest tests/ -v                              # all tests
 pytest tests/test_registry.py -v              # one module
 pytest tests/test_registry.py::test_name -v   # one test
 
-# Lint
-ruff check src/
+# Lint (the CI command)
+ruff check src/ tests/ --ignore SIM105
 
 # Typecheck
 pyright
@@ -36,33 +39,57 @@ Every other module imports from these; change them carefully.
 
 - **`project_slug.py`** — Canonical project slug derivation (`meta-organvm/organvm-engine` form). Converts filesystem paths, plan directory names, and raw slugs to a normalized slash-separated format. Shared across `prompts/`, `plans/`, and `session/`.
 
-### Domain modules (23)
+### Domain modules (47)
 
 | Module | Role |
 |--------|------|
-| `registry/` | Load/save/query/validate/update canonical `repo-registry.json` |
-| `governance/` | Promotion state machine, dependency graph validation, audit, blast-radius impact |
-| `seed/` | Discover `seed.yaml` files across workspace, read them, build produces/consumes graph |
-| `metrics/` | Calculate system metrics, propagate into markdown/JSON, timeseries, variable resolution |
-| `dispatch/` | Event payload validation, routing, cascade |
-| `git/` | Superproject init/sync, submodule status/drift, workspace reproduction |
-| `contextmd/` | Write `docs/organvm-context.md` per repo/organ/workspace from templates and point CLAUDE.md/GEMINI.md/AGENTS.md at it (short pointer between the AUTO markers) |
-| `omega/` | 17-criterion binary scorecard for system maturity |
-| `ci/` | CI health triage from soak-test data |
-| `deadlines/` | Parse deadlines from `rolling-todo.md` |
-| `pitchdeck/` | HTML pitch deck generation per repo |
-| `session/` | Multi-agent session transcript parsing (Claude, Gemini, Codex), plan auditing, prompt analysis |
-| `plans/` | Plan file atomization, indexing, hygiene checks, overlap detection, and per-organ synthesis |
-| `prompts/` | Prompt extraction, classification, narrative threading, and clipboard history analysis |
 | `atoms/` | Cross-system linking pipeline: Jaccard matching tasks↔prompts, git reconciliation, per-organ rollups |
+| `audit/` | Infrastructure wiring audit — 6-layer bottom-up verification. |
+| `ci/` | CI health triage from soak-test data |
+| `cli/` | One module per command group (51 modules), wired together in `cli/__init__.py` |
+| `composition/` | Composition engine for institutional primitives (INST-COMPOSITION). |
+| `content/` | Content pipeline — discovery, scaffolding, cadence tracking, content-moment signals. |
+| `contextmd/` | Write `docs/organvm-context.md` per repo/organ/workspace from templates and point CLAUDE.md/GEMINI.md/AGENTS.md at it (short pointer between the AUTO markers) |
+| `contrib/` | Contribution engine — outbound contribution tracking and backflow routing. |
 | `coordination/` | Multi-agent claims registry (punch-in/out), tool checkout line for concurrent command traffic |
+| `corpus/` | Corpus knowledge graph — computational bridge between theory and implementation. |
+| `deadlines/` | Parse deadlines from `rolling-todo.md` |
+| `debt/` | DEBT header detection and tracking. |
+| `dispatch/` | Event payload validation, routing, cascade |
 | `distill/` | Operational pattern taxonomy, SOP-to-pattern coverage analysis, scaffold generation |
+| `distillatio/` | V2 transformation engine for the palingenesis (river module); executable proofs in `probatio.py` |
+| `documentation/` | Reader-mode documentation contracts, validation, and repository auditing. |
 | `ecosystem/` | Product business profiles, competitive matrix, gap analysis, action generation |
-| `prompting/` | Agent-specific prompting guidelines and provider standards |
-| `sop/` | SOP/METADOC discovery, inventory audit, tiered resolver (T4→T3→T2 cascade) |
-| `irf/` | Parse, query, AND write back INST-INDEX-RERUM-FACIENDARUM.md — the universal work registry. IRFItem dataclass, priority/domain/status filtering, parse-completeness diagnostics, and tooled mutations (`irf add` / `irf complete` / `irf stats --write`, dry-run by default, hardlink-inode-preserving) |
+| `events/` | Event spine — append-only JSONL event bus for constitutional observability. |
+| `fabrica/` | Cyclic Dispatch Protocol — RELEASE → CATCH → HANDOFF → FORTIFY. |
+| `formations/` | Institutional formations — crystallized compositions of primitives. |
 | `fossil/` | Living Stratigraphy — archaeological reconstruction of system history. Excavates git commits, classifies by Jungian archetype (8 types), generates epoch chronicles, captures intentions, detects drift, real-time witness hooks, testament bridge |
-| `cli/` | One module per command group (24 modules), wired together in `cli/__init__.py` |
+| `git/` | Superproject init/sync, submodule status/drift, workspace reproduction |
+| `governance/` | Promotion state machine, dependency graph validation, audit, blast-radius impact |
+| `indexer/` | Deep structural indexer — drills to absolute bottom of every repo. |
+| `irf/` | Parse, query, AND write back INST-INDEX-RERUM-FACIENDARUM.md — the universal work registry. IRFItem dataclass, priority/domain/status filtering, parse-completeness diagnostics, and tooled mutations (`irf add` / `irf complete` / `irf stats --write`, dry-run by default, hardlink-inode-preserving) |
+| `ledger/` | Ledger — the Testament Protocol's native hash-linked event chain. |
+| `mcp/` | MCP tool layer for organvm-engine (LIMEN-060). |
+| `metrics/` | Calculate system metrics, propagate into markdown/JSON, timeseries, variable resolution |
+| `network/` | Network testament — external mirror mapping and engagement tracking. |
+| `omega/` | 17-criterion binary scorecard for system maturity |
+| `ontologia/` | Ontologia bridge — connects the engine to the structural registry. |
+| `ontology/` | Ontology module — stratified entity taxonomy per SPEC-001, unified relations per SPEC-002. |
+| `pitchdeck/` | HTML pitch deck generation per repo |
+| `plans/` | Plan file atomization, indexing, hygiene checks, overlap detection, and per-organ synthesis |
+| `portal/` | BIFRONS portal — the compile/decide half of the star<->contribution portal. |
+| `primitives/` | Institutional primitives — the operational atoms of ORGANVM. |
+| `prompting/` | Agent-specific prompting guidelines and provider standards |
+| `prompts/` | Prompt extraction, classification, narrative threading, and clipboard history analysis |
+| `pulse/` | Pulse module — the system's nervous system and self-awareness layer. |
+| `registry/` | Load/save/query/validate/update canonical `repo-registry.json` |
+| `seed/` | Discover `seed.yaml` files across workspace, read them, build produces/consumes graph |
+| `session/` | Multi-agent session transcript parsing (Claude, Gemini, Codex), plan auditing, prompt analysis |
+| `sop/` | SOP/METADOC discovery, inventory audit, tiered resolver (T4→T3→T2 cascade) |
+| `testament/` | Testament — the system's generative self-portrait. |
+| `topology/` | Topology: capability-to-location resolution. |
+| `trivium/` | Trivium — Dialectica Universalis. |
+| `verification/` | Formal verification module — proving the organ dispatch pipeline. |
 
 ### The atomization pipeline
 

@@ -1,0 +1,1 @@
+{"event":"theory.published","metadata":{"dispatch_id":"00000000-0000-4000-8000-000000000000","priority":"normal","timestamp":"2026-11-23T00:00:00+00:00","ttl_seconds":86400},"payload":{"message":"New theory"},"source":{"organ":"ORGAN-I"},"target":{"organ":"ORGAN-II"}}

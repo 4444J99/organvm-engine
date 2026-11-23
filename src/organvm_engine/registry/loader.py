@@ -51,6 +51,19 @@ def load_registry(path: Path | str | None = None) -> dict:
     """
     registry_path = Path(path) if path else _default_registry_path()
 
+    if not registry_path.exists():
+        # The CLI parser eagerly resolves its --registry default to the
+        # corpus location, so a missing default arrives here looking like
+        # an explicit path. Compare against the default instead of trusting
+        # the caller's None: the escape-hatch hint belongs to the default
+        # location, whichever route it came by (issue #196 onboarding).
+        if registry_path == _default_registry_path():
+            raise FileNotFoundError(
+                f"Registry not found at {registry_path} (default corpus location); "
+                "pass --registry <path> or set ORGANVM_CORPUS_DIR to the corpus repo",
+            )
+        raise FileNotFoundError(f"Registry not found at {registry_path}")
+
     if registry_path.is_dir():
         from organvm_engine.registry.split import merge_registry
 
