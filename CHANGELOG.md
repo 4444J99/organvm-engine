@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Release evidence for the 0.1.0 candidate (issue #195, steps 2–6):
+  `organvm_engine.ci.release_evidence` builds the wheel + sdist, checks
+  them against the exclusion list (private `organvm-ontologia` package,
+  `psycopg`, `legacy/`, live-custody `receipts/`/`signatures/`, credential
+  files), and writes a CycloneDX SBOM, `sha256sums.txt` and a provenance
+  receipt under `docs/releases/0.1.0/`; `organvm_engine.ci.release_rollback`
+  tests the rollback (install, uninstall, verify gone, reinstall from the
+  sdist). The release workflow now generates this evidence on every build,
+  attaches it to `v*` releases, smoke-tests the wheel on Python 3.11 and
+  3.12, and runs the rollback test. Publication (step 7) and owner approval
+  (step 8) are NOT done here: #192 is still open and publishing is the
+  owner's call — the 0.1.0 candidate is verified, not shipped.
 - Onboarding repair (issue #196): README and CONTRIBUTING now document the
   one install path (`pip install -e ".[dev]"`; there is no
   `requirements.txt`), every README CLI example is verified against the live

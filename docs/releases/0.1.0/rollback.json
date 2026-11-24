@@ -1,0 +1,67 @@
+{
+  "artifact": "organvm-engine",
+  "version": "0.1.0",
+  "wheel": "organvm_engine-0.1.0-py3-none-any.whl",
+  "sdist": "organvm_engine-0.1.0.tar.gz",
+  "previous_wheel": null,
+  "rollback_form": "uninstall + reinstall from sdist (no previous version published yet \u2014 first-release form)",
+  "tested_at": "2026-11-24T01:42:21.546452+00:00",
+  "steps": [
+    {
+      "name": "install candidate wheel",
+      "result": "pass",
+      "detail": ""
+    },
+    {
+      "name": "verify after install: installed version matches candidate",
+      "result": "pass",
+      "detail": "installed='0.1.0' expected='0.1.0'"
+    },
+    {
+      "name": "verify after install: organvm --help",
+      "result": "pass",
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verify after install: registry validate on minimal fixture",
+      "result": "pass",
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "uninstall candidate",
+      "result": "pass",
+      "detail": ""
+    },
+    {
+      "name": "organvm binary gone after uninstall",
+      "result": "pass",
+      "detail": ""
+    },
+    {
+      "name": "organvm_engine import gone after uninstall",
+      "result": "pass",
+      "detail": ""
+    },
+    {
+      "name": "reinstall from sdist",
+      "result": "pass",
+      "detail": ""
+    },
+    {
+      "name": "verify after reinstall: installed version matches candidate",
+      "result": "pass",
+      "detail": "installed='0.1.0' expected='0.1.0'"
+    },
+    {
+      "name": "verify after reinstall: organvm --help",
+      "result": "pass",
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verify after reinstall: registry validate on minimal fixture",
+      "result": "pass",
+      "detail": "rc=0 expected=0"
+    }
+  ],
+  "result": "pass"
+}
