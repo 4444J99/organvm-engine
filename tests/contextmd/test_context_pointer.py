@@ -13,6 +13,7 @@ from organvm_engine.contextmd.generator import (
     compose_context_document,
     generate_agents_section,
     generate_context_pointer,
+    generate_identity_pointer,
     generate_repo_section,
 )
 from organvm_engine.contextmd.reader import is_pointer_block, read_generated_context
@@ -108,6 +109,194 @@ def test_pointer_is_a_short_block_with_the_sync_stamp_inside_it():
     inside = pointer.split(AUTO_START, 1)[1].split(AUTO_END, 1)[0]
     assert f"Last synced: {T1}" in inside
     assert is_pointer_block(inside)
+
+
+# ── identity pointer ──────────────────────────────────────────────────
+#
+# A repo whose seed declares subscriptions, produces or consumes keeps
+# those lines in its instruction files after migration: downstream
+# contracts pin them in the file itself, and the plain pointer strips
+# them (editorial-standards #13: 88 staged failures, 24 validator errors).
+
+
+def _editorial_registry() -> dict:
+    return {
+        "organs": {
+            "ORGAN-V": {
+                "name": "Public Process",
+                "repositories": [
+                    {
+                        "name": "editorial-standards",
+                        "org": "4444J99",
+                        "tier": "standard",
+                        "promotion_status": "PUBLIC_PROCESS",
+                    },
+                ],
+            },
+            "ORGAN-IV": {
+                "name": "Orchestration",
+                "repositories": [
+                    {"name": "schema-definitions", "org": "organvm-iv-taxis"},
+                ],
+            },
+        },
+    }
+
+
+def _editorial_seed() -> dict:
+    return {
+        "produces": [
+            {"type": "editorial-governance", "consumers": [{"organ": "ORGAN-V"}]},
+            {"type": "frontmatter-schema", "consumers": [{"organ": "ORGAN-V"}]},
+            {"type": "essay-templates", "consumers": [{"organ": "ORGAN-V"}]},
+        ],
+        "consumes": [
+            {"type": "schema", "source": "organvm-iv-taxis/schema-definitions"},
+        ],
+        "subscriptions": [
+            {
+                "event": "essay.published",
+                "action": "Validate published essay against quality rubric",
+            },
+        ],
+    }
+
+
+def test_identity_pointer_for_claude_carries_the_arrow_edges():
+    pointer = generate_identity_pointer(
+        "CLAUDE.md", "editorial-standards", "4444J99",
+        _editorial_registry(), _editorial_seed(), timestamp=T1,
+    )
+    assert "**Org:** `4444J99` | **Repo:** `editorial-standards`" in pointer
+    assert "- **Produces** → `ORGAN-V`: editorial-governance" in pointer
+    assert "- **Produces** → `ORGAN-V`: frontmatter-schema" in pointer
+    assert "- **Produces** → `ORGAN-V`: essay-templates" in pointer
+    assert "- **Consumes** ← `organvm-iv-taxis/schema-definitions`: schema" in pointer
+    assert "Generated system context" in pointer
+    assert f"Last synced: {T1}" in pointer
+    inside = pointer.split(AUTO_START, 1)[1].split(AUTO_END, 1)[0]
+    assert is_pointer_block(inside)
+
+
+def test_identity_pointer_for_agents_uses_the_relative_schema_link():
+    pointer = generate_identity_pointer(
+        "AGENTS.md", "editorial-standards", "4444J99",
+        _editorial_registry(), _editorial_seed(), timestamp=T1,
+    )
+    assert (
+        "- Event: `essay.published` → Action: Validate published essay against quality rubric"
+        in pointer
+    )
+    assert "- **Produce** `editorial-governance` for ORGAN-V" in pointer
+    assert "- **Produce** `frontmatter-schema` for ORGAN-V" in pointer
+    assert "- **Produce** `essay-templates` for ORGAN-V" in pointer
+    assert (
+        "- **Consume** `schema` from "
+        "[`organvm-iv-taxis/schema-definitions`]"
+        "(../../organvm-iv-taxis/schema-definitions/CLAUDE.md)"
+        in pointer
+    )
+    assert "github.com" not in pointer
+    inside = pointer.split(AUTO_START, 1)[1].split(AUTO_END, 1)[0]
+    assert is_pointer_block(inside)
+
+
+def test_identity_pointer_without_a_seed_is_the_plain_pointer(registry):
+    pointer = generate_identity_pointer(
+        "CLAUDE.md", "recursive-engine", "organvm-i-theoria", registry, None, timestamp=T1,
+    )
+    assert pointer == EXPECTED_POINTER
+
+
+def test_reader_skips_identity_pointers_and_returns_none_without_content(tmp_path):
+    pointer = generate_identity_pointer(
+        "CLAUDE.md", "editorial-standards", "4444J99",
+        _editorial_registry(), _editorial_seed(), timestamp=T1,
+    )
+    (tmp_path / "CLAUDE.md").write_text(pointer + "\n")
+    (tmp_path / "GEMINI.md").write_text("# no generated block at all\n")
+
+    assert read_generated_context(tmp_path) is None
+
+
+def test_sync_all_writes_identity_pointers_for_a_seeded_repo(tmp_path, registry):
+    import json
+
+    root = tmp_path / "workspace"
+    repo = root / "organvm-i-theoria" / "recursive-engine"
+    repo.mkdir(parents=True)
+    registry_path = tmp_path / "registry.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": "2.0",
+                "schema_version": "0.5",
+                "organs": {
+                    "ORGAN-I": {
+                        "name": "Theory",
+                        "repositories": [
+                            {
+                                "name": "recursive-engine",
+                                "org": "organvm-i-theoria",
+                                "tier": "flagship",
+                                "promotion_status": "PUBLIC_PROCESS",
+                                "implementation_status": "ACTIVE",
+                                "public": True,
+                                "description": "A recursive engine for generative entities",
+                            },
+                        ],
+                    },
+                    "ORGAN-IV": {
+                        "name": "Orchestration",
+                        "repositories": [
+                            {
+                                "name": "schema-definitions",
+                                "org": "organvm-iv-taxis",
+                                "implementation_status": "ACTIVE",
+                                "public": True,
+                                "description": "Canonical schemas",
+                            },
+                        ],
+                    },
+                },
+            },
+        ),
+        encoding="utf-8",
+    )
+    (repo / "seed.yaml").write_text(
+        "repo: recursive-engine\norg: organvm-i-theoria\norgan: I\n"
+        "produces:\n  - type: governance-policy\n    consumers: [{organ: ORGAN-I}]\n"
+        "consumes:\n  - type: schema\n    source: organvm-iv-taxis/schema-definitions\n"
+        "subscriptions:\n  - event: essay.published\n"
+        "    action: Validate published essay against quality rubric\n",
+        encoding="utf-8",
+    )
+    for name in ("CLAUDE.md", "GEMINI.md", "AGENTS.md"):
+        (repo / name).write_text(f"# Manual {name}\n\n{AUTO_START}\nold\n{AUTO_END}\n")
+
+    result = sync_all(
+        workspace=root,
+        registry_path=str(registry_path),
+        additional_workspace_roots=[],
+        organs=["ORGAN-I"],
+    )
+
+    assert result["errors"] == []
+    claude = (repo / "CLAUDE.md").read_text()
+    assert "- **Produces** → `ORGAN-I`: governance-policy" in claude
+    assert "- **Consumes** ← `organvm-iv-taxis/schema-definitions`: schema" in claude
+    assert "Generated system context" in claude
+    agents = (repo / "AGENTS.md").read_text()
+    assert "- Event: `essay.published` → Action: Validate published essay against quality rubric" in agents
+    assert "- **Produce** `governance-policy` for ORGAN-I" in agents
+    assert (
+        "- **Consume** `schema` from "
+        "[`organvm-iv-taxis/schema-definitions`]"
+        "(../../organvm-iv-taxis/schema-definitions/CLAUDE.md)"
+        in agents
+    )
+    # The reader still goes to the document, never to the pointer.
+    assert read_generated_context(repo) == (repo / DOCUMENT).read_text()
 
 
 # ── pointer written, full context in docs/organvm-context.md ──────────
@@ -241,7 +430,10 @@ def test_pointer_stamp_moves_only_when_the_document_changes(tmp_path, registry):
     assert f"Last synced: {T2}" in pointer
     assert f"Last synced: {T1}" not in pointer
     assert "repo-b" in (repo / DOCUMENT).read_text()
-    assert "repo-b" not in pointer
+    # The identity pointer carries the repo's declared edges, so the new
+    # edge is in the pointer too (it used to carry no content at all).
+    assert "repo-b" in pointer
+    assert "- **Produces** → `repo-b`: data" in pointer
 
 
 # ── migration of a legacy full block ──────────────────────────────────

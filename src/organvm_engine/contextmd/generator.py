@@ -8,9 +8,11 @@ for auto-generated sections at each level (repo, organ, workspace).
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import lru_cache
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from urllib.parse import quote
 
@@ -26,6 +28,7 @@ from organvm_engine.contextmd.templates import (
     CONTEXT_DOCUMENT_HEADER,
     ECOSYSTEM_STATUS_SECTION,
     HANDOFF_STATUS_SECTION,
+    IDENTITY_POINTER_SECTION,
     LOGOS_SECTION,
     NETWORK_STATUS_SECTION,
     ONTOLOGIA_STATUS_SECTION,
@@ -174,6 +177,41 @@ def _consumed_reference(consumed: dict, registry: dict) -> dict[str, str] | None
     )
 
 
+def _relative_context_link(
+    *,
+    from_organ_key: str,
+    from_repo: str,
+    to_owner: str,
+    to_repo: str,
+    registry: dict,
+) -> str | None:
+    """Relative link from one repo dir to another repo's CLAUDE.md, or None.
+
+    The link is workspace-relative: the consuming repo lives at
+    ``<from-organ-dir>/<from-repo>`` and the target at
+    ``<to-owner>/<to-repo>`` (a declared owner doubles as its organ directory
+    in this topology). Only when the declared owner names a known workspace
+    directory and the target repo resolves in the registry; otherwise None
+    and the caller keeps the remote blob URL, so external or unresolvable
+    targets stay remote and receipted (see test_contextmd_remote_links).
+    """
+    from organvm_engine.organ_config import dir_to_registry_key, registry_key_to_dir
+
+    from_dir = registry_key_to_dir().get(from_organ_key)
+    if not from_dir:
+        return None
+    if to_owner not in dir_to_registry_key():
+        return None
+    try:
+        if _context_repository(registry, to_repo, to_owner) is None:
+            return None
+    except ValueError:
+        return None
+    target = PurePosixPath(to_owner) / to_repo / CONTEXT_DOCUMENT_PATH
+    start = PurePosixPath(from_dir) / from_repo
+    return os.path.relpath(str(target), start=str(start))
+
+
 def resolve_agents_remote_references(
     seed: dict | None,
     registry: dict,
@@ -235,34 +273,13 @@ def _context_repository(registry: dict, repo_name: str, owner: str) -> tuple[str
     raise ValueError(f"ambiguous context repository identity: {owner}/{repo_name}")
 
 
-def generate_repo_section(
-    repo_name: str,
-    org: str,
-    registry: dict,
-    seed: dict | None = None,
-    plan_index: "PlanIndex | None" = None,
-    sop_entries: list | None = None,
-    agent: str | Sequence[str] | None = None,
-    repo_path: str | None = None,
-    timestamp: str | None = None,
-    include_live_context: bool = True,
-) -> str:
-    """Generate the auto-generated section for a repo-level CLAUDE.md / GEMINI.md."""
+def _repo_edges_lines(seed: dict | None) -> list[str]:
+    """The Produces/Consumes arrow lines for a repo section, from its seed.
 
-    result = _context_repository(registry, repo_name, org)
-    resolved = resolve_entity(repo_name, registry=registry) if include_live_context else None
-    if resolved and resolved.get("registry_entry") and (
-        result is None or resolved.get("organ_key") == result[0]
-    ):
-        organ_key, repo_data = resolved["organ_key"], resolved["registry_entry"]
-    else:
-        if not result:
-            return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
-        organ_key, repo_data = result
-    organ_data = registry.get("organs", {}).get(organ_key, {})
-
-    # Format edges
-    edges = []
+    Shared by generate_repo_section and the repo-form identity pointer, so
+    the pointer carries exactly the lines the context document renders.
+    """
+    edges: list[str] = []
     if seed:
         for p in seed.get("produces", []) or []:
             if isinstance(p, dict):
@@ -278,7 +295,32 @@ def generate_repo_section(
                 edges.append(format_consumes_edge(source, artifact, c.get("event", "")))
             else:
                 edges.append(f"- **Consumes** ← `{c}`")
+    return edges
 
+
+def generate_repo_section(
+    repo_name: str,
+    org: str,
+    registry: dict,
+    seed: dict | None = None,
+    plan_index: "PlanIndex | None" = None,
+    sop_entries: list | None = None,
+    agent: str | Sequence[str] | None = None,
+    repo_path: str | None = None,
+    timestamp: str | None = None,
+    include_live_context: bool = True,
+) -> str:
+    """Generate the auto-generated section for a repo-level CLAUDE.md / GEMINI.md."""
+
+    resolved = _resolve_repo_context(
+        repo_name, org, registry, include_live_context=include_live_context,
+    )
+    if resolved is None:
+        return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
+    organ_key, repo_data, organ_data = resolved
+
+    # Format edges
+    edges = _repo_edges_lines(seed)
     edges_block = "\n".join(edges) if edges else format_no_edges()
 
     # Format siblings
@@ -381,22 +423,21 @@ def generate_repo_section(
     return section
 
 
-def generate_agents_section(
+def _agents_identity_lines(
     repo_name: str,
     org: str,
     registry: dict,
-    seed: dict | None = None,
-    timestamp: str | None = None,
-) -> str:
-    """Generate the auto-generated section for AGENTS.md."""
+    seed: dict | None,
+    organ_key: str,
+) -> tuple[str, str, str]:
+    """The subscription / produces / consumes blocks for an AGENTS.md section.
 
-    result = _context_repository(registry, repo_name, org)
-    if not result:
-        return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
-
-    organ_key, _ = result
-    organ_data = registry.get("organs", {}).get(organ_key, {})
-
+    Shared by generate_agents_section and the agents-form identity pointer,
+    so the pointer carries exactly the lines the context document renders.
+    A consume whose target is a co-located workspace repo links relatively
+    (the form downstream contracts pin); external or unresolvable targets
+    keep the remote blob URL, as the receipt references do.
+    """
     # Format subscriptions
     subs = []
     if seed:
@@ -446,7 +487,16 @@ def generate_agents_section(
                 # If source is org/repo, try to link it
                 reference = _consumed_reference(c, registry)
                 if reference is not None:
-                    source_link = f"[`{reference['repository']}`]({reference['url']})"
+                    owner, _, repo = reference["repository"].partition("/")
+                    relative = _relative_context_link(
+                        from_organ_key=organ_key,
+                        from_repo=repo_name,
+                        to_owner=owner,
+                        to_repo=repo,
+                        registry=registry,
+                    )
+                    link = relative if relative is not None else reference["url"]
+                    source_link = f"[`{reference['repository']}`]({link})"
                 else:
                     source_link = f"`{source}`"
                 cons.append(f"- **Consume** `{art}` from {source_link}")
@@ -455,6 +505,28 @@ def generate_agents_section(
 
     produces_block = "\n".join(prod) if prod else "- *No production responsibilities*"
     consumes_block = "\n".join(cons) if cons else "- *No external dependencies*"
+    return subs_block, produces_block, consumes_block
+
+
+def generate_agents_section(
+    repo_name: str,
+    org: str,
+    registry: dict,
+    seed: dict | None = None,
+    timestamp: str | None = None,
+) -> str:
+    """Generate the auto-generated section for AGENTS.md."""
+
+    result = _context_repository(registry, repo_name, org)
+    if not result:
+        return f"{AUTO_START}\n<!-- ERROR: Repo '{repo_name}' not found -->\n{AUTO_END}"
+
+    organ_key, _ = result
+    organ_data = registry.get("organs", {}).get(organ_key, {})
+
+    subs_block, produces_block, consumes_block = _agents_identity_lines(
+        repo_name, org, registry, seed, organ_key,
+    )
 
     # Simple governance for agents
     gov = ["- Adhere to unidirectional flow: I→II→III", "- Never commit secrets or credentials"]
@@ -1403,6 +1475,147 @@ def generate_context_pointer(timestamp: str | None = None) -> str:
     (workspace, organ, repo); the path is relative to the file's own directory.
     """
     return POINTER_SECTION.format(
+        context_path=CONTEXT_DOCUMENT_RELPATH,
+        timestamp=timestamp or _timestamp(),
+    )
+
+
+def _seed_declares_identity(seed: dict | None) -> bool:
+    """Whether a seed declares canonical identity lines worth preserving."""
+    if not seed:
+        return False
+    for key in ("produces", "consumes", "subscriptions"):
+        entries = seed.get(key)
+        if isinstance(entries, list) and entries:
+            return True
+    return False
+
+
+def _resolve_repo_context(
+    repo_name: str,
+    org: str,
+    registry: dict,
+    *,
+    include_live_context: bool = True,
+) -> tuple[str, dict, dict] | None:
+    """Return (organ_key, repo_data, organ_data) or None when unregistered.
+
+    Mirrors generate_repo_section's resolution: a live entity match wins
+    only when it agrees with the registry entry's organ.
+    """
+    result = _context_repository(registry, repo_name, org)
+    resolved = resolve_entity(repo_name, registry=registry) if include_live_context else None
+    if resolved and resolved.get("registry_entry") and (
+        result is None or resolved.get("organ_key") == result[0]
+    ):
+        organ_key, repo_data = resolved["organ_key"], resolved["registry_entry"]
+    else:
+        if not result:
+            return None
+        organ_key, repo_data = result
+    return organ_key, repo_data, registry.get("organs", {}).get(organ_key, {})
+
+
+def generate_repo_identity_block(
+    repo_name: str,
+    org: str,
+    registry: dict,
+    seed: dict | None = None,
+    *,
+    include_live_context: bool = True,
+) -> str | None:
+    """The canonical identity lines for CLAUDE.md / GEMINI.md, or None.
+
+    The same Organ / Org / Edges lines generate_repo_section renders, so a
+    contract pinned on the instruction file keeps passing after migration.
+    None when the seed declares no identity content or the repo is unregistered.
+    """
+    if not _seed_declares_identity(seed):
+        return None
+    resolved = _resolve_repo_context(
+        repo_name, org, registry, include_live_context=include_live_context,
+    )
+    if resolved is None:
+        return None
+    organ_key, repo_data, organ_data = resolved
+    lines = [
+        f"**Organ:** {organ_key} ({organ_data.get('name', organ_key)})"
+        f" | **Tier:** {repo_data.get('tier', 'standard')}"
+        f" | **Status:** {repo_data.get('promotion_status', 'LOCAL')}",
+        f"**Org:** `{org}` | **Repo:** `{repo_name}`",
+        "",
+        "### Edges",
+    ]
+    lines.extend(_repo_edges_lines(seed))
+    return "\n".join(lines)
+
+
+def generate_agents_identity_block(
+    repo_name: str,
+    org: str,
+    registry: dict,
+    seed: dict | None = None,
+) -> str | None:
+    """The canonical identity lines for AGENTS.md, or None.
+
+    The same swarm / subscription / Produce / Consume lines
+    generate_agents_section renders, so a contract pinned on the
+    instruction file keeps passing after migration. None when the seed
+    declares no identity content or the repo is unregistered.
+    """
+    if not _seed_declares_identity(seed):
+        return None
+    result = _context_repository(registry, repo_name, org)
+    if not result:
+        return None
+    organ_key, _ = result
+    organ_data = registry.get("organs", {}).get(organ_key, {})
+    subs_block, produces_block, consumes_block = _agents_identity_lines(
+        repo_name, org, registry, seed, organ_key,
+    )
+    return "\n".join(
+        [
+            f"This repo participates in the **{organ_key} ({organ_data.get('name', organ_key)})** swarm.",
+            "",
+            "### Active Subscriptions",
+            subs_block,
+            "",
+            "### Production Responsibilities",
+            produces_block,
+            "",
+            "### External Dependencies",
+            consumes_block,
+        ],
+    )
+
+
+def generate_identity_pointer(
+    filename: str,
+    repo_name: str,
+    org: str,
+    registry: dict,
+    seed: dict | None = None,
+    *,
+    timestamp: str | None = None,
+    include_live_context: bool = True,
+) -> str:
+    """Pointer for a repo instruction file, carrying its canonical identity.
+
+    A repo whose seed declares subscriptions, produces or consumes keeps
+    those lines in the file (downstream contracts pin them there); the
+    shared context document still carries the full text. A repo with no
+    declared identity keeps the plain short pointer.
+    """
+    if filename == "AGENTS.md":
+        identity = generate_agents_identity_block(repo_name, org, registry, seed)
+    else:
+        identity = generate_repo_identity_block(
+            repo_name, org, registry, seed, include_live_context=include_live_context,
+        )
+    if identity is None:
+        return generate_context_pointer(timestamp)
+    return IDENTITY_POINTER_SECTION.format(
+        identity_block=identity,
         context_path=CONTEXT_DOCUMENT_RELPATH,
         timestamp=timestamp or _timestamp(),
     )

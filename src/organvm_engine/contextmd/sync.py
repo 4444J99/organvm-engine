@@ -34,6 +34,7 @@ from organvm_engine.contextmd.generator import (
     compose_context_document,
     generate_agents_section,
     generate_context_pointer,
+    generate_identity_pointer,
     generate_organ_section,
     generate_repo_section,
     generate_workspace_section,
@@ -919,6 +920,17 @@ def _sync_repo_context_files(
             if reference["url"].encode("utf-8") in retained_payload
         )
 
+    def pointer_for_filename(filename: str) -> str:
+        return generate_identity_pointer(
+            filename,
+            repo_name,
+            org_name,
+            registry,
+            repo_seed,
+            timestamp=render_timestamp,
+            include_live_context=include_live_context,
+        )
+
     _sync_context_outputs(
         directory=repo_path,
         render_document=render_repo_document,
@@ -939,6 +951,7 @@ def _sync_repo_context_files(
         timestamp=render_timestamp,
         on_document_result=bind_document_references,
         on_document_error=bind_retained_document_references,
+        pointer_for_filename=pointer_for_filename,
     )
 
 
@@ -963,6 +976,7 @@ def _sync_context_outputs(
     timestamp: str | None,
     on_document_result=None,
     on_document_error=None,
+    pointer_for_filename=None,
 ) -> None:
     """Write one directory's context document, then point its instruction files at it.
 
@@ -1018,9 +1032,14 @@ def _sync_context_outputs(
     refresh_stamp = document_result["action"] != "unchanged"
     for filename in INSTRUCTION_FILENAMES:
         try:
+            pointer = (
+                pointer_for_filename(filename)
+                if pointer_for_filename is not None
+                else generate_context_pointer(timestamp)
+            )
             res = _inject_section_result(
                 directory / filename,
-                generate_context_pointer(timestamp),
+                pointer,
                 dry_run,
                 refresh_timestamp=refresh_stamp,
                 markers_required=not create_instruction_files,
@@ -1132,7 +1151,15 @@ def sync_repo(
     )
     res = _inject_section_result(
         repo_path / filename,
-        generate_context_pointer(timestamp),
+        generate_identity_pointer(
+            filename,
+            repo_name,
+            org,
+            registry,
+            seed,
+            timestamp=timestamp,
+            include_live_context=include_live_context,
+        ),
         dry_run,
         refresh_timestamp=document_res["action"] != "unchanged",
         markers_required=not create_instruction_files,

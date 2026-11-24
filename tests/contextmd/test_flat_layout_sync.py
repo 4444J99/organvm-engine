@@ -55,10 +55,13 @@ def test_sync_all_updates_repo_in_additional_flat_workspace_root(tmp_path, monke
     assert str(document_path) in result["created"]
     assert any(change["path"] == str(claude_md) for change in result["changelog"])
     assert any(change["path"] == str(document_path) for change in result["changelog"])
-    # The instruction file carries only the pointer; the generated text is in the document.
+    # The instruction file carries the identity pointer: the repo's identity
+    # lines stay in the file, and the full generated text is in the document.
     assert AUTO_START in content
     assert "docs/organvm-context.md" in content
-    assert "recursive-engine" not in content.replace("# Recursive Engine", "")
+    assert "**Org:** `organvm-i-theoria` | **Repo:** `recursive-engine`" in content
+    assert "- **Produces** → `META-ORGANVM`: context-files" in content
+    assert "## Directives" not in content
     assert not (repo / "GEMINI.md").exists()
     assert not (repo / "AGENTS.md").exists()
     assert "recursive-engine" in document
