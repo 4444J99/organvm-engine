@@ -100,6 +100,29 @@ def test_produced_consumer_links_use_the_consumers_registered_owner() -> None:
     assert "../schema-definitions/CLAUDE.md" not in section
 
 
+def test_co_located_consume_links_relatively_inside_the_workspace() -> None:
+    # A consume whose target is a co-located workspace repo links relatively:
+    # the form downstream contracts pin. External or unresolvable targets
+    # stay remote (the tests above).
+    seed = {
+        "consumes": [
+            {
+                "type": "schema",
+                "source": "organvm-iv-taxis/schema-definitions",
+            },
+        ],
+    }
+
+    section = generate_agents_section("broker", "organvm", _registry(), seed)
+
+    assert (
+        "- **Consume** `schema` from "
+        "[`organvm-iv-taxis/schema-definitions`]"
+        "(../../organvm-iv-taxis/schema-definitions/CLAUDE.md)"
+    ) in section
+    assert "github.com/organvm-iv-taxis/schema-definitions" not in section
+
+
 def test_same_name_consumer_prefers_default_owner() -> None:
     registry = _registry()
     registry["organs"]["META-ORGANVM"]["repositories"].extend([

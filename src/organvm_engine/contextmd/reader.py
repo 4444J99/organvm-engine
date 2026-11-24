@@ -19,14 +19,18 @@ from organvm_engine.contextmd import (
     INSTRUCTION_FILENAMES,
 )
 
-# A pointer block is a few lines; anything materially larger is a legacy full block.
-_POINTER_MAX_WORDS = 60
+# The pointer's first line is its fingerprint: a legacy full block never
+# carries it, and an identity pointer carries it along with the repo's
+# identity lines, so a word cap can no longer tell them apart.
+_POINTER_SENTENCE = (
+    "Generated system context (organ, edges, directives, task queue, density) is in"
+)
 _BLOCK_PATTERN = re.compile(re.escape(AUTO_START) + r"(.*?)" + re.escape(AUTO_END), re.DOTALL)
 
 
 def is_pointer_block(block: str) -> bool:
-    """Return whether an AUTO block is the short pointer rather than generated text."""
-    return CONTEXT_DOCUMENT_RELPATH in block and len(block.split()) <= _POINTER_MAX_WORDS
+    """Return whether an AUTO block is the pointer rather than generated text."""
+    return CONTEXT_DOCUMENT_RELPATH in block and _POINTER_SENTENCE in block
 
 
 def read_generated_context(directory: Path | str) -> str | None:
