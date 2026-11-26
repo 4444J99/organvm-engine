@@ -36,6 +36,7 @@ import json
 import os
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,6 +65,33 @@ def resolve_token(explicit: str | None = None) -> str:
     )
 
 
+class _StripAuthOnCrossOriginRedirect(urllib.request.HTTPRedirectHandler):
+    """Follow redirects, but never forward ``Authorization`` to another origin.
+
+    ``urllib`` copies request headers onto the redirected request, so a bearer
+    token sent to the GitHub API would be re-sent to whatever host a redirect
+    names. The header is dropped whenever the redirect target's scheme or host
+    (including port) differs from the original request's.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: PLR0913
+        new_request = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new_request is None:
+            return None
+        old = urllib.parse.urlsplit(req.full_url)
+        new = urllib.parse.urlsplit(new_request.full_url)
+        if (old.scheme.lower(), old.netloc.lower()) != (new.scheme.lower(), new.netloc.lower()):
+            for store in (new_request.headers, new_request.unredirected_hdrs):
+                for name in [k for k in store if k.lower() == "authorization"]:
+                    del store[name]
+        return new_request
+
+
+def _build_opener() -> urllib.request.OpenerDirector:
+    """Opener whose redirect handler drops credentials on cross-origin hops."""
+    return urllib.request.build_opener(_StripAuthOnCrossOriginRedirect)
+
+
 def _default_fetch(url: str, token: str) -> dict[str, Any]:
     """Fetch one GitHub API URL with the environment-supplied token."""
     request = urllib.request.Request(url, headers={
@@ -72,7 +100,7 @@ def _default_fetch(url: str, token: str) -> dict[str, Any]:
         "User-Agent": "organvm-engine-evidence-collector",
     })
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with _build_opener().open(request, timeout=60) as response:
             data = response.read(MAX_RESPONSE_BYTES + 1)
             if len(data) > MAX_RESPONSE_BYTES:
                 raise ValueError("evidence: response exceeds size budget")

@@ -257,3 +257,95 @@ def test_contract_fixture_matches_live_workflow():
     assert metadata["pinned_base"] == "1e4bec99a450d4c29338923c9a2e3396dc31756a"
     assert set(mapping) == {"test", "test-matrix (3.11)", "test-matrix (3.12)"}
     assert mapping["test"] == ["Require all matrix legs to pass"]
+
+
+# --- redirect credential handling -------------------------------------------
+
+
+def _serve(handler_cls):
+    import threading
+    from http.server import HTTPServer
+
+    server = HTTPServer(("127.0.0.1", 0), handler_cls)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+
+
+def _handler(seen, *, redirect_to=None):
+    from http.server import BaseHTTPRequestHandler
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            seen.append(self.headers.get("Authorization"))
+            if redirect_to is not None:
+                self.send_response(302)
+                self.send_header("Location", redirect_to)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            body = b'{"ok": true}'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    return Handler
+
+
+def test_authorization_dropped_on_cross_origin_redirect():
+    from organvm_engine.ci.evidence_collector import _default_fetch
+
+    target_seen: list = []
+    origin_seen: list = []
+    target = _serve(_handler(target_seen))
+    origin = _serve(_handler(
+        origin_seen, redirect_to=f"http://127.0.0.1:{target.server_port}/final",
+    ))
+    try:
+        result = _default_fetch(f"http://127.0.0.1:{origin.server_port}/start", "tok-secret")
+    finally:
+        origin.shutdown()
+        target.shutdown()
+    assert result == {"ok": True}
+    assert origin_seen == ["Bearer tok-secret"]
+    assert target_seen == [None]
+
+
+def test_authorization_kept_on_same_origin_redirect():
+    from organvm_engine.ci.evidence_collector import _default_fetch
+
+    seen: list = []
+    # Redirect to the same origin: first hop redirects, second serves.
+    hops = {"n": 0}
+    from http.server import BaseHTTPRequestHandler
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            seen.append(self.headers.get("Authorization"))
+            if hops["n"] == 0:
+                hops["n"] += 1
+                self.send_response(302)
+                self.send_header("Location", f"http://127.0.0.1:{self.server.server_port}/b")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            body = b'{"ok": true}'
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = _serve(Handler)
+    try:
+        _default_fetch(f"http://127.0.0.1:{server.server_port}/a", "tok-secret")
+    finally:
+        server.shutdown()
+    assert seen == ["Bearer tok-secret", "Bearer tok-secret"]

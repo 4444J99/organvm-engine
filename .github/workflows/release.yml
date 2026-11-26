@@ -9,8 +9,10 @@ on:
       - "v*"
   workflow_dispatch:
 
+# Least privilege: every job reads only. The publish job alone is granted
+# `contents: write` (to attach assets to the release) at job level.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -50,10 +52,15 @@ jobs:
           path: evidence/*
 
   publish:
-    needs: build
+    # Publish only after every gate has passed: the build, the clean-venv
+    # smoke matrix, and the tested rollback. Without smoke and rollback in
+    # `needs`, a tag push would publish in parallel with them.
+    needs: [build, smoke, rollback]
     # Tag pushes only: a dispatch dry run must never create a release.
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - name: Download artifacts
@@ -135,10 +142,18 @@ jobs:
         with:
           name: dist
           path: dist
+      # The candidate version comes from pyproject.toml, never a literal:
+      # a hard-coded version here goes stale on the first version bump and
+      # fails (or worse, mis-verifies) every later release.
+      - name: Read the candidate version from pyproject.toml
+        id: version
+        run: |
+          VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Test the rollback
         run: |
           PYTHONPATH=src python -m organvm_engine.ci.release_rollback \
-            --wheel dist/*.whl --sdist dist/*.tar.gz --version 0.1.0 \
+            --wheel dist/*.whl --sdist dist/*.tar.gz --version "${{ steps.version.outputs.version }}" \
             --checkout . --out-dir evidence-rollback
       - name: Upload rollback receipt
         uses: actions/upload-artifact@v7
