@@ -31,6 +31,37 @@ class TestLoader:
         with pytest.raises(FileNotFoundError):
             load_registry("/nonexistent/path.json")
 
+    def test_load_missing_file_names_the_path(self):
+        # Fail closed with a diagnostic, not a bare errno: the message names
+        # the path that was actually resolved (issue #196 onboarding).
+        with pytest.raises(FileNotFoundError, match="/nonexistent/path.json"):
+            load_registry("/nonexistent/path.json")
+
+    def test_load_missing_default_names_the_escape_hatches(self):
+        # With no explicit path the default corpus location is resolved; a
+        # fresh machine has no corpus checkout, so the error must point at
+        # --registry and ORGANVM_CORPUS_DIR (issue #196 onboarding).
+        # conftest redirects the default to /nonexistent/organvm-test-guard.
+        with pytest.raises(FileNotFoundError) as excinfo:
+            load_registry()
+        message = str(excinfo.value)
+        assert "--registry" in message
+        assert "ORGANVM_CORPUS_DIR" in message
+        assert "organvm-test-guard" in message
+
+    def test_load_missing_default_given_explicitly_still_names_hatches(self):
+        # The CLI parser eagerly resolves its --registry default to the
+        # corpus location, so the default can arrive as an explicit path;
+        # the hint must still fire (issue #196 onboarding).
+        from organvm_engine.registry import loader as loader_mod
+
+        default = loader_mod._default_registry_path()
+        with pytest.raises(FileNotFoundError) as excinfo:
+            load_registry(str(default))
+        message = str(excinfo.value)
+        assert "--registry" in message
+        assert "ORGANVM_CORPUS_DIR" in message
+
     @pytest.mark.parametrize(
         "payload,match",
         [

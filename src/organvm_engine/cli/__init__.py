@@ -57,10 +57,12 @@ from organvm_engine.cli.atoms import (
 )
 from organvm_engine.cli.ci import (
     cmd_ci_audit,
+    cmd_ci_evidence,
     cmd_ci_mandate,
     cmd_ci_protect,
     cmd_ci_scaffold,
     cmd_ci_triage,
+    cmd_ci_workflow_inventory,
 )
 from organvm_engine.cli.cmd_audit import (
     cmd_audit_absorption,
@@ -190,6 +192,7 @@ from organvm_engine.cli.irf import (
 )
 from organvm_engine.cli.ledger import (
     cmd_ledger_checkpoint,
+    cmd_ledger_export_feed,
     cmd_ledger_genesis,
     cmd_ledger_log,
     cmd_ledger_repair,
@@ -354,7 +357,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--registry",
         default=str(_default_registry_path()),
-        help="Path to registry-v2.json",
+        help="Path to repo-registry.json",
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -1124,6 +1127,97 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Output machine-readable JSON",
+    )
+    ci_evidence = ci_sub.add_parser(
+        "evidence",
+        help="Collect one run's execution evidence and evaluate it (#189)",
+    )
+    ci_evidence.add_argument(
+        "--repo",
+        required=True,
+        help="Repository as OWNER/NAME",
+    )
+    ci_evidence.add_argument(
+        "--run-id",
+        required=True,
+        type=int,
+        help="Actions run id to collect",
+    )
+    ci_evidence.add_argument(
+        "--revision",
+        required=True,
+        help="Expected head SHA (40/64 hex) the run must match",
+    )
+    ci_evidence.add_argument(
+        "--repository-id",
+        required=True,
+        type=int,
+        help="Expected GitHub repository id the run must match",
+    )
+    ci_evidence.add_argument(
+        "--workflow-id",
+        required=True,
+        type=int,
+        help="Expected workflow id the run must match",
+    )
+    ci_evidence.add_argument(
+        "--attempt",
+        type=int,
+        default=1,
+        help="Expected run attempt (default 1)",
+    )
+    ci_evidence.add_argument(
+        "--required-steps",
+        required=True,
+        help="JSON contract file mapping job names to required step names",
+    )
+    ci_evidence.add_argument(
+        "--out",
+        help="Write the full report JSON to this path",
+    )
+    ci_evidence.add_argument(
+        "--json",
+        action="store_true",
+        help="Output machine-readable JSON",
+    )
+    ci_workflow_inventory = ci_sub.add_parser(
+        "workflow-inventory",
+        help="Collect one revision-pinned workflow inventory cycle (#190)",
+    )
+    ci_workflow_inventory.add_argument(
+        "--repo",
+        required=True,
+        help="Repository as OWNER/NAME",
+    )
+    ci_workflow_inventory.add_argument(
+        "--revision",
+        required=True,
+        help="Expected head SHA (40/64 hex) the inventory must match",
+    )
+    ci_workflow_inventory.add_argument(
+        "--repository-id",
+        required=True,
+        type=int,
+        help="Expected GitHub repository id the inventory must match",
+    )
+    ci_workflow_inventory.add_argument(
+        "--registry",
+        default=None,
+        help="Optional canonical registry path for the tier/dependency join",
+    )
+    ci_workflow_inventory.add_argument(
+        "--out",
+        help="Write the full envelope JSON to this path",
+    )
+    ci_workflow_inventory.add_argument(
+        "--json",
+        action="store_true",
+        help="Output machine-readable JSON",
+    )
+    ci_workflow_inventory.add_argument(
+        "--restore-from",
+        default=None,
+        help="Rebuild the snapshot from a retained cycle artifact instead of collecting",
     )
 
     # omega
@@ -2360,6 +2454,14 @@ def build_parser() -> argparse.ArgumentParser:
     ledger_repair = ledger_sub.add_parser("repair", help="Repair corrupted chain")
     ledger_repair.add_argument("--write", action="store_true", help="Execute repair")
     ledger_repair.add_argument("--chain-path", default=None)
+
+    ledger_export = ledger_sub.add_parser(
+        "export-feed", help="Export chain as portal JSON feed",
+    )
+    ledger_export.add_argument(
+        "--out", required=True, help="Where to write the JSON feed",
+    )
+    ledger_export.add_argument("--chain-path", default=None)
 
     # ecosystem
     eco = sub.add_parser(
@@ -3748,6 +3850,8 @@ def main() -> int:
         ("ci", "mandate"): cmd_ci_mandate,
         ("ci", "scaffold"): cmd_ci_scaffold,
         ("ci", "protect"): cmd_ci_protect,
+        ("ci", "evidence"): cmd_ci_evidence,
+        ("ci", "workflow-inventory"): cmd_ci_workflow_inventory,
         ("pitch", "generate"): cmd_pitch_generate,
         ("pitch", "sync"): cmd_pitch_sync,
         ("context", "sync"): cmd_context_sync,
@@ -3913,6 +4017,7 @@ def main() -> int:
             "log": cmd_ledger_log,
             "checkpoint": cmd_ledger_checkpoint,
             "repair": cmd_ledger_repair,
+            "export-feed": cmd_ledger_export_feed,
         }
         handler = ledger_dispatch.get(getattr(args, "subcommand", "") or "")
         if handler:

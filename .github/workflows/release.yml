@@ -1,0 +1,162 @@
+name: Release
+
+# Publishes a versioned artifact on `v*` tags (organvm-engine #98).
+# A `workflow_dispatch` run exercises the build + smoke + rollback path
+# without cutting a release: the publish job only runs on tag pushes.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+# Least privilege: every job reads only. The publish job alone is granted
+# `contents: write` (to attach assets to the release) at job level.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      # `python -m build` needs no secrets and no private dependency:
+      # the runtime deps in pyproject.toml are public, and `ontologia`
+      # is an optional extra the build does not install.
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          python -m build
+      # Release evidence (organvm-engine #195, steps 2-5): SBOM, hashes
+      # and provenance for the exact artifacts just built, plus the
+      # clean-room install legs. Fails closed: any exclusion leak or
+      # failed leg fails the build, so a bad candidate never ships.
+      # The module runs from source (PYTHONPATH=src); the wheel it
+      # inspects is the one this job just built.
+      - name: Generate release evidence
+        run: |
+          PYTHONPATH=src python -m organvm_engine.ci.release_evidence \
+            --no-build --dist-dir dist --out-dir evidence --checkout .
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/*
+      - name: Upload release evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: evidence
+          path: evidence/*
+
+  publish:
+    # Publish only after every gate has passed: the build, the clean-venv
+    # smoke matrix, and the tested rollback. Without smoke and rollback in
+    # `needs`, a tag push would publish in parallel with them.
+    needs: [build, smoke, rollback]
+    # Tag pushes only: a dispatch dry run must never create a release.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
+      - name: Download release evidence
+        uses: actions/download-artifact@v7
+        with:
+          name: evidence
+          path: evidence
+      # softprops/action-gh-release is in the repo audit's recognised
+      # release-action list (src/organvm_engine/ci/audit.py). Uses
+      # GITHUB_TOKEN only; no new secret, no PyPI.
+      - name: Attach artifacts to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
+            evidence/*
+          generate_release_notes: true
+
+  smoke:
+    needs: build
+    # Every supported Python version (#195 step 4): the matrix in ci.yml
+    # is ["3.11", "3.12"] and the release smoke must match it, not just
+    # the 3.11 the build job uses.
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
+      # Install the artifact just built, not the checkout: this is what
+      # proves the shipped package runs.
+      - name: Install the built wheel in a clean venv
+        run: |
+          python -m venv .smoke-venv
+          .smoke-venv/bin/pip install --upgrade pip
+          .smoke-venv/bin/pip install dist/*.whl
+      # `--registry` is a top-level flag; the bare `organvm registry
+      # validate` form resolves the default registry path, which is a
+      # local-machine path and does not exist on a runner. The shipped
+      # minimal fixture is the registry this command can validate
+      # anywhere, with no network, no secrets, and no private dep.
+      - name: Smoke-test the installed artifact
+        run: |
+          .smoke-venv/bin/organvm --help
+          .smoke-venv/bin/organvm --registry tests/fixtures/registry-minimal.json registry validate
+          # Optional-dep absence must degrade with a diagnostic, never a
+          # traceback: ontologia exits 1 naming the missing private dep.
+          ! .smoke-venv/bin/organvm --registry tests/fixtures/registry-minimal.json ontologia status 2>&1 | grep -q Traceback
+
+  rollback:
+    needs: build
+    # Tested rollback (#195 step 6), not a documented one: install the
+    # candidate, uninstall it, verify it is gone, reinstall from the
+    # sdist and verify the same version returns. No previous version
+    # has ever been published, so the first-release form is
+    # uninstall + reinstall; a --previous-wheel downgrade leg applies
+    # once a 0.1.1 candidate exists.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
+      # The candidate version comes from pyproject.toml, never a literal:
+      # a hard-coded version here goes stale on the first version bump and
+      # fails (or worse, mis-verifies) every later release.
+      - name: Read the candidate version from pyproject.toml
+        id: version
+        run: |
+          VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Test the rollback
+        run: |
+          PYTHONPATH=src python -m organvm_engine.ci.release_rollback \
+            --wheel dist/*.whl --sdist dist/*.tar.gz --version "${{ steps.version.outputs.version }}" \
+            --checkout . --out-dir evidence-rollback
+      - name: Upload rollback receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: rollback-receipt
+          path: evidence-rollback/*

@@ -12,11 +12,28 @@ from unittest.mock import patch
 import pytest
 
 from organvm_engine.contextmd.generator import (
+    _build_sop_directives,
     generate_organ_section,
     generate_repo_section,
     generate_workspace_section,
 )
 from organvm_engine.contextmd.sync import sync_repo
+from organvm_engine.sop.discover import SOPEntry
+
+
+def _sop_entry(name, scope, path):
+    return SOPEntry(
+        path=Path(path),
+        org="meta-organvm",
+        repo="praxis-perpetua",
+        filename=Path(path).name,
+        title=f"SOP: {name}",
+        doc_type="SOP",
+        canonical=scope == "system",
+        has_canonical_header=scope == "unknown",
+        scope=scope,
+        sop_name=name,
+    )
 
 
 @pytest.fixture
@@ -44,6 +61,31 @@ class TestGenerator:
         assert "**Organ:** ORGAN-I" in section
         assert "Produces" in section
         assert "repo-b" in section
+
+    def test_directives_render_each_sop_once(self, mock_registry):
+        """organvm-engine #76 step 2: a raw canonical + legacy pair renders
+        one Active Directives row, not two."""
+        seed = {"repo": "repo-a"}
+        entries = [
+            _sop_entry(
+                "pitch-deck-rollout", "unknown",
+                "/ws/4444J99/legacy-repo/docs/SOP--pitch-deck-rollout.md",
+            ),
+            _sop_entry(
+                "pitch-deck-rollout", "system",
+                "/ws/meta-organvm/praxis-perpetua/standards/SOP--pitch-deck-rollout.md",
+            ),
+        ]
+        section = _build_sop_directives(entries)
+        assert section.count("| pitch-deck-rollout |") == 1
+        assert "| system | any | pitch-deck-rollout |" in section
+        assert "| unknown | any | pitch-deck-rollout |" not in section
+
+        # Same guarantee at the repo-section level (the CLAUDE.md path).
+        full = generate_repo_section(
+            "repo-a", "organvm-i-theoria", mock_registry, seed, sop_entries=entries,
+        )
+        assert full.count("| pitch-deck-rollout |") == 1
 
     def test_generate_organ_section(self, mock_registry):
         section = generate_organ_section("ORGAN-I", mock_registry, [])

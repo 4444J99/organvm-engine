@@ -7,12 +7,12 @@ delivery:
 - platform: python_library
   status: live
   priority: critical
-  notes: "21 domain modules, 590+ tests, installable package"
+  notes: "47 domain modules, ~6,800 tests, installable package"
   next_action: "Maintain and extend as new domain modules are added"
 - platform: cli_tool
   status: live
   priority: critical
-  notes: "organvm CLI with 23 command groups"
+  notes: "organvm CLI with 49 command groups"
   next_action: "Keep CLI aligned with domain module capabilities"
 
 content:

@@ -1,0 +1,140 @@
+{
+  "artifact": "organvm-engine",
+  "version": "0.1.0",
+  "status": "candidate",
+  "published": false,
+  "checkout_sha": "70b73b9e95d98f48e093a84e1c22071bc6863377",
+  "built_at": "2026-11-24T01:42:05.887036+00:00",
+  "builder": {
+    "release_evidence": "0.1.0",
+    "build": "build 1.6.1 (/home/hatch/workspace/goals/github-debt-evolution/hidden_files/oe195-venvs/build/lib/python3.12/site-packages/build)",
+    "python": "3.12.3"
+  },
+  "clean_room_python": "/home/hatch/workspace/goals/github-debt-evolution/hidden_files/oe195-venvs/build/bin/python",
+  "hashes": {
+    "wheel": "8b29d7197d819c515ad97abb4fa1c0e9e51baafe65d1e53b5ff9de420d36a623",
+    "sdist": "748989b1effbe346af6e4c6815034344e71655efb8ab16905ad866456a65269a",
+    "sbom": "20955dd159752944fb68d1308d91167ced667fb3ba412df43eefc5caf72a62ba"
+  },
+  "exclusions_applied": [
+    {
+      "pattern": "organvm_ontologia",
+      "reason": "private dependency package must never be bundled"
+    },
+    {
+      "pattern": "psycopg",
+      "reason": "neon extra dependency must not ship in the default install"
+    },
+    {
+      "pattern": "legacy/",
+      "reason": "old packages, not Engine (pre-#195 provenance files)"
+    },
+    {
+      "pattern": "receipts/",
+      "reason": "live custody directory, never shipped (#196)"
+    },
+    {
+      "pattern": "signatures/",
+      "reason": "live custody directory, never shipped (#196)"
+    },
+    {
+      "pattern": ".env",
+      "reason": "credentials must never ship"
+    },
+    {
+      "pattern": ".pem",
+      "reason": "credentials must never ship"
+    },
+    {
+      "pattern": ".key",
+      "reason": "credentials must never ship"
+    },
+    {
+      "pattern": "credentials",
+      "reason": "credentials must never ship"
+    }
+  ],
+  "exclusions_note": "#180 (restricted-custody classes) is still open, so the fallback applies: every restricted class is excluded. In-repo ontologia/neon adapter modules DO ship (public code); the private organvm-ontologia package and psycopg do not.",
+  "clean_room_checks": [
+    {
+      "name": "organvm --help",
+      "rc": "0",
+      "expected_rc": "0",
+      "result": "pass",
+      "detail": "  --registry REGISTRY   Path to repo-registry.json"
+    },
+    {
+      "name": "organvm version matches pyproject",
+      "rc": "0",
+      "expected_rc": "0",
+      "result": "pass",
+      "detail": ""
+    },
+    {
+      "name": "registry validate on minimal fixture",
+      "rc": "0",
+      "expected_rc": "0",
+      "result": "pass",
+      "detail": "All checks passed."
+    },
+    {
+      "name": "ontologia degrades without private dep",
+      "rc": "1",
+      "expected_rc": "1",
+      "result": "pass",
+      "detail": "  Install with: pip install -e ../organvm-ontologia/"
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "license": "MIT"
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "license": "MIT"
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "license": "MIT"
+    },
+    {
+      "name": "organvm-engine",
+      "version": "0.1.0",
+      "license": "MIT"
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.4",
+      "license": "MIT"
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "license": "MIT"
+    },
+    {
+      "name": "rfc8785",
+      "version": "0.1.4",
+      "license": ""
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.9.1",
+      "license": "MIT"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "license": "PSF-2.0"
+    }
+  ],
+  "notes": [
+    "No tag has been pushed and no release published for this version; the candidate is verified, not shipped.",
+    "Rollback is tested separately (organvm_engine.ci.release_rollback); see the PR receipt.",
+    "Publication (step 7) and owner approval (step 8) are deferred: #192 is still open and publishing is Anthony's call."
+  ]
+}

@@ -76,6 +76,24 @@ Generated system context (organ, edges, directives, task queue, density) is in `
 Read it when you need it; it is refreshed by `organvm context sync --write`. *Last synced: {timestamp}*
 <!-- ORGANVM:AUTO:END -->"""
 
+# ── Identity pointer (repo instruction files) ───────────────────────
+#
+# A repo whose seed declares canonical identity (subscriptions, produces,
+# consumes) keeps those lines in its instruction files after migration:
+# downstream contracts pin them in the file itself, and the pointer alone
+# strips them. The identity block is the same rendering the shared context
+# document carries, in the form the file's contract expects (agents prose
+# for AGENTS.md, system-context arrows for CLAUDE.md / GEMINI.md). A repo
+# with no declared identity keeps the plain short pointer.
+
+IDENTITY_POINTER_SECTION = """\
+<!-- ORGANVM:AUTO:START -->
+{identity_block}
+
+Generated system context (organ, edges, directives, task queue, density) is in `{context_path}`.
+Read it when you need it; it is refreshed by `organvm context sync --write`. *Last synced: {timestamp}*
+<!-- ORGANVM:AUTO:END -->"""
+
 # ── Shared generated context file (docs/organvm-context.md) ───────
 
 CONTEXT_DOCUMENT_HEADER = (
