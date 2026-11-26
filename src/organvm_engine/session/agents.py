@@ -10,6 +10,8 @@ import codecs
 import json
 import os
 import sqlite3
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -88,6 +90,29 @@ class AgentSession:
         if self.size_bytes >= 1024:
             return f"{self.size_bytes / 1024:.0f}KB"
         return f"{self.size_bytes}B"
+
+
+@dataclass
+class SessionScanDiagnostic:
+    """Per-agent session discovery timing for the review/list path.
+
+    The four session stores are home-directory roots (bounded by
+    construction — see issue #70), so discovery records timing only: a
+    future stall still shows up as an elapsed time instead of silence.
+    """
+
+    agent: str
+    elapsed_seconds: float
+    sessions_found: int
+
+    def to_dict(self) -> dict[str, str | float | int]:
+        """Return a stable CLI-facing representation of the diagnostic."""
+        return {
+            "status": "session-scan",
+            "agent": self.agent,
+            "elapsed_seconds": round(self.elapsed_seconds, 3),
+            "sessions_found": self.sessions_found,
+        }
 
 
 @dataclass(frozen=True)
@@ -383,36 +408,72 @@ def discover_all_sessions(
     directory_filter: str | None = None,
     *,
     diagnostics: list[UnreadableSession] | None = None,
+    scan_diagnostics: list[SessionScanDiagnostic] | None = None,
 ) -> list[AgentSession]:
-    """Discover sessions across all agents, sorted newest first."""
+    """Discover sessions across all agents, sorted newest first.
+
+    When ``scan_diagnostics`` is provided, one SessionScanDiagnostic per
+    attempted agent store is appended (elapsed time + sessions found), so
+    the review path can show that discovery completed instead of hanging
+    silently (issue #70).
+    """
     results: list[AgentSession] = []
+
+    def _discover_timed(
+        label: str, discover: Callable[[], list[AgentSession]],
+    ) -> list[AgentSession]:
+        started = time.monotonic()
+        found = discover()
+        if scan_diagnostics is not None:
+            scan_diagnostics.append(
+                SessionScanDiagnostic(
+                    agent=label,
+                    elapsed_seconds=time.monotonic() - started,
+                    sessions_found=len(found),
+                ),
+            )
+        return found
 
     if agent is None or agent == "claude":
         results.extend(
-            discover_claude_sessions(
-                project_filter,
-                directory_filter,
-                diagnostics=diagnostics,
+            _discover_timed(
+                "claude",
+                lambda: discover_claude_sessions(
+                    project_filter,
+                    directory_filter,
+                    diagnostics=diagnostics,
+                ),
             ),
         )
     if agent is None or agent == "gemini":
         results.extend(
-            discover_gemini_sessions(
-                project_filter,
-                directory_filter,
-                diagnostics=diagnostics,
+            _discover_timed(
+                "gemini",
+                lambda: discover_gemini_sessions(
+                    project_filter,
+                    directory_filter,
+                    diagnostics=diagnostics,
+                ),
             ),
         )
     if agent is None or agent == "codex":
         results.extend(
-            discover_codex_sessions(
-                project_filter,
-                directory_filter,
-                diagnostics=diagnostics,
+            _discover_timed(
+                "codex",
+                lambda: discover_codex_sessions(
+                    project_filter,
+                    directory_filter,
+                    diagnostics=diagnostics,
+                ),
             ),
         )
     if agent is None or agent == "opencode":
-        results.extend(discover_opencode_sessions(project_filter, directory_filter))
+        results.extend(
+            _discover_timed(
+                "opencode",
+                lambda: discover_opencode_sessions(project_filter, directory_filter),
+            ),
+        )
 
     results.sort(
         key=lambda s: s.started or datetime.min.replace(tzinfo=timezone.utc),

@@ -5,10 +5,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from organvm_engine.cli.session import _print_unreadable_sessions, cmd_session_review
 from organvm_engine.session import agents as session_agents
 from organvm_engine.session.agents import UnreadableSession
 from organvm_engine.session.parser import find_session
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_session_stores(tmp_path, monkeypatch):
+    """Point global agent stores at empty tmp dirs so host state never leaks in."""
+    empty = tmp_path / "_hermetic_home"
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PLANS_GLOBAL", empty / "plans")
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setattr("organvm_engine.session.parser.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setenv("CODEX_HOME", str(empty / "codex"))
+
 
 # ── Helpers ───────────────────────────────────────────────────────
 
@@ -225,6 +238,67 @@ def test_review_shows_plans(tmp_path, capsys):
         assert "Plans in this project" in captured.out
         assert "Feature Plan" in captured.out
         assert "same day" in captured.out
+
+
+def test_review_latest_shows_plans_for_decoded_cwd(tmp_path, capsys):
+    """Review finds the session project's plans via the decoded cwd.
+
+    Regression for the #70 build: project_slug used to prefer the encoded
+    session-store directory name, which never resolves to the project, so
+    review reported "No plans found" for projects that have plans.
+    """
+    project = tmp_path / "project"
+    plans_dir = project / ".claude" / "plans"
+    plans_dir.mkdir(parents=True)
+    (plans_dir / "2026-03-06-feature-plan.md").write_text("# Feature Plan\n")
+
+    jsonl = tmp_path / "session-abc123.jsonl"
+    messages = [
+        {
+            "type": "user",
+            "sessionId": "session-abc123",
+            "slug": "repro",
+            "cwd": str(project),
+            "gitBranch": "main",
+            "timestamp": "2026-03-06T10:00:00Z",
+            "message": {"role": "user", "content": "Implement the feature"},
+        },
+        {
+            "type": "assistant",
+            "sessionId": "session-abc123",
+            "slug": "repro",
+            "cwd": str(project),
+            "gitBranch": "main",
+            "timestamp": "2026-03-06T10:05:00Z",
+            "message": {"role": "assistant", "content": [{"type": "text", "text": "Done."}]},
+        },
+    ]
+    with jsonl.open("w") as f:
+        for m in messages:
+            f.write(json.dumps(m) + "\n")
+
+    from organvm_engine.session.agents import AgentSession
+
+    mock_session = AgentSession(
+        agent="claude",
+        session_id="session-abc123",
+        file_path=jsonl,
+        project_dir="-tmp-project",  # encoded name: must NOT drive the lookup
+        started=datetime(2026, 3, 6, 10, 0, tzinfo=timezone.utc),
+        ended=datetime(2026, 3, 6, 10, 5, tzinfo=timezone.utc),
+        size_bytes=jsonl.stat().st_size,
+    )
+
+    with patch(
+        "organvm_engine.cli.session.discover_all_sessions",
+        return_value=[mock_session],
+    ):
+        result = cmd_session_review(_FakeArgs(latest=True))
+
+    assert result == 0
+    captured = capsys.readouterr()
+    assert "Plans in this project" in captured.out
+    assert "Feature Plan" in captured.out
 
 
 def test_review_unparseable_session(tmp_path, capsys):

@@ -1,10 +1,16 @@
 """Tests for session plan discovery and inventory."""
 
+import time
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
+
+from organvm_engine.cli.session import cmd_session_plans
 from organvm_engine.session.plans import (
     AGENT_PLAN_DIRS,
     PlanFile,
+    PlanScanBudgetExceeded,
     _infer_lifecycle_statuses,
     _parse_plan_file,
     _resolve_organ_repo,
@@ -13,6 +19,17 @@ from organvm_engine.session.plans import (
     render_plan_inventory,
     render_plan_matrix,
 )
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_session_stores(tmp_path, monkeypatch):
+    """Point global agent stores at empty tmp dirs so host state never leaks in."""
+    empty = tmp_path / "_hermetic_home"
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PLANS_GLOBAL", empty / "plans")
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setattr("organvm_engine.session.parser.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setenv("CODEX_HOME", str(empty / "codex"))
+
 
 # ── PlanFile dataclass ────────────────────────────────────────────
 
@@ -339,6 +356,134 @@ def test_discover_plans_prunes_dependency_trees(tmp_path):
     results = discover_plans(workspace=tmp_path)
     assert len(results) == 1
     assert results[0].slug == "plan"
+
+
+# ── Scan diagnostics (issue #70) ────────────────────────────────────
+
+
+def test_discover_plans_reports_scan_diagnostics(tmp_path):
+    """A normal scan records counts + timing for the project walk."""
+    plans_dir = tmp_path / "project" / ".claude" / "plans"
+    plans_dir.mkdir(parents=True)
+    (plans_dir / "2026-01-01-plan.md").write_text("# Plan\n")
+
+    ignored = tmp_path / "project" / "node_modules" / "pkg" / ".claude" / "plans"
+    ignored.mkdir(parents=True)
+    (ignored / "2026-01-01-ignored.md").write_text("# Ignored\n")
+
+    diagnostics: list = []
+    results = discover_plans(workspace=tmp_path, diagnostics=diagnostics)
+
+    assert len(results) == 1
+    assert len(diagnostics) == 1
+    diag = diagnostics[0]
+    assert diag.directories_scanned >= 1
+    assert diag.directories_pruned >= 1  # node_modules pruned, decoy never found
+    assert diag.plan_dirs_found == 1
+    assert diag.elapsed_seconds >= 0
+    assert diag.budget_seconds is None
+    assert diag.over_budget is False
+    assert diag.to_dict()["status"] == "plan-scan"
+
+
+def test_discover_plans_scan_budget_raises_actionable_error(tmp_path):
+    """An over-budget walk fails with an actionable message, not a hang."""
+    for i in range(200):
+        (tmp_path / f"dir-{i:03d}").mkdir()
+
+    with pytest.raises(PlanScanBudgetExceeded) as exc_info:
+        discover_plans(workspace=tmp_path, scan_budget_seconds=0)
+
+    message = str(exc_info.value)
+    assert "--project" in message
+    assert str(tmp_path) in message
+    assert "budget" in message
+
+
+def test_discover_plans_progress_reports_slow_scan(tmp_path, capsys):
+    """A slow walk emits a stderr progress line instead of staying silent."""
+    for i in range(200):
+        (tmp_path / f"dir-{i:03d}").mkdir()
+
+    discover_plans(workspace=tmp_path, progress_every_seconds=0)
+
+    captured = capsys.readouterr()
+    assert "plan scan:" in captured.err
+    assert "still scanning" in captured.err
+
+
+def test_session_plans_completes_within_budget_on_large_repo(tmp_path, monkeypatch):
+    """Acceptance (issue #70): the exact Apr/Sep hang shape now completes.
+
+    Deep node_modules/.git/vendor trees plus many plan dirs: the walk must
+    finish well inside 20s, the decoy plan inside node_modules must stay
+    pruned, and the diagnostics must show the pruning happened.
+    """
+    repo = tmp_path / "project"
+    for i in range(60):
+        deep = repo / "node_modules" / f"pkg-{i}" / "lib" / "deep" / "deeper"
+        deep.mkdir(parents=True)
+        (deep / "index.js").write_text("// pkg\n")
+    decoy = repo / "node_modules" / "pkg-0" / ".claude" / "plans"
+    decoy.mkdir(parents=True)
+    (decoy / "2026-01-01-decoy.md").write_text("# Decoy\n")
+    for i in range(50):
+        d = repo / ".git" / "objects" / f"{i:02x}"
+        d.mkdir(parents=True)
+        (d / "blob").write_text("x" * 200)
+    for i in range(30):
+        d = repo / "vendor" / f"dep-{i}" / "src"
+        d.mkdir(parents=True)
+        (d / "mod.py").write_text("# vendor\n")
+    for agent_dir in (".claude/plans", ".gemini/plans", ".codex/plans"):
+        d = repo / agent_dir
+        d.mkdir(parents=True)
+        (d / "2026-01-01-repo-plan.md").write_text("# Repo plan\n")
+    for i in range(30):
+        d = tmp_path / f"project-{i:02d}" / ".claude" / "plans"
+        d.mkdir(parents=True)
+        (d / "2026-01-01-plan.md").write_text("# Sibling plan\n")
+
+    monkeypatch.chdir(repo)
+    diagnostics: list = []
+    started = time.monotonic()
+    results = discover_plans(
+        workspace=tmp_path, project_filter=".", diagnostics=diagnostics,
+    )
+    elapsed = time.monotonic() - started
+
+    assert elapsed < 20
+    assert {r.slug for r in results} == {"repo-plan"}
+    assert len(diagnostics) == 1
+    assert diagnostics[0].directories_pruned > 0
+    assert diagnostics[0].plan_dirs_found == 3
+
+
+class _PlansArgs:
+    """Minimal argparse namespace for cmd_session_plans."""
+
+    def __init__(self, **kwargs):
+        self.project = kwargs.get("project")
+        self.since = kwargs.get("since")
+        self.audit = kwargs.get("audit", False)
+        self.agent = kwargs.get("agent")
+        self.organ = kwargs.get("organ")
+        self.matrix = kwargs.get("matrix", False)
+
+
+def test_cmd_session_plans_fails_closed_on_budget(tmp_path, monkeypatch, capsys):
+    """`session plans` exits 1 with the actionable message on over-budget."""
+    for i in range(200):
+        (tmp_path / f"dir-{i:03d}").mkdir()
+    monkeypatch.chdir(tmp_path)
+
+    with patch("organvm_engine.cli.session.PLAN_SCAN_BUDGET_SECONDS", 0):
+        result = cmd_session_plans(_PlansArgs(project="."))
+
+    assert result == 1
+    captured = capsys.readouterr()
+    assert "budget" in captured.err
+    assert "--project" in captured.err
 
 
 def test_discover_plans_since_filter(tmp_path):
