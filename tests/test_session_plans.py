@@ -20,6 +20,17 @@ from organvm_engine.session.plans import (
     render_plan_matrix,
 )
 
+
+@pytest.fixture(autouse=True)
+def _hermetic_session_stores(tmp_path, monkeypatch):
+    """Point global agent stores at empty tmp dirs so host state never leaks in."""
+    empty = tmp_path / "_hermetic_home"
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PLANS_GLOBAL", empty / "plans")
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setattr("organvm_engine.session.parser.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setenv("CODEX_HOME", str(empty / "codex"))
+
+
 # ── PlanFile dataclass ────────────────────────────────────────────
 
 

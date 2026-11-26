@@ -5,10 +5,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from organvm_engine.cli.session import _print_unreadable_sessions, cmd_session_review
 from organvm_engine.session import agents as session_agents
 from organvm_engine.session.agents import UnreadableSession
 from organvm_engine.session.parser import find_session
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_session_stores(tmp_path, monkeypatch):
+    """Point global agent stores at empty tmp dirs so host state never leaks in."""
+    empty = tmp_path / "_hermetic_home"
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PLANS_GLOBAL", empty / "plans")
+    monkeypatch.setattr("organvm_engine.session.plans.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setattr("organvm_engine.session.parser.CLAUDE_PROJECTS_DIR", empty / "projects")
+    monkeypatch.setenv("CODEX_HOME", str(empty / "codex"))
+
 
 # ── Helpers ───────────────────────────────────────────────────────
 
