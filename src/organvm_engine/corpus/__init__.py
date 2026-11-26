@@ -8,7 +8,9 @@ Pipeline: scan → extract → link → render
   1. Scanner reads .zettel-index.yaml for transcript/concept nodes
   2. Extractor reads Layer 2 frontmatter for EXTRACTED_FROM edges
   3. Linker reads seed.yaml implements[] for IMPLEMENTS edges
-  4. Renderer produces corpus-graph.json + gap report
+  4. Renderer publishes six navigable markdown indices (concept-index,
+     provenance-map, spec-coverage, tag-analysis, cross-corpus-bridges,
+     gaps) via ``organvm corpus render`` (``render_all`` / ``render.py``)
 """
 
 from organvm_engine.corpus.governance_lineage import (
@@ -18,6 +20,7 @@ from organvm_engine.corpus.governance_lineage import (
     process_child,
 )
 from organvm_engine.corpus.graph import CorpusGraph
+from organvm_engine.corpus.render import render_all
 from organvm_engine.corpus.scanner import scan_corpus
 
 __all__ = [
@@ -26,5 +29,6 @@ __all__ = [
     "ZOOM_LEVELS",
     "finalize_state",
     "process_child",
+    "render_all",
     "scan_corpus",
 ]
