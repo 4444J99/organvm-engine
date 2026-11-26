@@ -28,7 +28,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "organvm-ontologia @ git+https://github.com/meta-organvm/organvm-ontologia.git"
+          # Pinned to a full commit SHA so a push to the dependency's default
+          # branch cannot change what this scheduled job installs. To bump:
+          #   gh api repos/meta-organvm/organvm-ontologia/commits/main --jq .sha
+          # then replace the SHA below in a reviewed PR.
+          pip install "organvm-ontologia @ git+https://github.com/meta-organvm/organvm-ontologia.git@7e185c136f20325fbadcd3d7b87dbc38a66c2ab7"
           pip install -e .
 
       - name: Collect workflow inventory
