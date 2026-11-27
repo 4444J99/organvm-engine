@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
@@ -62,14 +62,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
       - name: Download release evidence
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: evidence
           path: evidence
@@ -77,7 +77,7 @@ jobs:
       # release-action list (src/organvm_engine/ci/audit.py). Uses
       # GITHUB_TOKEN only; no new secret, no PyPI.
       - name: Attach artifacts to the release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*
@@ -94,12 +94,12 @@ jobs:
         python-version: ["3.11", "3.12"]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
@@ -133,12 +133,12 @@ jobs:
     # once a 0.1.1 candidate exists.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
